@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hazmat Incident Map - Hot Wash Replay (Phase 1)</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #182230;
+      --muted: #4e5d73;
+      --accent: #0068d6;
+      --warn: #9d1d1d;
+      --ok: #1f7a3d;
+      --border: #d5deea;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", Tahoma, sans-serif; background: var(--bg); color: var(--text); }
+    .view { display: none; }
+    .view.active { display: block; }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 16px; }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+    .grid { display: grid; gap: 12px; }
+    .grid.two { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    h1, h2, h3 { margin: 0 0 10px; }
+    label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
+    input, select, button, textarea {
+      width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font: inherit;
+    }
+    textarea { min-height: 72px; }
+    button { cursor: pointer; background: #fff; }
+    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button.warn { background: #fff4f4; border-color: #d7a6a6; color: var(--warn); }
+    button.ok { background: #f2fff7; border-color: #9cd9b2; color: var(--ok); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .row > * { flex: 1; min-width: 140px; }
+    .header { display: grid; gap: 10px; margin-bottom: 12px; }
+    .status-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .status-pill.locked { color: var(--warn); border-color: #cf9d9d; background: #fff3f3; }
+    #lockedBanner {
+      display: none;
+      padding: 8px 12px;
+      border: 1px solid #cf9d9d;
+      background: #fff4f4;
+      color: var(--warn);
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    #map { height: 420px; border: 1px solid var(--border); border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid var(--border); padding: 6px; text-align: left; vertical-align: top; }
+    .small { font-size: 12px; color: var(--muted); }
+    .toast {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      background: #1f2d3d;
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 8px;
+      display: none;
+      max-width: 420px;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+  <div id="homeView" class="view active">
+    <div class="wrap grid two">
+      <div class="card">
+        <h1>Hazmat Incident Map - Hot Wash Replay</h1>
+        <div class="small">Phase 1 (Local-only Incident Management)</div>
+        <label for="authorName">Author Name</label>
+        <input id="authorName" placeholder="Jane Smith" />
+        <label for="authorRole">Author Role</label>
+        <select id="authorRole">
+          <option value="IC">IC</option>
+          <option value="Operations">Operations</option>
+          <option value="Planning">Planning</option>
+          <option value="Observer">Observer</option>
+        </select>
+        <label for="authorAgency">Agency</label>
+        <input id="authorAgency" placeholder="City Fire" />
+      </div>
+
+      <div class="card">
+        <h2>Create Incident</h2>
+        <label for="incidentTitle">Incident Title</label>
+        <input id="incidentTitle" placeholder="Rail Yard Tank Car Leak" />
+        <label for="incidentStatus">Status</label>
+        <select id="incidentStatus">
+          <option value="LIVE">LIVE</option>
+          <option value="TRAINING">TRAINING</option>
+          <option value="ARCHIVED">ARCHIVED</option>
+        </select>
+        <div class="row" style="margin-top:10px;">
+          <button id="createIncidentBtn" class="primary">Create Incident</button>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column: 1 / -1;">
+        <h2>Open Incident</h2>
+        <div class="row">
+          <select id="incidentList"></select>
+          <button id="refreshIncidentsBtn">Refresh</button>
+          <button id="openIncidentBtn" class="ok">Open Selected</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="incidentView" class="view">
+    <div class="wrap grid">
+      <div class="card header">
+        <div class="row">
+          <div>
+            <h2 id="incidentTitleHeader">Incident</h2>
+            <span id="opStatusPill" class="status-pill">OP Status</span>
+          </div>
+          <div>
+            <label for="opSelector">Operating Period</label>
+            <select id="opSelector"></select>
+          </div>
+        </div>
+
+        <div class="row">
+          <button id="closeLockOpBtn" class="warn">Close &amp; Lock OP</button>
+          <button id="startNextOpBtn" class="ok">Start Next OP</button>
+          <button id="createAmendmentBtn">Create Amendment</button>
+          <button id="backHomeBtn">Back</button>
+        </div>
+        <div id="lockedBanner">OP is LOCKED (read-only)</div>
+      </div>
+
+      <div class="grid two">
+        <div class="card">
+          <h3>Map</h3>
+          <div class="row" style="margin-bottom:8px;">
+            <button id="addMarkerBtn" class="primary">Add Marker at Center</button>
+            <button id="removeMarkerBtn">Remove Selected Marker</button>
+            <button id="moveMarkerBtn">Move Selected to Center</button>
+          </div>
+          <div id="map"></div>
+          <div id="selectedMarkerMeta" class="small" style="margin-top:8px;">No marker selected.</div>
+        </div>
+
+        <div class="card">
+          <h3>Staging Ledger</h3>
+          <div class="row">
+            <input id="stagingName" placeholder="Asset name" />
+            <input id="stagingRate" type="number" min="0" step="0.01" placeholder="Rate/hr" />
+            <button id="addStagingBtn">Add</button>
+          </div>
+          <table>
+            <thead>
+              <tr><th>Asset</th><th>Status</th><th>Rate</th><th>Action</th></tr>
+            </thead>
+            <tbody id="stagingBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <div class="card">
+          <h3>Timeline Events</h3>
+          <div class="row" style="margin-bottom:8px;">
+            <input id="noteInput" placeholder="Add note event" />
+            <button id="addNoteBtn">Add Note</button>
+          </div>
+          <table>
+            <thead>
+              <tr><th>Time</th><th>Type</th><th>Author</th><th>Client</th></tr>
+            </thead>
+            <tbody id="timelineBody"></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>Amendments</h3>
+          <div id="amendmentsEmpty" class="small">No amendments.</div>
+          <table>
+            <thead>
+              <tr><th>ID</th><th>When</th><th>By</th><th>Reason</th></tr>
+            </thead>
+            <tbody id="amendmentsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="amendmentModal" class="view" style="position:fixed; inset:0; background:rgba(0,0,0,.45); align-items:center; justify-content:center;">
+    <div class="card" style="max-width:640px; margin: 50px auto;">
+      <h3>Create Amendment</h3>
+      <div class="small">Allowed only on LOCKED OP. Snapshot remains immutable.</div>
+      <label for="amdReason">Reason</label>
+      <textarea id="amdReason" placeholder="Why is this correction needed?"></textarea>
+
+      <label for="amdOp">Patch Operation</label>
+      <select id="amdOp">
+        <option value="replace">replace</option>
+        <option value="add">add</option>
+        <option value="remove">remove</option>
+      </select>
+
+      <label for="amdPath">JSON Patch Path</label>
+      <input id="amdPath" placeholder="/mapState/items/0/lat" />
+
+      <label for="amdValue">Value (JSON)</label>
+      <textarea id="amdValue" placeholder="40.12345"></textarea>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="amdMoveSelectedBtn">Prefill: Move Selected Marker</button>
+        <button id="amdCancelBtn">Cancel</button>
+        <button id="amdSubmitBtn" class="primary">Create Amendment</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
