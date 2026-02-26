@@ -450,7 +450,7 @@ async function upsertTrainerIfPossible(
 }
 
 async function trainerOwnsScenario(
-  app: { pg: { query: (sql: string, params?: unknown[]) => Promise<{ rowCount: number; rows: Array<{ trainer_ref: string | null }> }> } },
+  app: { pg: { query: (sql: string, params?: unknown[]) => Promise<{ rowCount: number | null; rows: Array<{ trainer_ref: string | null }> }> } },
   scenarioID: string,
   trainerRef: string
 ): Promise<'ok' | 'forbidden' | 'not_found'> {
