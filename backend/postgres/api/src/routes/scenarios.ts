@@ -465,7 +465,7 @@ async function trainerOwnsScenario(
 }
 
 async function insertOrUpdateShape(
-  app: { pg: { query: (sql: string, params?: unknown[]) => Promise<{ rows: ShapeRow[]; rowCount: number }> } },
+  app: { pg: { query: (sql: string, params?: unknown[]) => Promise<{ rows: ShapeRow[]; rowCount: number | null }> } },
   scenarioID: string,
   shapeID: string | null,
   body: ShapeBody
