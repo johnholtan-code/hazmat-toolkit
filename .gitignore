@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+
+# Codex / local tooling
+.codex/
+
+# Environment / secrets
+.env
+*.env
+backend/postgres/api/.env
+
+# Node
+node_modules/
+backend/postgres/api/node_modules/
+
+# Xcode / Swift
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+.swiftpm/xcode/xcuserdata/
+
+# Build artifacts
+build/
+dist/
+
+# Logs / pids
+*.log
+*.pid
+.hazmat_http_server.log
+.hazmat_http_server.pid
