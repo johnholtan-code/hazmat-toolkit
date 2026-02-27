@@ -41,12 +41,12 @@ export const sessionRoutes: FastifyPluginAsync = async (app) => {
         session: {
           id: result.session.id,
           scenarioId: result.session.scenarioID,
-          status: result.session.status,
+          status: toPublicSessionStatus(result.session.status),
           joinCode: result.session.joinCode,
           joinCodeExpiresAt: result.session.joinCodeExpiresAt,
           startsAt: result.session.startsAt,
           endedAt: result.session.endedAt,
-          isLive: result.session.isLive
+          isLive: toPublicSessionStatus(result.session.status) === 'active'
         },
         joinCode: {
           joinCode: result.session.joinCode,
@@ -91,33 +91,6 @@ export const sessionRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  app.post<{ Params: { sessionId: string } }>('/v1/sessions/:sessionId/start', async (request, reply) => {
-    const trainerRef = readTrainerRefHeader(request.headers);
-    if (!trainerRef) {
-      return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'Missing X-Trainer-Ref header.' });
-    }
-    try {
-      await assertTrainerOwnsSession(app.pg, request.params.sessionId, trainerRef);
-      const session = await updateSessionLifecycle(app.pg, request.params.sessionId, 'start');
-      return reply.send(session);
-    } catch (error) {
-      request.log.error({ err: error }, 'Failed to start session');
-      if (error instanceof TrainerTargetNotFoundError) {
-        return reply.code(404).send({ error: 'NOT_FOUND', message: error.message });
-      }
-      if (error instanceof TrainerForbiddenError) {
-        return reply.code(403).send({ error: 'FORBIDDEN', message: error.message });
-      }
-      if (error instanceof NotFoundError) {
-        return reply.code(404).send({ error: 'NOT_FOUND', message: error.message });
-      }
-      if (error instanceof ConflictError) {
-        return reply.code(409).send({ error: 'CONFLICT', message: error.message });
-      }
-      return reply.code(500).send({ error: 'INTERNAL_ERROR', message: 'Failed to start session.' });
-    }
-  });
-
   app.post<{ Params: { sessionId: string } }>('/v1/sessions/:sessionId/end', async (request, reply) => {
     const trainerRef = readTrainerRefHeader(request.headers);
     if (!trainerRef) {
@@ -125,8 +98,12 @@ export const sessionRoutes: FastifyPluginAsync = async (app) => {
     }
     try {
       await assertTrainerOwnsSession(app.pg, request.params.sessionId, trainerRef);
-      const session = await updateSessionLifecycle(app.pg, request.params.sessionId, 'end');
-      return reply.send(session);
+      const session = await closeSession(app.pg, request.params.sessionId);
+      return reply.send({
+        ...session,
+        status: toPublicSessionStatus(session.status),
+        isLive: false
+      });
     } catch (error) {
       request.log.error({ err: error }, 'Failed to end session');
       if (error instanceof TrainerTargetNotFoundError) {
@@ -165,7 +142,7 @@ export const sessionRoutes: FastifyPluginAsync = async (app) => {
       return reply.send({
         session: {
           id: joined.session.id,
-          status: joined.session.status,
+          status: toPublicSessionStatus(joined.session.status),
           startsAt: joined.session.startsAt
         },
         participant: {
@@ -204,7 +181,12 @@ export const sessionRoutes: FastifyPluginAsync = async (app) => {
 
     try {
       const sessionInfo = await getParticipantSessionInfoForToken(app.pg, bearer);
-      return reply.send(sessionInfo);
+      const status = toPublicSessionStatus(sessionInfo.status);
+      return reply.send({
+        ...sessionInfo,
+        status,
+        isLive: status === 'active'
+      });
     } catch (error) {
       request.log.error({ err: error }, 'Failed to fetch current session metadata');
       if (error instanceof UnauthorizedError) {
@@ -317,6 +299,16 @@ function isNotFoundError(error: unknown): error is NotFoundError {
 
 function isSupportedDeviceType(value: string): value is 'air_monitor' | 'radiation_detection' | 'ph_paper' {
   return value === 'air_monitor' || value === 'radiation_detection' || value === 'ph_paper';
+}
+
+type PublicSessionStatus = 'active' | 'closed';
+
+function toPublicSessionStatus(status: string): PublicSessionStatus {
+  const normalized = status.trim().toLowerCase();
+  if (normalized === 'ended' || normalized === 'cancelled' || normalized === 'closed') {
+    return 'closed';
+  }
+  return 'active';
 }
 
 async function createSessionWithSnapshot(pool: { connect(): Promise<PoolClient> }, params: CreateSessionParams) {
@@ -619,7 +611,7 @@ async function joinSessionByCode(
 
     const rawToken = `sess_${randomUUID()}${randomUUID().replace(/-/g, '')}`;
     const tokenHash = hashSessionToken(rawToken);
-    const tokenExpiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
+    const tokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const upserted = await client.query<DBParticipantInsertRow>(
       `
@@ -698,56 +690,32 @@ type DBLifecycleRow = {
   is_live: boolean;
 };
 
-async function updateSessionLifecycle(
-  pool: { query: PoolClient['query'] },
-  sessionID: string,
-  action: 'start' | 'end'
-) {
+async function closeSession(pool: { query: PoolClient['query'] }, sessionID: string) {
   if (!sessionID?.trim()) {
     throw new NotFoundError('Session ID is required.');
   }
 
-  const sql =
-    action === 'start'
-      ? `
-          update scenario_sessions
-          set
-            status = 'live',
-            is_live = true,
-            starts_at = coalesce(starts_at, now()),
-            ended_at = null
-          where id = $1::uuid
-            and status in ('scheduled', 'live')
-          returning
-            id::text as id,
-            scenario_id::text as scenario_id,
-            status::text as status,
-            join_code,
-            join_code_expires_at,
-            starts_at,
-            ended_at,
-            is_live
-        `
-      : `
-          update scenario_sessions
-          set
-            status = 'ended',
-            is_live = false,
-            ended_at = coalesce(ended_at, now())
-          where id = $1::uuid
-            and status in ('scheduled', 'live', 'ended')
-          returning
-            id::text as id,
-            scenario_id::text as scenario_id,
-            status::text as status,
-            join_code,
-            join_code_expires_at,
-            starts_at,
-            ended_at,
-            is_live
-        `;
-
-  const result = await pool.query<DBLifecycleRow>(sql, [sessionID.trim()]);
+  const result = await pool.query<DBLifecycleRow>(
+    `
+      update scenario_sessions
+      set
+        status = 'ended',
+        is_live = false,
+        ended_at = coalesce(ended_at, now())
+      where id = $1::uuid
+        and status in ('scheduled', 'live', 'ended')
+      returning
+        id::text as id,
+        scenario_id::text as scenario_id,
+        status::text as status,
+        join_code,
+        join_code_expires_at,
+        starts_at,
+        ended_at,
+        is_live
+    `,
+    [sessionID.trim()]
+  );
 
   const row = result.rows[0];
   if (!row) {
@@ -758,7 +726,7 @@ async function updateSessionLifecycle(
     if (exists.rowCount === 0) {
       throw new NotFoundError('Session not found.');
     }
-    throw new ConflictError(`Session cannot be ${action}ed from its current status.`);
+    throw new ConflictError('Session cannot be closed from its current status.');
   }
 
   return {
