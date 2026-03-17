@@ -43,6 +43,7 @@ const GEOMETRY_TYPES = ['point', 'line', 'polygon'] as const;
 const SESSION_STATUSES = ['active', 'ended', 'expired'] as const;
 const EDIT_LOCK_MS = 30_000;
 const PARTICIPANT_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const ACTIVE_PARTICIPANT_WINDOW_MS = 30_000;
 
 type PermissionTier = (typeof PERMISSION_TIERS)[number];
 type GeometryType = (typeof GEOMETRY_TYPES)[number];
@@ -619,6 +620,22 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
+  app.post<{ Params: { sessionId: string } }>('/v1/ics-collab/sessions/:sessionId/leave', async (request, reply) => {
+    const client = await app.pg.connect();
+    try {
+      await client.query('BEGIN');
+      const actor = await resolveSessionActorWithClient(client, app, request.params.sessionId, request.headers.authorization);
+      await leaveSession(client, actor.participant);
+      await client.query('COMMIT');
+      return reply.send({ ok: true });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      return sendRouteError(reply, request, error, 'Failed to leave collaborative session.');
+    } finally {
+      client.release();
+    }
+  });
+
   app.post<{ Params: { sessionId: string } }>('/v1/ics-collab/sessions/:sessionId/end', async (request, reply) => {
     try {
       const actor = await resolveSessionActor(app, request.params.sessionId, request.headers.authorization, { requireCommander: true });
@@ -704,6 +721,7 @@ async function resolveSessionActorWithClient(
   if (!commanderParticipant) {
     throw new TrainerForbiddenError('Commander participant record is missing.');
   }
+  await touchParticipant(client, commanderParticipant.id);
   if (options.requireCommander && commanderParticipant.permission_tier !== 'commander') {
     throw new TrainerForbiddenError('Commander access is required.');
   }
@@ -944,9 +962,10 @@ async function listParticipants(pool: { query: PoolClient['query'] }, sessionID:
         token_expires_at
       from collab_map_participants
       where session_id = $1::uuid
+        and last_seen_at >= now() - ($2::int * interval '1 millisecond')
       order by joined_at asc, display_name asc
     `,
-    [sessionID]
+    [sessionID, ACTIVE_PARTICIPANT_WINDOW_MS]
   );
   return result.rows;
 }
@@ -1204,6 +1223,32 @@ async function touchParticipant(pool: { query: PoolClient['query'] }, participan
       where id = $1::uuid
     `,
     [participantID]
+  );
+}
+
+async function leaveSession(pool: { query: PoolClient['query'] }, participant: CollabParticipantRow) {
+  await pool.query(
+    `
+      update collab_map_objects
+      set
+        active_lock_participant_id = null,
+        lock_expires_at = null
+      where session_id = $1::uuid
+        and active_lock_participant_id = $2::uuid
+    `,
+    [participant.session_id, participant.id]
+  );
+
+  await pool.query(
+    `
+      update collab_map_participants
+      set
+        session_token_hash = case when trainer_ref is null then null else session_token_hash end,
+        token_expires_at = case when trainer_ref is null then null else token_expires_at end,
+        last_seen_at = now() - interval '1 day'
+      where id = $1::uuid
+    `,
+    [participant.id]
   );
 }
 

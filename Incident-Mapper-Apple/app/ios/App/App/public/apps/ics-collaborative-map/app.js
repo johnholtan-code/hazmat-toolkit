@@ -86,6 +86,8 @@
     guidedModeBtn: document.getElementById("guidedModeBtn"),
     guidedSetupToggle: document.getElementById("guidedSetupToggle"),
     mapStyleSelect: document.getElementById("mapStyleSelect"),
+    leaveSessionBtn: document.getElementById("leaveSessionBtn"),
+    sessionSignOutBtn: document.getElementById("sessionSignOutBtn"),
     quickFlowPanel: document.getElementById("quickFlowPanel"),
     sessionPanel: document.getElementById("sessionPanel"),
     sessionPanelToggle: document.getElementById("sessionPanelToggle"),
@@ -172,6 +174,8 @@
     elements.guidedModeBtn.addEventListener("click", () => toggleGuidedMode(!state.guidedMode));
     elements.guidedSetupToggle.addEventListener("change", (event) => toggleGuidedMode(event.target.checked));
     elements.mapStyleSelect.addEventListener("change", (event) => setBaseLayer(event.target.value));
+    elements.leaveSessionBtn.addEventListener("click", leaveCurrentSession);
+    elements.sessionSignOutBtn.addEventListener("click", signOutCommander);
     elements.sessionPanelToggle.addEventListener("click", () => togglePanel("session"));
     elements.participantsPanelToggle.addEventListener("click", () => togglePanel("participants"));
     elements.palettesPanelToggle.addEventListener("click", () => togglePanel("palettes"));
@@ -638,29 +642,29 @@
         setStatus(`Commander ready: ${state.commanderAuth.displayName || state.commanderAuth.email}.`);
       }
     } catch (error) {
-      signOutCommander();
+      void signOutCommander();
     }
   }
 
-  function signOutCommander() {
+  async function signOutCommander() {
+    if (state.activeSession && isCommander()) {
+      try {
+        await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(state.activeSession.id)}/leave`, {
+          method: "POST",
+          actorType: "commander"
+        });
+      } catch (_error) {
+        // Continue clearing local auth even if the leave call fails.
+      }
+    }
     state.commanderAuth = null;
     persistJSON(STORAGE_KEYS.commanderAuth, null);
     elements.createSessionPanel.classList.add("hidden");
     elements.sessionListPanel.classList.add("hidden");
     elements.commanderSignOutBtn.classList.add("hidden");
+    elements.sessionSignOutBtn.classList.add("hidden");
     if (!state.participantAuth) {
-      clearPolling();
-      state.activeSession = null;
-      state.actor = null;
-      state.objects = new Map();
-      state.participants = [];
-      state.selectedObjectId = null;
-      state.selectedTemplateType = null;
-      cancelGeometryPreviewOnly();
-      syncMapObjects();
-      elements.landingView.classList.remove("hidden");
-      elements.appView.classList.add("hidden");
-      scheduleMapResizeRefresh();
+      exitActiveWorkspace();
     }
     renderCommanderSessions([]);
     renderAll();
@@ -670,6 +674,63 @@
   function clearParticipantAuth() {
     state.participantAuth = null;
     persistJSON(STORAGE_KEYS.participantAuth, null);
+  }
+
+  function exitActiveWorkspace() {
+    clearPolling();
+    state.activeSession = null;
+    state.actor = null;
+    state.objects = new Map();
+    state.participants = [];
+    state.selectedObjectId = null;
+    state.selectedTemplateType = null;
+    state.drawState = null;
+    state.guidedMode = false;
+    state.qrPayload = null;
+    cancelGeometryPreviewOnly();
+    syncMapObjects();
+    updateDrawControls();
+    elements.landingView.classList.remove("hidden");
+    elements.appView.classList.add("hidden");
+    scheduleMapResizeRefresh();
+  }
+
+  async function leaveCurrentSession() {
+    if (!state.activeSession || !state.actor) {
+      setStatus("No active session to leave.");
+      return;
+    }
+    const leavingAsCommander = isCommander();
+    const prompt = leavingAsCommander
+      ? "Leave this session and return to your commander dashboard?"
+      : "Leave this session? You can rejoin later with the join code.";
+    if (!window.confirm(prompt)) return;
+    try {
+      await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(state.activeSession.id)}/leave`, {
+        method: "POST",
+        actorType: currentActorType()
+      });
+    } catch (error) {
+      setStatus(formatError(error));
+      return;
+    }
+
+    if (!leavingAsCommander) {
+      clearParticipantAuth();
+    }
+    exitActiveWorkspace();
+    renderAll();
+    if (leavingAsCommander && state.commanderAuth?.accessToken) {
+      try {
+        await refreshCommanderSessions();
+      } catch (error) {
+        setStatus(formatError(error));
+        return;
+      }
+      setStatus("Left the collaborative session.");
+      return;
+    }
+    setStatus("Left the collaborative session.");
   }
 
   async function updateOperationalPeriod() {
@@ -766,6 +827,8 @@
     elements.createSessionPanel.classList.toggle("hidden", !signedIn);
     elements.sessionListPanel.classList.toggle("hidden", !signedIn);
     elements.commanderSignOutBtn.classList.toggle("hidden", !signedIn);
+    elements.sessionSignOutBtn.classList.toggle("hidden", !signedIn || !state.activeSession);
+    elements.leaveSessionBtn.classList.toggle("hidden", !state.activeSession);
   }
 
   function renderCommanderSessions(sessions) {
