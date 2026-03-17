@@ -700,27 +700,38 @@
       setStatus("No active session to leave.");
       return;
     }
+    const sessionId = state.activeSession.id;
     const leavingAsCommander = isCommander();
+    const actorType = currentActorType();
+    const shouldRefreshCommanderSessions = leavingAsCommander && Boolean(state.commanderAuth?.accessToken);
     const prompt = leavingAsCommander
       ? "Leave this session and return to your commander dashboard?"
       : "Leave this session? You can rejoin later with the join code.";
     if (!window.confirm(prompt)) return;
-    try {
-      await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(state.activeSession.id)}/leave`, {
-        method: "POST",
-        actorType: currentActorType()
-      });
-    } catch (error) {
-      setStatus(formatError(error));
-      return;
-    }
 
     if (!leavingAsCommander) {
       clearParticipantAuth();
     }
     exitActiveWorkspace();
     renderAll();
-    if (leavingAsCommander && state.commanderAuth?.accessToken) {
+    setStatus("Leaving collaborative session…");
+    try {
+      await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(sessionId)}/leave`, {
+        method: "POST",
+        actorType
+      });
+    } catch (error) {
+      if (shouldRefreshCommanderSessions) {
+        try {
+          await refreshCommanderSessions();
+        } catch (_refreshError) {
+          // Ignore secondary refresh failures here.
+        }
+      }
+      setStatus(`Left locally. ${formatError(error)}`);
+      return;
+    }
+    if (shouldRefreshCommanderSessions) {
       try {
         await refreshCommanderSessions();
       } catch (error) {
