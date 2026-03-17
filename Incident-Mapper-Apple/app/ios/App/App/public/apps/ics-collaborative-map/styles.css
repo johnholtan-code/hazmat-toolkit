@@ -222,6 +222,20 @@ button.danger { background: rgba(178,58,72,0.14); color: #f4c9ce; border-color: 
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
+  color: var(--text);
+  text-align: left;
+}
+.object-template strong {
+  display: block;
+  color: var(--text);
+  font-size: 1.05rem;
+  line-height: 1.15;
+}
+.object-template .muted {
+  color: #c1cfde;
+  font-size: 0.95rem;
+  line-height: 1.1;
+  margin-top: 4px;
 }
 .object-template[draggable="true"] {
   cursor: grab;
