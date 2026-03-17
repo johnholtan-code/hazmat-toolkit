@@ -161,6 +161,7 @@
     elements.deleteObjectBtn.addEventListener("click", deleteSelectedObject);
     elements.finishGeometryBtn.addEventListener("click", finishGeometryDraw);
     elements.cancelGeometryBtn.addEventListener("click", cancelGeometryDraw);
+    window.addEventListener("resize", scheduleMapResizeRefresh);
   }
 
   function initMap() {
@@ -171,7 +172,20 @@
     }).addTo(state.map);
     state.objectLayerGroup = L.layerGroup().addTo(state.map);
     state.map.on("click", onMapClick);
+    scheduleMapResizeRefresh();
     tryCenterMapOnCurrentLocation();
+  }
+
+  function scheduleMapResizeRefresh() {
+    if (!state.map) return;
+    requestAnimationFrame(() => {
+      if (!state.map) return;
+      state.map.invalidateSize(false);
+      window.setTimeout(() => {
+        if (!state.map) return;
+        state.map.invalidateSize(false);
+      }, 200);
+    });
   }
 
   function tryCenterMapOnCurrentLocation() {
@@ -419,9 +433,12 @@
     if (resolvedSnapshot.actor && !state.actor) {
       state.actor = resolvedSnapshot.actor;
     }
+    scheduleMapResizeRefresh();
     applySnapshot(payload);
     renderAll();
+    scheduleMapResizeRefresh();
     fitMapIfNeeded();
+    scheduleMapResizeRefresh();
     startPolling();
   }
 
@@ -525,6 +542,7 @@
       syncMapObjects();
       elements.landingView.classList.remove("hidden");
       elements.appView.classList.add("hidden");
+      scheduleMapResizeRefresh();
     }
     renderCommanderSessions([]);
     renderAll();
