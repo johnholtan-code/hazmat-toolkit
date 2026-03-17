@@ -1254,8 +1254,7 @@
   function supabaseHeaders() {
     return {
       "Content-Type": "application/json",
-      apikey: runtimeConfig.supabaseAnonKey,
-      Authorization: `Bearer ${runtimeConfig.supabaseAnonKey}`
+      apikey: runtimeConfig.supabaseAnonKey
     };
   }
 
@@ -1284,7 +1283,13 @@
   async function parseSupabaseAuthResponse(response) {
     const payload = await parseJsonSafely(response);
     if (!response.ok) {
-      throw new Error(payload?.msg_description || payload?.error_description || payload?.message || "Supabase auth request failed.");
+      const details =
+        payload?.msg_description ||
+        payload?.error_description ||
+        payload?.error ||
+        payload?.message ||
+        `HTTP ${response.status}`;
+      throw new Error(`Supabase auth request failed: ${details}`);
     }
     return payload;
   }
