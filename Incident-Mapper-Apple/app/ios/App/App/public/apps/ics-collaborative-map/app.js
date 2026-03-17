@@ -87,6 +87,12 @@
     guidedSetupToggle: document.getElementById("guidedSetupToggle"),
     mapStyleSelect: document.getElementById("mapStyleSelect"),
     quickFlowPanel: document.getElementById("quickFlowPanel"),
+    sessionPanel: document.getElementById("sessionPanel"),
+    sessionPanelToggle: document.getElementById("sessionPanelToggle"),
+    participantsPanel: document.getElementById("participantsPanel"),
+    participantsPanelToggle: document.getElementById("participantsPanelToggle"),
+    palettesPanel: document.getElementById("palettesPanel"),
+    palettesPanelToggle: document.getElementById("palettesPanelToggle"),
     copyJoinLinkBtn: document.getElementById("copyJoinLinkBtn"),
     endSessionBtn: document.getElementById("endSessionBtn"),
     sessionMeta: document.getElementById("sessionMeta"),
@@ -135,7 +141,8 @@
     previewLayer: null,
     sessionRefreshNonce: 0,
     dragTemplateType: null,
-    collapsedPaletteCategories: new Set()
+    collapsedPaletteCategories: new Set(),
+    collapsedPanels: new Set()
   };
 
   async function init() {
@@ -165,6 +172,9 @@
     elements.guidedModeBtn.addEventListener("click", () => toggleGuidedMode(!state.guidedMode));
     elements.guidedSetupToggle.addEventListener("change", (event) => toggleGuidedMode(event.target.checked));
     elements.mapStyleSelect.addEventListener("change", (event) => setBaseLayer(event.target.value));
+    elements.sessionPanelToggle.addEventListener("click", () => togglePanel("session"));
+    elements.participantsPanelToggle.addEventListener("click", () => togglePanel("participants"));
+    elements.palettesPanelToggle.addEventListener("click", () => togglePanel("palettes"));
     elements.copyJoinLinkBtn.addEventListener("click", copyJoinLink);
     elements.endSessionBtn.addEventListener("click", endSession);
     elements.updateOperationalPeriodBtn.addEventListener("click", updateOperationalPeriod);
@@ -724,6 +734,7 @@
     renderSelectedObject();
     updateDrawControls();
     renderGuidedControls();
+    renderPanelCollapses();
   }
 
   function renderGuidedControls() {
@@ -731,6 +742,23 @@
     elements.guidedModeBtn.textContent = state.guidedMode ? "Hide Guided Setup" : "10-Minute Setup";
     elements.quickFlowPanel.classList.toggle("collapsed", !state.guidedMode);
     elements.appView.classList.toggle("guided-collapsed", !state.guidedMode);
+  }
+
+  function renderPanelCollapses() {
+    syncPanelCollapse(elements.sessionPanel, elements.sessionPanelToggle, "session");
+    syncPanelCollapse(elements.participantsPanel, elements.participantsPanelToggle, "participants");
+    syncPanelCollapse(elements.palettesPanel, elements.palettesPanelToggle, "palettes");
+  }
+
+  function syncPanelCollapse(panelElement, toggleElement, panelKey) {
+    if (!panelElement || !toggleElement) return;
+    const collapsed = state.collapsedPanels.has(panelKey);
+    panelElement.classList.toggle("section-collapsed", collapsed);
+    toggleElement.setAttribute("aria-expanded", String(!collapsed));
+    const symbol = toggleElement.querySelector(".toggle-symbol");
+    if (symbol) {
+      symbol.textContent = collapsed ? "+" : "\u2212";
+    }
   }
 
   function renderCommanderAuthPanels() {
@@ -863,7 +891,7 @@
         button.className = `object-template ${state.selectedTemplateType === template.objectType ? "active" : ""}`;
         button.type = "button";
         button.disabled = !canCreateObjects();
-        button.draggable = canCreateObjects();
+        button.draggable = canCreateObjects() && template.geometryType === "point";
         button.innerHTML = `
           <span>
             <strong>${escapeHtml(template.label)}</strong>
@@ -872,8 +900,10 @@
           <span class="map-badge">${escapeHtml(template.objectType.replace(/[a-z]/g, "").slice(0, 3) || template.geometryType[0].toUpperCase())}</span>
         `;
         button.addEventListener("click", () => selectTemplate(template.objectType));
-        button.addEventListener("dragstart", (event) => onTemplateDragStart(event, template.objectType, button));
-        button.addEventListener("dragend", () => onTemplateDragEnd(button));
+        if (template.geometryType === "point") {
+          button.addEventListener("dragstart", (event) => onTemplateDragStart(event, template.objectType, button));
+          button.addEventListener("dragend", () => onTemplateDragEnd(button));
+        }
         grid.appendChild(button);
       });
       group.append(header, grid);
@@ -888,6 +918,15 @@
       state.collapsedPaletteCategories.add(category);
     }
     renderPalettes();
+  }
+
+  function togglePanel(panelKey) {
+    if (state.collapsedPanels.has(panelKey)) {
+      state.collapsedPanels.delete(panelKey);
+    } else {
+      state.collapsedPanels.add(panelKey);
+    }
+    renderPanelCollapses();
   }
 
   function renderGuidedSteps() {
@@ -983,12 +1022,12 @@
     }
     if (template.geometryType === "point") {
       state.drawState = { mode: "create", template, points: [] };
-      setStatus(`Selected ${template.label}. Drag it onto the map or click the map to place it.`);
+      setStatus(`Selected ${template.label}. Click the map to place it.`);
     } else {
       state.drawState = { mode: "create", template, points: initialPoint ? [initialPoint] : [] };
       setStatus(initialPoint
         ? `Dropped ${template.label}. Add more points, then finish.`
-        : `Selected ${template.label}. Drag it onto the map or click to add ${template.geometryType} points, then finish.`);
+        : `Selected ${template.label}. Draw directly on the map to add ${template.geometryType} points, then finish.`);
     }
     redrawPreviewLayer();
     updateDrawControls();

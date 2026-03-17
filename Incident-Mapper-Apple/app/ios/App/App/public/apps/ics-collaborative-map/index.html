@@ -87,9 +87,14 @@
 
       <section id="appView" class="app hidden">
         <aside class="sidebar left">
-          <div class="panel compact">
-            <h3>Session</h3>
-            <div id="sessionMeta" class="meta-list"></div>
+          <div id="sessionPanel" class="panel compact">
+            <button id="sessionPanelToggle" class="panel-section-toggle" type="button" aria-expanded="true">
+              <span>Session</span>
+              <span class="toggle-symbol">−</span>
+            </button>
+            <div id="sessionPanelBody" class="panel-section-body">
+              <div id="sessionMeta" class="meta-list"></div>
+            </div>
           </div>
 
           <div id="sessionPeriodPanel" class="panel compact hidden">
@@ -107,15 +112,25 @@
             </div>
           </div>
 
-          <div class="panel compact">
-            <h3>Participants</h3>
-            <div id="participantList" class="participant-list"></div>
+          <div id="participantsPanel" class="panel compact">
+            <button id="participantsPanelToggle" class="panel-section-toggle" type="button" aria-expanded="true">
+              <span>Participants</span>
+              <span class="toggle-symbol">−</span>
+            </button>
+            <div id="participantsPanelBody" class="panel-section-body">
+              <div id="participantList" class="participant-list"></div>
+            </div>
           </div>
 
-          <div class="panel compact">
-            <h3>Palettes</h3>
-            <div class="muted drag-hint">Drag an item onto the map to place it, or tap one and click the map.</div>
-            <div id="paletteContainer" class="palette-list"></div>
+          <div id="palettesPanel" class="panel compact">
+            <button id="palettesPanelToggle" class="panel-section-toggle" type="button" aria-expanded="true">
+              <span>Palettes</span>
+              <span class="toggle-symbol">−</span>
+            </button>
+            <div id="palettesPanelBody" class="panel-section-body">
+              <div class="muted drag-hint">Tap a point item to place it, or choose a line/polygon tool and draw directly on the map.</div>
+              <div id="paletteContainer" class="palette-list"></div>
+            </div>
           </div>
         </aside>
 

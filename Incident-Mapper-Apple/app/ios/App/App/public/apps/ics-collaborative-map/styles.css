@@ -80,6 +80,30 @@ body { height: 100vh; overflow: hidden; }
   padding-bottom: 10px;
 }
 .panel h2, .panel h3 { margin: 0 0 10px; }
+.panel-section-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: left;
+}
+.panel-section-toggle:hover {
+  transform: none;
+}
+.panel-section-body {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+.panel.compact.section-collapsed .panel-section-body {
+  display: none;
+}
 .muted { color: var(--muted); }
 .stack { display: grid; gap: 10px; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -181,6 +205,7 @@ button.danger { background: rgba(178,58,72,0.14); color: #f4c9ce; border-color: 
   border-radius: 999px;
   background: rgba(255,255,255,0.08);
   color: var(--text);
+  flex-shrink: 0;
 }
 
 .template-grid {
