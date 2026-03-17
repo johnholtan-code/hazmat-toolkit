@@ -7,6 +7,7 @@ export type AppConfig = {
   joinCodeTtlMinutes: number;
   supabaseUrl: string | null;
   supabaseAnonKey: string | null;
+  icsCollabPublicBaseUrl: string | null;
 };
 
 function env(name: string, fallback?: string): string {
@@ -41,6 +42,7 @@ export function loadConfig(): AppConfig {
     corsOrigin: env("CORS_ORIGIN", "*"),
     joinCodeTtlMinutes: envInt("JOIN_CODE_TTL_MINUTES", 60),
     supabaseUrl: envOptional("SUPABASE_URL"),
-    supabaseAnonKey: envOptional("SUPABASE_ANON_KEY")
+    supabaseAnonKey: envOptional("SUPABASE_ANON_KEY"),
+    icsCollabPublicBaseUrl: envOptional("ICS_COLLAB_PUBLIC_BASE_URL")
   };
 }

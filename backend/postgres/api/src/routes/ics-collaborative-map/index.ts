@@ -169,7 +169,8 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
     editLockSeconds: EDIT_LOCK_MS / 1000,
     runtimeConfig: {
       supabaseUrl: app.config.supabaseUrl,
-      supabaseAnonKey: app.config.supabaseAnonKey
+      supabaseAnonKey: app.config.supabaseAnonKey,
+      publicBaseUrl: app.config.icsCollabPublicBaseUrl
     }
   }));
 
@@ -199,7 +200,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         `,
         [trainer.trainerRef]
       );
-      return reply.send(result.rows.map((row) => mapSession(row, request.headers.origin)));
+      return reply.send(result.rows.map((row) => mapSession(row, app.config.icsCollabPublicBaseUrl ?? request.headers.origin)));
     } catch (error) {
       return sendTrainerError(reply, request, error, 'Failed to list collaborative sessions.');
     }
@@ -302,7 +303,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
 
         await client.query('COMMIT');
         return reply.code(201).send({
-          session: mapSession(session, request.headers.origin),
+          session: mapSession(session, app.config.icsCollabPublicBaseUrl ?? request.headers.origin),
           participant: mapParticipant(commanderParticipantInsert.rows[0]),
           qrPayload: JSON.stringify({ type: 'ics_collab_join', joinCode })
         });
@@ -375,7 +376,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
       const snapshot = await buildSessionSnapshot(client, refreshedSession.id);
       await client.query('COMMIT');
       return reply.send({
-        session: mapSession(refreshedSession, request.headers.origin),
+        session: mapSession(refreshedSession, app.config.icsCollabPublicBaseUrl ?? request.headers.origin),
         participant: mapParticipant(participantUpsert.rows[0]),
         token: {
           accessToken: token.raw,
@@ -396,7 +397,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
       const actor = await resolveSessionActor(app, request.params.sessionId, request.headers.authorization);
       const snapshot = await buildSessionSnapshot(app.pg, actor.session.id);
       return reply.send({
-        session: mapSession(actor.session, request.headers.origin),
+        session: mapSession(actor.session, app.config.icsCollabPublicBaseUrl ?? request.headers.origin),
         actor: mapParticipant(actor.participant),
         snapshot
       });
@@ -412,7 +413,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
       const refreshed = await refreshSessionStatusIfExpired(app.pg, actor.session.id);
       const deltas = await listMutationsSince(app.pg, actor.session.id, sinceVersion);
       return reply.send({
-        session: mapSession(refreshed, request.headers.origin),
+        session: mapSession(refreshed, app.config.icsCollabPublicBaseUrl ?? request.headers.origin),
         sinceVersion,
         currentVersion: Number(refreshed.last_mutation_version),
         deltas: deltas.map(mapMutation)
@@ -467,7 +468,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         `,
         [actor.session.id, operationalPeriodStart.toISOString(), operationalPeriodEnd.toISOString()]
       );
-      return reply.send(mapSession(result.rows[0], request.headers.origin));
+      return reply.send(mapSession(result.rows[0], app.config.icsCollabPublicBaseUrl ?? request.headers.origin));
     } catch (error) {
       return sendRouteError(reply, request, error, 'Failed to update operational period.');
     }
@@ -501,7 +502,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
       await client.query('COMMIT');
       const updatedSession = await fetchSessionByID(app.pg, actor.session.id);
       return reply.send({
-        session: mapSession(updatedSession ?? session, request.headers.origin),
+        session: mapSession(updatedSession ?? session, app.config.icsCollabPublicBaseUrl ?? request.headers.origin),
         applied
       });
     } catch (error) {
@@ -646,7 +647,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         `,
         [actor.session.id]
       );
-      return reply.send(mapSession(result.rows[0], request.headers.origin));
+      return reply.send(mapSession(result.rows[0], app.config.icsCollabPublicBaseUrl ?? request.headers.origin));
     } catch (error) {
       return sendRouteError(reply, request, error, 'Failed to end collaborative session.');
     }
@@ -1287,10 +1288,17 @@ function generateJoinCode(length = 6): string {
   return out;
 }
 
-function mapSession(row: CollabSessionRow, originHeader?: string) {
-  const joinUrl = originHeader
-    ? `${originHeader.replace(/\/$/, '')}/apps/ics-collaborative-map/index.html?join=${encodeURIComponent(row.join_code)}`
-    : null;
+function mapSession(row: CollabSessionRow, publicBaseUrl?: string) {
+  let joinUrl: string | null = null;
+  if (publicBaseUrl) {
+    try {
+      const url = new URL(publicBaseUrl);
+      url.searchParams.set('join', row.join_code);
+      joinUrl = url.toString();
+    } catch (_error) {
+      joinUrl = `${publicBaseUrl.replace(/\/$/, '')}/?join=${encodeURIComponent(row.join_code)}`;
+    }
+  }
   return {
     id: row.id,
     trainerRef: row.trainer_ref,
