@@ -207,14 +207,22 @@
 
     setStatus(state.authTab === "signin" ? "Signing in commander…" : "Creating commander account…");
     try {
-      const session = state.authTab === "signin"
+      const authResponse = state.authTab === "signin"
         ? await supabasePasswordSignIn(email, password)
         : await supabaseSignUp(email, password, displayName);
-      if (!session || !session.access_token) {
-        setStatus("Commander account created. Check email confirmation settings in Supabase if sign-in is not immediate.");
+      if (!authResponse?.access_token) {
+        if (state.authTab === "signup" && authResponse?.user?.id) {
+          const confirmationMessage = authResponse.user?.confirmed_at
+            ? "Commander account created. Sign in with the new account."
+            : "Commander account created. Check email confirmation settings in Supabase if sign-in is not immediate.";
+          setStatus(confirmationMessage);
+          return;
+        }
+        const details = authResponse ? JSON.stringify(authResponse) : "No user or session returned from Supabase.";
+        setStatus(`Supabase signup did not return a usable account: ${details}`);
         return;
       }
-      state.commanderAuth = normalizeCommanderAuth(session, displayName);
+      state.commanderAuth = normalizeCommanderAuth(authResponse, displayName);
       persistJSON(STORAGE_KEYS.commanderAuth, state.commanderAuth);
       elements.commanderPasswordInput.value = "";
       await refreshCommanderSessions();
