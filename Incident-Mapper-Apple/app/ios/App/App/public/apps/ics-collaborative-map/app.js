@@ -72,6 +72,7 @@
     incidentNameInput: document.getElementById("incidentNameInput"),
     opStartInput: document.getElementById("opStartInput"),
     opEndInput: document.getElementById("opEndInput"),
+    guidedSetupDefaultInput: document.getElementById("guidedSetupDefaultInput"),
     createSessionBtn: document.getElementById("createSessionBtn"),
     joinCodeInput: document.getElementById("joinCodeInput"),
     joinDisplayNameInput: document.getElementById("joinDisplayNameInput"),
@@ -83,6 +84,8 @@
     guidedSteps: document.getElementById("guidedSteps"),
     startGuidedSetupBtn: document.getElementById("startGuidedSetupBtn"),
     guidedModeBtn: document.getElementById("guidedModeBtn"),
+    guidedSetupToggle: document.getElementById("guidedSetupToggle"),
+    mapStyleSelect: document.getElementById("mapStyleSelect"),
     copyJoinLinkBtn: document.getElementById("copyJoinLinkBtn"),
     endSessionBtn: document.getElementById("endSessionBtn"),
     sessionMeta: document.getElementById("sessionMeta"),
@@ -123,9 +126,12 @@
     guidedMode: false,
     qrPayload: null,
     map: null,
+    baseLayers: null,
+    activeBaseLayerKey: "road",
     objectLayerGroup: null,
     previewLayer: null,
-    sessionRefreshNonce: 0
+    sessionRefreshNonce: 0,
+    dragTemplateType: null
   };
 
   async function init() {
@@ -153,6 +159,8 @@
     elements.joinSessionBtn.addEventListener("click", onJoinSession);
     elements.startGuidedSetupBtn.addEventListener("click", () => toggleGuidedMode(true));
     elements.guidedModeBtn.addEventListener("click", () => toggleGuidedMode(!state.guidedMode));
+    elements.guidedSetupToggle.addEventListener("change", (event) => toggleGuidedMode(event.target.checked));
+    elements.mapStyleSelect.addEventListener("change", (event) => setBaseLayer(event.target.value));
     elements.copyJoinLinkBtn.addEventListener("click", copyJoinLink);
     elements.endSessionBtn.addEventListener("click", endSession);
     elements.updateOperationalPeriodBtn.addEventListener("click", updateOperationalPeriod);
@@ -166,14 +174,62 @@
 
   function initMap() {
     state.map = L.map("map", { zoomControl: true, preferCanvas: true }).setView([39.5, -98.35], 4);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 20,
-      attribution: "&copy; OpenStreetMap contributors"
-    }).addTo(state.map);
+    state.baseLayers = createBaseLayers();
+    state.baseLayers[state.activeBaseLayerKey].addTo(state.map);
+    L.control.layers(
+      {
+        Road: state.baseLayers.road,
+        Satellite: state.baseLayers.satellite,
+        Topographic: state.baseLayers.topo
+      },
+      {},
+      { collapsed: true }
+    ).addTo(state.map);
     state.objectLayerGroup = L.layerGroup().addTo(state.map);
     state.map.on("click", onMapClick);
+    state.map.on("baselayerchange", (event) => {
+      const nextKey = Object.entries(state.baseLayers || {}).find(([, layer]) => layer === event.layer)?.[0];
+      if (nextKey) {
+        state.activeBaseLayerKey = nextKey;
+        elements.mapStyleSelect.value = nextKey;
+      }
+    });
+    const mapContainer = state.map.getContainer();
+    mapContainer.addEventListener("dragover", onMapDragOver);
+    mapContainer.addEventListener("dragleave", onMapDragLeave);
+    mapContainer.addEventListener("drop", onMapDrop);
     scheduleMapResizeRefresh();
     tryCenterMapOnCurrentLocation();
+  }
+
+  function createBaseLayers() {
+    return {
+      road: L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 20,
+        attribution: "&copy; OpenStreetMap contributors"
+      }),
+      satellite: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 20,
+        attribution: "Tiles &copy; Esri"
+      }),
+      topo: L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+        maxZoom: 17,
+        subdomains: ["a", "b", "c"],
+        attribution: "Map data &copy; OpenStreetMap contributors, SRTM | Map style &copy; OpenTopoMap"
+      })
+    };
+  }
+
+  function setBaseLayer(layerKey) {
+    if (!state.map || !state.baseLayers || !state.baseLayers[layerKey]) return;
+    if (state.baseLayers[state.activeBaseLayerKey]) {
+      state.map.removeLayer(state.baseLayers[state.activeBaseLayerKey]);
+    }
+    state.activeBaseLayerKey = layerKey;
+    state.baseLayers[layerKey].addTo(state.map);
+    if (elements.mapStyleSelect.value !== layerKey) {
+      elements.mapStyleSelect.value = layerKey;
+    }
   }
 
   function scheduleMapResizeRefresh() {
@@ -363,6 +419,7 @@
     }
     setStatus("Creating collaborative session…");
     try {
+      state.guidedMode = Boolean(elements.guidedSetupDefaultInput.checked);
       const result = await apiFetch("/v1/ics-collab/sessions", {
         method: "POST",
         actorType: "commander",
@@ -615,6 +672,12 @@
     renderGuidedSteps();
     renderSelectedObject();
     updateDrawControls();
+    renderGuidedControls();
+  }
+
+  function renderGuidedControls() {
+    elements.guidedSetupToggle.checked = state.guidedMode;
+    elements.guidedModeBtn.textContent = state.guidedMode ? "Hide Guided Setup" : "10-Minute Setup";
   }
 
   function renderCommanderAuthPanels() {
@@ -739,6 +802,7 @@
         button.className = `object-template ${state.selectedTemplateType === template.objectType ? "active" : ""}`;
         button.type = "button";
         button.disabled = !canCreateObjects();
+        button.draggable = canCreateObjects();
         button.innerHTML = `
           <span>
             <strong>${escapeHtml(template.label)}</strong>
@@ -747,6 +811,8 @@
           <span class="map-badge">${escapeHtml(template.objectType.replace(/[a-z]/g, "").slice(0, 3) || template.geometryType[0].toUpperCase())}</span>
         `;
         button.addEventListener("click", () => selectTemplate(template.objectType));
+        button.addEventListener("dragstart", (event) => onTemplateDragStart(event, template.objectType, button));
+        button.addEventListener("dragend", () => onTemplateDragEnd(button));
         grid.appendChild(button);
       });
       group.append(heading, grid);
@@ -829,20 +895,79 @@
   }
 
   function selectTemplate(objectType) {
+    beginTemplatePlacement(objectType);
+  }
+
+  function beginTemplatePlacement(objectType, initialPoint = null) {
     const template = templateByType[objectType];
     if (!template) return;
     state.selectedTemplateType = objectType;
     state.selectedObjectId = null;
     renderPalettes();
     renderSelectedObject();
+    if (template.geometryType === "point" && initialPoint) {
+      createObject(template, { lat: initialPoint.lat, lng: initialPoint.lng });
+      state.drawState = null;
+      updateDrawControls();
+      return;
+    }
     if (template.geometryType === "point") {
       state.drawState = { mode: "create", template, points: [] };
-      setStatus(`Selected ${template.label}. Click the map to place it.`);
+      setStatus(`Selected ${template.label}. Drag it onto the map or click the map to place it.`);
     } else {
-      state.drawState = { mode: "create", template, points: [] };
-      setStatus(`Selected ${template.label}. Click the map to add ${template.geometryType} points, then finish.`);
+      state.drawState = { mode: "create", template, points: initialPoint ? [initialPoint] : [] };
+      setStatus(initialPoint
+        ? `Dropped ${template.label}. Add more points, then finish.`
+        : `Selected ${template.label}. Drag it onto the map or click to add ${template.geometryType} points, then finish.`);
     }
+    redrawPreviewLayer();
     updateDrawControls();
+  }
+
+  function onTemplateDragStart(event, objectType, button) {
+    if (!canCreateObjects()) return;
+    state.dragTemplateType = objectType;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "copy";
+      event.dataTransfer.setData("text/plain", objectType);
+    }
+    button.classList.add("dragging");
+    document.querySelector(".map-stage")?.classList.add("drag-active");
+  }
+
+  function onTemplateDragEnd(button) {
+    state.dragTemplateType = null;
+    button.classList.remove("dragging");
+    document.querySelector(".map-stage")?.classList.remove("drag-active");
+  }
+
+  function onMapDragOver(event) {
+    if (!state.dragTemplateType || !canCreateObjects()) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+    document.querySelector(".map-stage")?.classList.add("drag-active");
+  }
+
+  function onMapDragLeave(event) {
+    const stage = document.querySelector(".map-stage");
+    if (!stage) return;
+    if (event.currentTarget === event.target) {
+      stage.classList.remove("drag-active");
+    }
+  }
+
+  function onMapDrop(event) {
+    if (!state.dragTemplateType || !state.map) return;
+    event.preventDefault();
+    document.querySelector(".map-stage")?.classList.remove("drag-active");
+    const rect = state.map.getContainer().getBoundingClientRect();
+    const containerPoint = L.point(event.clientX - rect.left, event.clientY - rect.top);
+    const latLng = state.map.containerPointToLatLng(containerPoint);
+    beginTemplatePlacement(state.dragTemplateType, {
+      lat: roundCoord(latLng.lat),
+      lng: roundCoord(latLng.lng)
+    });
+    state.dragTemplateType = null;
   }
 
   function onMapClick(event) {

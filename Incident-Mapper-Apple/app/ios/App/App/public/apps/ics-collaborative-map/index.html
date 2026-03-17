@@ -58,6 +58,10 @@
               Operational Period End
               <input id="opEndInput" type="datetime-local" />
             </label>
+            <label class="inline-checkbox">
+              <input id="guidedSetupDefaultInput" type="checkbox" />
+              <span>Start this session with the 10-Minute Setup workflow</span>
+            </label>
             <button id="createSessionBtn" class="primary" type="button">Create Collaborative Session</button>
           </div>
 
@@ -110,12 +114,23 @@
 
           <div class="panel compact">
             <h3>Palettes</h3>
+            <div class="muted drag-hint">Drag an item onto the map to place it, or tap one and click the map.</div>
             <div id="paletteContainer" class="palette-list"></div>
           </div>
         </aside>
 
         <section class="map-stage">
           <div id="map"></div>
+          <div class="map-style-panel">
+            <label>
+              Map Style
+              <select id="mapStyleSelect">
+                <option value="road">Road</option>
+                <option value="satellite">Satellite</option>
+                <option value="topo">Topographic</option>
+              </select>
+            </label>
+          </div>
           <div id="drawControls" class="draw-controls hidden">
             <span id="drawHintText">Click the map to place points.</span>
             <button id="finishGeometryBtn" class="primary" type="button">Finish</button>
@@ -126,7 +141,11 @@
         <aside class="sidebar right">
           <div class="panel compact">
             <h3>Quick Flow</h3>
-            <button id="startGuidedSetupBtn" class="primary" type="button">Start 10-Minute Setup</button>
+            <label class="inline-checkbox">
+              <input id="guidedSetupToggle" type="checkbox" />
+              <span>Use 10-Minute Setup</span>
+            </label>
+            <button id="startGuidedSetupBtn" class="primary" type="button">Focus Next Guided Step</button>
             <div id="guidedSteps" class="guided-steps"></div>
           </div>
 
