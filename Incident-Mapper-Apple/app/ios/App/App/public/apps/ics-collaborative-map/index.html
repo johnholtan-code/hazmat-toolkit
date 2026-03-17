@@ -13,7 +13,7 @@
       <div>
         <div class="eyebrow">Hazmat ToolK.I.T.</div>
         <h1>ICS Collaborative Map</h1>
-        <p class="subtitle">Commander-owned, browser-friendly operational map for shared incident command.</p>
+        <p class="subtitle">Owner-led, browser-friendly operational map for shared incident command.</p>
       </div>
       <div class="topbar-actions">
         <div class="topbar-action-row">
@@ -37,7 +37,7 @@
           <div class="panel landing-panel landing-panel-commander">
             <div class="landing-panel-header">
               <div>
-                <h2>Commander Workspace</h2>
+                <h2>Session Owner Workspace</h2>
                 <p class="muted">Sign in once, create a new map session, or reopen an existing one from the same workspace.</p>
               </div>
               <div class="segmented">
@@ -61,8 +61,8 @@
               </div>
 
               <div id="authFields" class="stack auth-grid">
-                <input id="commanderNameInput" type="text" placeholder="Commander display name" />
-                <input id="commanderEmailInput" type="email" placeholder="Commander email" />
+                <input id="commanderNameInput" type="text" placeholder="Session owner display name" />
+                <input id="commanderEmailInput" type="email" placeholder="Session owner email" />
                 <input id="commanderPasswordInput" type="password" placeholder="Password" />
               </div>
 
@@ -85,8 +85,8 @@
                   <input id="incidentNameInput" type="text" placeholder="Incident name" disabled />
                 </label>
                 <label class="field-block field-block-role">
-                  Commander Role
-                  <select id="commanderRoleSelect" disabled></select>
+                  Initial Incident Commander
+                  <input id="initialIncidentCommanderRoleInput" type="text" value="Incident Commander" disabled />
                 </label>
                 <label class="field-block">
                   Operational Period Start
@@ -139,10 +139,10 @@
 
             <div class="landing-card landing-note">
               <h3>What Happens Next</h3>
-              <p class="muted">Commanders create and share the incident. Operators can contribute to the map. Observers get a read-only operational picture.</p>
+                <p class="muted">Owners create and share the incident. Operators can contribute to the map. Observers get a read-only operational picture.</p>
+              </div>
             </div>
           </div>
-        </div>
       </section>
 
       <section id="appView" class="app hidden">
@@ -172,6 +172,21 @@
                 <input id="sessionOpEndInput" type="datetime-local" />
               </label>
               <button id="updateOperationalPeriodBtn" class="secondary" type="button">Update Period</button>
+            </div>
+          </div>
+
+          <div id="incidentCommandPanel" class="panel compact hidden">
+            <button id="incidentCommandPanelToggle" class="panel-section-toggle" type="button" aria-expanded="true">
+              <span>Incident Command</span>
+              <span class="toggle-symbol">−</span>
+            </button>
+            <div id="incidentCommandPanelBody" class="panel-section-body">
+              <label>
+                Assigned Incident Commander
+                <input id="sessionIncidentCommanderNameInput" type="text" />
+              </label>
+              <div class="muted">Session ownership stays with the owner even if you assign another Incident Commander.</div>
+              <button id="updateIncidentCommandBtn" class="secondary" type="button">Assign Incident Commander</button>
             </div>
           </div>
 

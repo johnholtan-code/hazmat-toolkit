@@ -75,6 +75,7 @@
     sessionListPanel: document.getElementById("sessionListPanel"),
     commanderSessionList: document.getElementById("commanderSessionList"),
     commanderRoleSelect: document.getElementById("commanderRoleSelect"),
+    initialIncidentCommanderRoleInput: document.getElementById("initialIncidentCommanderRoleInput"),
     incidentNameInput: document.getElementById("incidentNameInput"),
     opStartInput: document.getElementById("opStartInput"),
     opEndInput: document.getElementById("opEndInput"),
@@ -108,6 +109,10 @@
     sessionMeta: document.getElementById("sessionMeta"),
     sessionPeriodPanel: document.getElementById("sessionPeriodPanel"),
     sessionPeriodPanelToggle: document.getElementById("sessionPeriodPanelToggle"),
+    incidentCommandPanel: document.getElementById("incidentCommandPanel"),
+    incidentCommandPanelToggle: document.getElementById("incidentCommandPanelToggle"),
+    sessionIncidentCommanderNameInput: document.getElementById("sessionIncidentCommanderNameInput"),
+    updateIncidentCommandBtn: document.getElementById("updateIncidentCommandBtn"),
     sessionOpStartInput: document.getElementById("sessionOpStartInput"),
     sessionOpEndInput: document.getElementById("sessionOpEndInput"),
     updateOperationalPeriodBtn: document.getElementById("updateOperationalPeriodBtn"),
@@ -165,8 +170,12 @@
   };
 
   async function init() {
-    populateRoleSelect(elements.commanderRoleSelect, "Incident Commander");
-    populateRoleSelect(elements.joinRoleSelect, "Operations Section Chief");
+    if (elements.initialIncidentCommanderRoleInput) {
+      elements.initialIncidentCommanderRoleInput.value = "Incident Commander";
+    }
+    populateRoleSelect(elements.joinRoleSelect, "Operations Section Chief", {
+      exclude: ["Incident Commander"]
+    });
     await hydrateAuthUI();
     wireEvents();
     initMap();
@@ -203,6 +212,7 @@
     elements.showViewerQrBtn.addEventListener("click", showViewerQrModal);
     elements.sessionPanelToggle.addEventListener("click", () => togglePanel("session"));
     elements.sessionPeriodPanelToggle.addEventListener("click", () => togglePanel("sessionPeriod"));
+    elements.incidentCommandPanelToggle.addEventListener("click", () => togglePanel("incidentCommand"));
     elements.participantsPanelToggle.addEventListener("click", () => togglePanel("participants"));
     elements.palettesPanelToggle.addEventListener("click", () => togglePanel("palettes"));
     elements.copyJoinLinkBtn.addEventListener("click", copyJoinLink);
@@ -210,6 +220,7 @@
     elements.copyViewerLinkBtn.addEventListener("click", copyViewerLink);
     elements.endSessionBtn.addEventListener("click", endSession);
     elements.updateOperationalPeriodBtn.addEventListener("click", updateOperationalPeriod);
+    elements.updateIncidentCommandBtn.addEventListener("click", updateIncidentCommand);
     elements.saveFieldsBtn.addEventListener("click", saveSelectedObjectFields);
     elements.editGeometryBtn.addEventListener("click", startGeometryEdit);
     elements.deleteObjectBtn.addEventListener("click", deleteSelectedObject);
@@ -367,7 +378,7 @@
     const authReady = hasSupabaseAuthConfig();
     elements.commanderAuthBtn.disabled = !authReady;
     if (!authReady) {
-      setStatus("Commander auth needs Supabase public config. Operators can still join shared sessions.");
+      setStatus("Session owner auth needs Supabase public config.");
     }
   }
 
@@ -380,18 +391,18 @@
 
   async function onCommanderAuth() {
     if (!hasSupabaseAuthConfig()) {
-      setStatus("Supabase auth is not configured for commander sign-in.");
+      setStatus("Supabase auth is not configured for session owner sign-in.");
       return;
     }
     const email = elements.commanderEmailInput.value.trim();
     const password = elements.commanderPasswordInput.value;
     const displayName = elements.commanderNameInput.value.trim();
     if (!displayName || !email || !password) {
-      setStatus("Enter a commander display name, email, and password.");
+      setStatus("Enter a session owner display name, email, and password.");
       return;
     }
 
-    setStatus(state.authTab === "signin" ? "Signing in commander…" : "Creating commander account…");
+    setStatus(state.authTab === "signin" ? "Signing in session owner…" : "Creating session owner account…");
     try {
       const authResponse = state.authTab === "signin"
         ? await supabasePasswordSignIn(email, password)
@@ -408,8 +419,8 @@
             return;
           }
           const confirmationMessage = createdUser?.confirmed_at
-            ? "Commander account created. Sign in with the new account."
-            : "Commander account created. Check email confirmation settings in Supabase if sign-in is not immediate.";
+            ? "Session owner account created. Sign in with the new account."
+            : "Session owner account created. Check email confirmation settings in Supabase if sign-in is not immediate.";
           setStatus(confirmationMessage);
           return;
         }
@@ -510,12 +521,11 @@
 
   async function onCreateSession() {
     if (!state.commanderAuth?.accessToken) {
-      setStatus("Sign in as commander before creating a session.");
+      setStatus("Sign in as session owner before creating a session.");
       return;
     }
     const incidentName = elements.incidentNameInput.value.trim();
-    const commanderName = elements.commanderNameInput.value.trim() || state.commanderAuth.displayName || state.commanderAuth.email || "Commander";
-    const commanderICSRole = elements.commanderRoleSelect.value;
+    const ownerName = elements.commanderNameInput.value.trim() || state.commanderAuth.displayName || state.commanderAuth.email || "Owner";
     const operationalPeriodStart = inputValueToISOString(elements.opStartInput.value);
     const operationalPeriodEnd = inputValueToISOString(elements.opEndInput.value);
     if (!incidentName || !operationalPeriodStart || !operationalPeriodEnd) {
@@ -530,8 +540,7 @@
         actorType: "commander",
         body: {
           incidentName,
-          commanderName,
-          commanderICSRole,
+          commanderName: ownerName,
           operationalPeriodStart,
           operationalPeriodEnd
         }
@@ -708,7 +717,7 @@
     try {
       if (state.commanderAuth?.accessToken) {
         await refreshCommanderSessions();
-        setStatus(`Commander ready: ${state.commanderAuth.displayName || state.commanderAuth.email}.`);
+        setStatus(`Session owner ready: ${state.commanderAuth.displayName || state.commanderAuth.email}.`);
       }
     } catch (error) {
       void signOutCommander();
@@ -737,7 +746,7 @@
     }
     renderCommanderSessions([]);
     renderAll();
-    setStatus("Commander signed out.");
+    setStatus("Session owner signed out.");
   }
 
   function clearParticipantAuth() {
@@ -778,7 +787,7 @@
     const actorType = currentActorType();
     const shouldRefreshCommanderSessions = leavingAsCommander && Boolean(state.commanderAuth?.accessToken);
     const prompt = leavingAsCommander
-      ? "Leave this session and return to your commander dashboard?"
+      ? "Leave this session and return to your session owner dashboard?"
       : "Leave this session? You can rejoin later with the join code.";
     if (!window.confirm(prompt)) return;
 
@@ -819,7 +828,7 @@
 
   async function updateOperationalPeriod() {
     if (!isCommander()) {
-      setStatus("Only the commander can update the operational period.");
+      setStatus("Only the session owner can update the operational period.");
       return;
     }
     const operationalPeriodStart = inputValueToISOString(elements.sessionOpStartInput.value);
@@ -842,9 +851,33 @@
     }
   }
 
+  async function updateIncidentCommand() {
+    if (!isCommander()) {
+      setStatus("Only the session owner can assign the Incident Commander.");
+      return;
+    }
+    const commanderName = elements.sessionIncidentCommanderNameInput.value.trim();
+    if (!commanderName) {
+      setStatus("Enter the name of the assigned Incident Commander.");
+      return;
+    }
+    try {
+      const session = await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(state.activeSession.id)}/incident-command`, {
+        method: "PATCH",
+        actorType: "commander",
+        body: { commanderName }
+      });
+      state.activeSession = session;
+      renderSessionMeta();
+      setStatus("Incident Commander assignment updated.");
+    } catch (error) {
+      setStatus(formatError(error));
+    }
+  }
+
   async function endSession() {
     if (!isCommander()) {
-      setStatus("Only the commander can end the session.");
+      setStatus("Only the session owner can end the session.");
       return;
     }
     if (!window.confirm("End this collaborative session? It will become read-only for everyone.")) {
@@ -892,6 +925,7 @@
   function renderPanelCollapses() {
     syncPanelCollapse(elements.sessionPanel, elements.sessionPanelToggle, "session");
     syncPanelCollapse(elements.sessionPeriodPanel, elements.sessionPeriodPanelToggle, "sessionPeriod");
+    syncPanelCollapse(elements.incidentCommandPanel, elements.incidentCommandPanelToggle, "incidentCommand");
     syncPanelCollapse(elements.participantsPanel, elements.participantsPanelToggle, "participants");
     syncPanelCollapse(elements.palettesPanel, elements.palettesPanelToggle, "palettes");
   }
@@ -912,7 +946,7 @@
     elements.commanderSignedInSummary.classList.toggle("hidden", !signedIn);
     elements.authFields.classList.toggle("hidden", signedIn);
     if (signedIn) {
-      elements.commanderSummaryName.textContent = state.commanderAuth?.displayName || "Signed in";
+      elements.commanderSummaryName.textContent = `Session Owner: ${state.commanderAuth?.displayName || "Signed in"}`;
       elements.commanderSummaryEmail.textContent = state.commanderAuth?.email || "";
     }
     elements.createSessionPanel.classList.toggle("hidden", false);
@@ -1010,22 +1044,27 @@
     if (!state.activeSession) {
       appendMetaRow(elements.sessionMeta, "Status", "No active session");
       elements.sessionPeriodPanel.classList.add("hidden");
+      elements.incidentCommandPanel.classList.add("hidden");
       elements.copyJoinLinkBtn.classList.add("hidden");
       elements.endSessionBtn.classList.add("hidden");
       return;
     }
     const session = state.activeSession;
     const visibleStatus = effectiveSessionStatus(session);
+    const ownerParticipant = state.participants.find((participant) => participant.permissionTier === "commander");
     appendMetaRow(elements.sessionMeta, "Incident", session.incidentName);
-    appendMetaRow(elements.sessionMeta, "Commander", `${session.commanderName} · ${session.commanderICSRole}`);
+    appendMetaRow(elements.sessionMeta, "Session Owner", ownerParticipant ? ownerParticipant.displayName : "Owner");
+    appendMetaRow(elements.sessionMeta, "Incident Commander", `${session.commanderName} · ${session.commanderICSRole}`);
     appendMetaRow(elements.sessionMeta, "Status", visibleStatus);
     appendMetaRow(elements.sessionMeta, "Join Code", session.joinCode);
     appendMetaRow(elements.sessionMeta, "Period", `${formatDateTime(session.operationalPeriodStart)} → ${formatDateTime(session.operationalPeriodEnd)}`);
     elements.copyJoinLinkBtn.classList.toggle("hidden", !session.joinCode);
     elements.endSessionBtn.classList.toggle("hidden", !isCommander());
     elements.sessionPeriodPanel.classList.toggle("hidden", !isCommander());
+    elements.incidentCommandPanel.classList.toggle("hidden", !isCommander());
     elements.sessionOpStartInput.value = isoToInputValue(session.operationalPeriodStart);
     elements.sessionOpEndInput.value = isoToInputValue(session.operationalPeriodEnd);
+    elements.sessionIncidentCommanderNameInput.value = session.commanderName || "";
   }
 
   function renderParticipants() {
@@ -1042,7 +1081,7 @@
       card.className = "participant-card";
       card.innerHTML = `
         <strong>${escapeHtml(participant.displayName)}</strong>
-        <div class="muted">${escapeHtml(participant.permissionTier)} · ${escapeHtml(participant.icsRole)}</div>
+        <div class="muted">${escapeHtml(formatPermissionTier(participant.permissionTier))} · ${escapeHtml(participant.icsRole)}</div>
         <div class="muted">Joined ${escapeHtml(formatDateTime(participant.joinedAt))}</div>
         <div class="muted">Last seen ${escapeHtml(formatDateTime(participant.lastSeenAt))}</div>
       `;
@@ -1752,6 +1791,11 @@
     return state.actor?.permissionTier === "commander" || currentActorType() === "commander";
   }
 
+  function formatPermissionTier(permissionTier) {
+    if (permissionTier === "commander") return "owner";
+    return permissionTier;
+  }
+
   function sessionIsActive() {
     return effectiveSessionStatus(state.activeSession) === "active";
   }
@@ -1993,9 +2037,11 @@
     }
   }
 
-  function populateRoleSelect(select, defaultValue) {
+  function populateRoleSelect(select, defaultValue, options = {}) {
+    if (!select) return;
+    const excluded = new Set(options.exclude || []);
     select.innerHTML = "";
-    ICS_ROLES.forEach((role) => {
+    ICS_ROLES.filter((role) => !excluded.has(role)).forEach((role) => {
       const option = document.createElement("option");
       option.value = role;
       option.textContent = role;

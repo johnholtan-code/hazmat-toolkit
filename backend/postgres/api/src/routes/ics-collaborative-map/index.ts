@@ -85,6 +85,10 @@ type UpdateOperationalPeriodBody = {
   operationalPeriodEnd?: string;
 };
 
+type UpdateIncidentCommandBody = {
+  commanderName?: string;
+};
+
 type LockBody = {
   baseVersion?: number;
 };
@@ -254,11 +258,11 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: CreateSessionBody }>('/v1/ics-collab/sessions', async (request, reply) => {
     const incidentName = normalizeRequiredText(request.body?.incidentName, 'incidentName');
-    const commanderICSRole = normalizeICSRole(request.body?.commanderICSRole ?? 'Incident Commander');
+    const commanderICSRole = 'Incident Commander';
     const operationalPeriodStart = parseRequiredDate(request.body?.operationalPeriodStart, 'operationalPeriodStart');
     const operationalPeriodEnd = parseRequiredDate(request.body?.operationalPeriodEnd, 'operationalPeriodEnd');
-    if (!incidentName || !commanderICSRole || !operationalPeriodStart || !operationalPeriodEnd) {
-      return reply.code(400).send({ error: 'BAD_REQUEST', message: 'incidentName, commanderICSRole, operationalPeriodStart, and operationalPeriodEnd are required.' });
+    if (!incidentName || !operationalPeriodStart || !operationalPeriodEnd) {
+      return reply.code(400).send({ error: 'BAD_REQUEST', message: 'incidentName, operationalPeriodStart, and operationalPeriodEnd are required.' });
     }
     if (operationalPeriodEnd <= operationalPeriodStart) {
       return reply.code(400).send({ error: 'BAD_REQUEST', message: 'Operational period end must be after start.' });
@@ -373,7 +377,10 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'BAD_REQUEST', message: 'joinCode, displayName, and icsRole are required.' });
     }
     if (requestedPermission === 'commander') {
-      return reply.code(400).send({ error: 'BAD_REQUEST', message: 'Participants cannot join as commander.' });
+      return reply.code(400).send({ error: 'BAD_REQUEST', message: 'Participants cannot join as session owner.' });
+    }
+    if (icsRole === 'Incident Commander') {
+      return reply.code(400).send({ error: 'BAD_REQUEST', message: 'Incident Commander is assigned by the session owner.' });
     }
 
     const client = await app.pg.connect();
@@ -523,6 +530,44 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
+  app.patch<{ Params: { sessionId: string }; Body: UpdateIncidentCommandBody }>('/v1/ics-collab/sessions/:sessionId/incident-command', async (request, reply) => {
+    try {
+      const actor = await resolveSessionActor(app, request.params.sessionId, request.headers.authorization, { requireCommander: true });
+      const commanderName = normalizeRequiredText(request.body?.commanderName, 'commanderName');
+      if (!commanderName) {
+        return reply.code(400).send({ error: 'BAD_REQUEST', message: 'commanderName is required.' });
+      }
+      const result = await app.pg.query<CollabSessionRow>(
+        `
+          update collab_map_sessions
+          set
+            commander_name = $2,
+            commander_ics_role = 'Incident Commander'
+          where id = $1::uuid
+          returning
+            id::text as id,
+            trainer_ref,
+            incident_name,
+            commander_name,
+            commander_ics_role,
+            join_code,
+            join_code_expires_at,
+            session_status,
+            operational_period_start,
+            operational_period_end,
+            last_mutation_version::text as last_mutation_version,
+            ended_at,
+            created_at,
+            updated_at
+        `,
+        [actor.session.id, commanderName]
+      );
+      return reply.send(mapSession(result.rows[0], app.config.icsCollabPublicBaseUrl ?? request.headers.origin));
+    } catch (error) {
+      return sendRouteError(reply, request, error, 'Failed to update Incident Commander assignment.');
+    }
+  });
+
   app.post<{ Params: { sessionId: string }; Body: MutationBody }>('/v1/ics-collab/sessions/:sessionId/mutations', async (request, reply) => {
     const mutations = Array.isArray(request.body?.mutations) ? request.body!.mutations! : [];
     if (mutations.length === 0) {
@@ -629,7 +674,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
       const actor = await resolveSessionActorWithClient(client, app, request.params.sessionId, request.headers.authorization);
       const object = await getObjectForUpdate(client, actor.session.id, request.params.objectId);
       if (object.active_lock_participant_id && object.active_lock_participant_id !== actor.participant.id && actor.participant.permission_tier !== 'commander') {
-        throw new TrainerForbiddenError('Only the lock holder or commander can release this lock.');
+        throw new TrainerForbiddenError('Only the lock holder or session owner can release this lock.');
       }
       const updated = await client.query<CollabObjectRow>(
         `
