@@ -211,8 +211,9 @@
         ? await supabasePasswordSignIn(email, password)
         : await supabaseSignUp(email, password, displayName);
       if (!authResponse?.access_token) {
-        if (state.authTab === "signup" && authResponse?.user?.id) {
-          const confirmationMessage = authResponse.user?.confirmed_at
+        const createdUser = authResponse?.user?.id ? authResponse.user : (authResponse?.id ? authResponse : null);
+        if (state.authTab === "signup" && createdUser?.id) {
+          const confirmationMessage = createdUser?.confirmed_at
             ? "Commander account created. Sign in with the new account."
             : "Commander account created. Check email confirmation settings in Supabase if sign-in is not immediate.";
           setStatus(confirmationMessage);
