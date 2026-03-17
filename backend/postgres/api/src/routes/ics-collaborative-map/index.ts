@@ -258,7 +258,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
 
   app.get('/v1/ics-collab/sessions/active', async (request, reply) => {
     try {
-      await requireTrainerIdentity(app, request.headers);
+      const trainer = await requireTrainerIdentity(app, request.headers);
       const result = await app.pg.query<{
         id: string;
         incident_name: string;
@@ -298,7 +298,8 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         status: row.session_status,
         ownerName: row.owner_name ?? 'Owner',
         ownerTrainerRef: row.owner_trainer_ref,
-        commanderName: row.commander_name
+        commanderName: row.commander_name,
+        isOwner: row.owner_trainer_ref === trainer.trainerRef
       })));
     } catch (error) {
       return sendTrainerError(reply, request, error, 'Failed to list active collaborative sessions.');

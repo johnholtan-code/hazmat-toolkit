@@ -1071,16 +1071,37 @@
       role.textContent = `Incident Commander: ${session.commanderName}`;
       const row = document.createElement("div");
       row.className = "row";
-      const useCodeBtn = document.createElement("button");
-      useCodeBtn.className = "secondary";
-      useCodeBtn.type = "button";
-      useCodeBtn.textContent = "Use Code";
-      useCodeBtn.addEventListener("click", () => {
-        elements.joinCodeInput.value = session.joinCode;
-        elements.joinCodeInput.focus();
-        setStatus(`Loaded join code for ${session.incidentName}.`);
-      });
-      row.append(useCodeBtn);
+      if (session.isOwner) {
+        const openBtn = document.createElement("button");
+        openBtn.className = "secondary";
+        openBtn.type = "button";
+        openBtn.textContent = "Open Session";
+        openBtn.addEventListener("click", async () => {
+          try {
+            const snapshot = await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(session.id)}/snapshot`, {
+              actorType: "commander"
+            });
+            state.actor = snapshot.actor;
+            state.qrPayload = JSON.stringify({ type: "ics_collab_join", joinCode: session.joinCode });
+            await openSession(snapshot.session, snapshot.actor, "commander", snapshot.snapshot);
+            setStatus(`Opened ${session.incidentName}.`);
+          } catch (error) {
+            setStatus(formatError(error));
+          }
+        });
+        row.append(openBtn);
+      } else {
+        const useCodeBtn = document.createElement("button");
+        useCodeBtn.className = "secondary";
+        useCodeBtn.type = "button";
+        useCodeBtn.textContent = "Use Code";
+        useCodeBtn.addEventListener("click", () => {
+          elements.joinCodeInput.value = session.joinCode;
+          elements.joinCodeInput.focus();
+          setStatus(`Loaded join code for ${session.incidentName}.`);
+        });
+        row.append(useCodeBtn);
+      }
       card.append(title, meta, role, row);
       elements.activeSessionGallery.appendChild(card);
     });
