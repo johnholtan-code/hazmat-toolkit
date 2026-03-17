@@ -130,6 +130,8 @@
     baseLayers: null,
     activeBaseLayerKey: "road",
     objectLayerGroup: null,
+    currentLocationMarker: null,
+    currentLocation: null,
     previewLayer: null,
     sessionRefreshNonce: 0,
     dragTemplateType: null
@@ -200,7 +202,7 @@
     mapContainer.addEventListener("dragleave", onMapDragLeave);
     mapContainer.addEventListener("drop", onMapDrop);
     scheduleMapResizeRefresh();
-    tryCenterMapOnCurrentLocation();
+    requestCurrentLocation({ recenter: true, force: false });
   }
 
   function createBaseLayers() {
@@ -264,33 +266,57 @@
     }
   }
 
-  function tryCenterMapOnCurrentLocation() {
+  function requestCurrentLocation({ recenter = false, force = false } = {}) {
     if (!navigator.geolocation || !state.map) return;
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        if (!state.map || state.snapshotLoaded || state.objects.size > 0) return;
+        if (!state.map) return;
         const { latitude, longitude, accuracy } = position.coords;
-        state.map.setView([latitude, longitude], 16);
-        L.circleMarker([latitude, longitude], {
-          radius: 7,
-          color: "#0b7285",
-          weight: 2,
-          fillColor: "#15aabf",
-          fillOpacity: 0.9
-        })
-          .bindTooltip(`Current location${accuracy ? ` (+/- ${Math.round(accuracy)} m)` : ""}`, { direction: "top" })
-          .addTo(state.objectLayerGroup);
-        setStatus("Centered map on your current location.");
+        const latLng = [latitude, longitude];
+        state.currentLocation = {
+          lat: latitude,
+          lng: longitude,
+          accuracy: accuracy || null
+        };
+        renderCurrentLocationMarker();
+        const shouldCenter =
+          force ||
+          recenter ||
+          !state.snapshotLoaded ||
+          state.objects.size === 0;
+        if (shouldCenter) {
+          state.map.setView(latLng, 18);
+          scheduleMapResizeRefresh();
+          setStatus("Centered map on your current location.");
+        }
       },
       () => {
         // Leave the default map extent in place when geolocation is unavailable or denied.
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000
+        timeout: 12000,
+        maximumAge: 30000
       }
     );
+  }
+
+  function renderCurrentLocationMarker() {
+    if (!state.map || !state.objectLayerGroup || !state.currentLocation) return;
+    if (state.currentLocationMarker) {
+      state.objectLayerGroup.removeLayer(state.currentLocationMarker);
+      state.currentLocationMarker = null;
+    }
+    const { lat, lng, accuracy } = state.currentLocation;
+    state.currentLocationMarker = L.circleMarker([lat, lng], {
+      radius: 7,
+      color: "#f8f9fa",
+      weight: 2,
+      fillColor: "#f3c613",
+      fillOpacity: 0.95
+    })
+      .bindTooltip(`Current location${accuracy ? ` (+/- ${Math.round(accuracy)} m)` : ""}`, { direction: "top" })
+      .addTo(state.objectLayerGroup);
   }
 
   async function hydrateAuthUI() {
@@ -511,10 +537,14 @@
       state.actor = resolvedSnapshot.actor;
     }
     scheduleMapResizeRefresh();
+    requestCurrentLocation({ recenter: true, force: true });
     applySnapshot(payload);
     renderAll();
     scheduleMapResizeRefresh();
     fitMapIfNeeded();
+    if (!state.objects.size) {
+      requestCurrentLocation({ recenter: true, force: true });
+    }
     scheduleMapResizeRefresh();
     startPolling();
   }
