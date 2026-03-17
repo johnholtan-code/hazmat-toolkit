@@ -94,6 +94,15 @@ body { height: 100vh; overflow: hidden; }
   border-radius: 16px;
   padding: 16px;
 }
+.account-summary {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--stroke);
+  margin-bottom: 10px;
+}
 .landing-card.locked {
   opacity: 0.72;
 }
@@ -128,11 +137,18 @@ body { height: 100vh; overflow: hidden; }
 .join-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.create-session-grid > :first-child,
 .create-session-grid > :last-child,
 .join-grid > :first-child,
 .join-grid > :nth-child(2) {
   grid-column: span 2;
+}
+.field-block {
+  display: grid;
+  gap: 6px;
+}
+.field-block-incident,
+.field-block-role {
+  min-width: 0;
 }
 .landing-note {
   margin-top: auto;

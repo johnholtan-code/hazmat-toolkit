@@ -55,6 +55,11 @@
                 <button id="commanderSignOutBtn" class="secondary hidden" type="button">Sign Out</button>
               </div>
 
+              <div id="commanderSignedInSummary" class="account-summary hidden">
+                <strong id="commanderSummaryName">Signed in</strong>
+                <div id="commanderSummaryEmail" class="muted"></div>
+              </div>
+
               <div id="authFields" class="stack auth-grid">
                 <input id="commanderNameInput" type="text" placeholder="Commander display name" />
                 <input id="commanderEmailInput" type="email" placeholder="Commander email" />
@@ -75,13 +80,19 @@
               </div>
               <p id="createSessionLockedNote" class="inline-note">Sign in first to unlock session creation.</p>
               <div class="stack create-session-grid">
-                <input id="incidentNameInput" type="text" placeholder="Incident name" disabled />
-                <select id="commanderRoleSelect" disabled></select>
-                <label>
+                <label class="field-block field-block-incident">
+                  Incident Name
+                  <input id="incidentNameInput" type="text" placeholder="Incident name" disabled />
+                </label>
+                <label class="field-block field-block-role">
+                  Commander Role
+                  <select id="commanderRoleSelect" disabled></select>
+                </label>
+                <label class="field-block">
                   Operational Period Start
                   <input id="opStartInput" type="datetime-local" disabled />
                 </label>
-                <label>
+                <label class="field-block">
                   Operational Period End
                   <input id="opEndInput" type="datetime-local" disabled />
                 </label>

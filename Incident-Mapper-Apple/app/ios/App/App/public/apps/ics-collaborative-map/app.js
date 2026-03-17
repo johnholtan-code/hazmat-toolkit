@@ -63,6 +63,10 @@
     signUpTabBtn: document.getElementById("signUpTabBtn"),
     commanderAuthBtn: document.getElementById("commanderAuthBtn"),
     commanderSignOutBtn: document.getElementById("commanderSignOutBtn"),
+    authFields: document.getElementById("authFields"),
+    commanderSignedInSummary: document.getElementById("commanderSignedInSummary"),
+    commanderSummaryName: document.getElementById("commanderSummaryName"),
+    commanderSummaryEmail: document.getElementById("commanderSummaryEmail"),
     commanderNameInput: document.getElementById("commanderNameInput"),
     commanderEmailInput: document.getElementById("commanderEmailInput"),
     commanderPasswordInput: document.getElementById("commanderPasswordInput"),
@@ -905,6 +909,12 @@
 
   function renderCommanderAuthPanels() {
     const signedIn = Boolean(state.commanderAuth?.accessToken);
+    elements.commanderSignedInSummary.classList.toggle("hidden", !signedIn);
+    elements.authFields.classList.toggle("hidden", signedIn);
+    if (signedIn) {
+      elements.commanderSummaryName.textContent = state.commanderAuth?.displayName || "Signed in";
+      elements.commanderSummaryEmail.textContent = state.commanderAuth?.email || "";
+    }
     elements.createSessionPanel.classList.toggle("hidden", false);
     elements.createSessionPanel.classList.toggle("locked", !signedIn);
     elements.createSessionLockedNote.classList.toggle("hidden", signedIn);
