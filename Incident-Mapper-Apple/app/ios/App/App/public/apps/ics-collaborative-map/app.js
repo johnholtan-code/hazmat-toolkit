@@ -213,6 +213,14 @@
       if (!authResponse?.access_token) {
         const createdUser = authResponse?.user?.id ? authResponse.user : (authResponse?.id ? authResponse : null);
         if (state.authTab === "signup" && createdUser?.id) {
+          const looksLikeExistingEmailResponse = Array.isArray(createdUser.identities)
+            && createdUser.identities.length === 0
+            && !createdUser.confirmed_at
+            && !createdUser.email_confirmed_at;
+          if (looksLikeExistingEmailResponse) {
+            setStatus("This email may already exist in Supabase or be stuck in a stale signup state. Try Sign In, Reset Password, or use a different email.");
+            return;
+          }
           const confirmationMessage = createdUser?.confirmed_at
             ? "Commander account created. Sign in with the new account."
             : "Commander account created. Check email confirmation settings in Supabase if sign-in is not immediate.";
