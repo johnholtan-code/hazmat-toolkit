@@ -26,6 +26,16 @@
         <div class="topbar-action-row topbar-action-row-secondary">
           <button id="guidedModeBtn" class="secondary hidden" type="button">10-Minute Setup</button>
         </div>
+        <div id="quickFlowPanel" class="panel compact topbar-quick-flow">
+          <h3>Quick Flow</h3>
+          <label class="inline-checkbox">
+            <input id="guidedSetupToggle" type="checkbox" />
+            <span>Use 10-Minute Setup</span>
+          </label>
+          <div class="guided-collapsed-content muted">Turn this on when you want the guided startup workflow.</div>
+          <button id="startGuidedSetupBtn" class="primary" type="button">Focus Next Guided Step</button>
+          <div id="guidedSteps" class="guided-steps"></div>
+        </div>
       </div>
     </header>
 
@@ -241,17 +251,6 @@
         </section>
 
         <aside class="sidebar right">
-          <div id="quickFlowPanel" class="panel compact">
-            <h3>Quick Flow</h3>
-            <label class="inline-checkbox">
-              <input id="guidedSetupToggle" type="checkbox" />
-              <span>Use 10-Minute Setup</span>
-            </label>
-            <div class="guided-collapsed-content muted">Turn this on when you want the guided startup workflow.</div>
-            <button id="startGuidedSetupBtn" class="primary" type="button">Focus Next Guided Step</button>
-            <div id="guidedSteps" class="guided-steps"></div>
-          </div>
-
           <div class="panel compact">
             <h3>Selected Item</h3>
             <div id="selectedObjectEmpty" class="muted">Select an item to inspect or edit it.</div>
