@@ -223,27 +223,17 @@
 
         <section class="map-stage">
           <div id="map"></div>
-          <div class="map-tools-dock">
-            <button id="mapToolsLauncherBtn" class="map-tools-launcher" type="button" aria-expanded="false" aria-label="Open quick placement tools">
-              <span class="map-tools-launcher-icon">+</span>
+          <div class="map-style-dock">
+            <button id="mapStyleLauncherBtn" class="map-style-launcher" type="button" aria-expanded="false" aria-label="Open map styles">
+              <span class="map-style-launcher-icon">◫</span>
             </button>
-            <div id="mapToolsTray" class="map-tools-tray hidden">
-              <div class="map-tools-tray-header">
-                <strong>Quick Tools</strong>
-                <button id="mapToolsCloseBtn" class="map-tools-close" type="button" aria-label="Close quick placement tools">×</button>
+            <div id="mapStyleTray" class="map-style-tray hidden">
+              <div class="map-style-tray-header">
+                <strong>Map Modes</strong>
+                <button id="mapStyleCloseBtn" class="map-style-close" type="button" aria-label="Close map styles">×</button>
               </div>
-              <div id="mapToolsTrayGrid" class="map-tools-tray-grid"></div>
+              <div id="mapStyleTrayGrid" class="map-style-tray-grid"></div>
             </div>
-          </div>
-          <div class="map-style-panel">
-            <label>
-              Map Style
-              <select id="mapStyleSelect">
-                <option value="road">Road</option>
-                <option value="satellite">Satellite</option>
-                <option value="topo">Topographic</option>
-              </select>
-            </label>
           </div>
           <div id="drawControls" class="draw-controls hidden">
             <span id="drawHintText">Click the map to place points.</span>

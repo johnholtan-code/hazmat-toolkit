@@ -52,15 +52,10 @@
     { key: "division", label: "Define Divisions", objectTypes: ["Division"] },
     { key: "resources", label: "Assign Initial Resources", objectTypes: ["HoseLine", "Hydrant", "MonitoringPoint", "Rehab", "RIT", "DeconCorridor"] }
   ];
-  const QUICK_TOOL_TYPES = [
-    "IncidentCommand",
-    "Staging",
-    "HazardSource",
-    "HotZone",
-    "CollapseZone",
-    "Division",
-    "MonitoringPoint",
-    "HoseLine"
+  const MAP_STYLE_OPTIONS = [
+    { key: "road", label: "Road", description: "Street-level context", chip: "RD", color: "#6ec1ff" },
+    { key: "satellite", label: "Satellite", description: "Aerial imagery", chip: "SAT", color: "#8cc46f" },
+    { key: "topo", label: "Topographic", description: "Terrain and contours", chip: "TOP", color: "#e1c26f" }
   ];
 
   const templateByType = Object.fromEntries(OBJECT_TEMPLATES.map((template) => [template.objectType, template]));
@@ -105,7 +100,10 @@
     startGuidedSetupBtn: document.getElementById("startGuidedSetupBtn"),
     guidedModeBtn: document.getElementById("guidedModeBtn"),
     guidedSetupToggle: document.getElementById("guidedSetupToggle"),
-    mapStyleSelect: document.getElementById("mapStyleSelect"),
+    mapStyleLauncherBtn: document.getElementById("mapStyleLauncherBtn"),
+    mapStyleCloseBtn: document.getElementById("mapStyleCloseBtn"),
+    mapStyleTray: document.getElementById("mapStyleTray"),
+    mapStyleTrayGrid: document.getElementById("mapStyleTrayGrid"),
     leaveSessionBtn: document.getElementById("leaveSessionBtn"),
     sessionSignOutBtn: document.getElementById("sessionSignOutBtn"),
     showViewerQrBtn: document.getElementById("showViewerQrBtn"),
@@ -140,10 +138,6 @@
     drawHintText: document.getElementById("drawHintText"),
     finishGeometryBtn: document.getElementById("finishGeometryBtn"),
     cancelGeometryBtn: document.getElementById("cancelGeometryBtn"),
-    mapToolsLauncherBtn: document.getElementById("mapToolsLauncherBtn"),
-    mapToolsCloseBtn: document.getElementById("mapToolsCloseBtn"),
-    mapToolsTray: document.getElementById("mapToolsTray"),
-    mapToolsTrayGrid: document.getElementById("mapToolsTrayGrid"),
     rightSidebar: document.getElementById("rightSidebar"),
     rightSidebarCollapseBtn: document.getElementById("rightSidebarCollapseBtn"),
     viewerQrModal: document.getElementById("viewerQrModal"),
@@ -186,7 +180,7 @@
     viewerMode: false,
     viewerJoinCode: null,
     rightSidebarCollapsed: false,
-    quickToolTrayOpen: false
+    mapStyleTrayOpen: false
   };
 
   async function init() {
@@ -226,7 +220,8 @@
     elements.startGuidedSetupBtn.addEventListener("click", () => toggleGuidedMode(true));
     elements.guidedModeBtn.addEventListener("click", () => toggleGuidedMode(!state.guidedMode));
     elements.guidedSetupToggle.addEventListener("change", (event) => toggleGuidedMode(event.target.checked));
-    elements.mapStyleSelect.addEventListener("change", (event) => setBaseLayer(event.target.value));
+    elements.mapStyleLauncherBtn.addEventListener("click", toggleMapStyleTray);
+    elements.mapStyleCloseBtn.addEventListener("click", closeMapStyleTray);
     elements.leaveSessionBtn.addEventListener("click", leaveCurrentSession);
     elements.sessionSignOutBtn.addEventListener("click", signOutCommander);
     elements.showViewerQrBtn.addEventListener("click", showViewerQrModal);
@@ -246,8 +241,6 @@
     elements.deleteObjectBtn.addEventListener("click", deleteSelectedObject);
     elements.finishGeometryBtn.addEventListener("click", finishGeometryDraw);
     elements.cancelGeometryBtn.addEventListener("click", cancelGeometryDraw);
-    elements.mapToolsLauncherBtn.addEventListener("click", toggleQuickToolTray);
-    elements.mapToolsCloseBtn.addEventListener("click", closeQuickToolTray);
     elements.rightSidebarCollapseBtn.addEventListener("click", toggleRightSidebar);
     window.addEventListener("resize", scheduleMapResizeRefresh);
   }
@@ -271,7 +264,7 @@
       const nextKey = Object.entries(state.baseLayers || {}).find(([, layer]) => layer === event.layer)?.[0];
       if (nextKey) {
         state.activeBaseLayerKey = nextKey;
-        elements.mapStyleSelect.value = nextKey;
+        renderMapStyleTray();
       }
     });
     const mapContainer = state.map.getContainer();
@@ -316,9 +309,7 @@
     }
     state.activeBaseLayerKey = layerKey;
     state.baseLayers[layerKey].addTo(state.map);
-    if (elements.mapStyleSelect.value !== layerKey) {
-      elements.mapStyleSelect.value = layerKey;
-    }
+    renderMapStyleTray();
   }
 
   function scheduleMapResizeRefresh() {
@@ -938,7 +929,7 @@
     renderSessionMeta();
     renderParticipants();
     renderPalettes();
-    renderQuickToolTray();
+    renderMapStyleTray();
     renderGuidedSteps();
     renderSelectedObject();
     updateDrawControls();
@@ -994,31 +985,28 @@
     toggleLandingCardAccess(signedIn);
   }
 
-  function renderQuickToolTray() {
-    if (!elements.mapToolsTray || !elements.mapToolsLauncherBtn || !elements.mapToolsTrayGrid) return;
-    elements.mapToolsTray.classList.toggle("hidden", !state.quickToolTrayOpen);
-    elements.mapToolsLauncherBtn.setAttribute("aria-expanded", String(state.quickToolTrayOpen));
-    elements.mapToolsTrayGrid.innerHTML = "";
-    QUICK_TOOL_TYPES
-      .map((type) => templateByType[type])
-      .filter(Boolean)
-      .forEach((template) => {
-        const card = document.createElement("button");
-        const badgeText = template.objectType.replace(/[a-z]/g, "").slice(0, 3) || template.geometryType[0].toUpperCase();
-        card.className = `map-tool-card ${state.selectedTemplateType === template.objectType ? "active" : ""}`;
-        card.type = "button";
-        card.disabled = !canCreateObjects();
-        card.innerHTML = `
-          <span class="map-tool-card-badge" style="background:${escapeAttribute(template.color || "#f3c613")}">${escapeHtml(badgeText)}</span>
-          <span class="map-tool-card-label">${escapeHtml(template.label)}</span>
-          <span class="map-tool-card-kind">${escapeHtml(template.geometryType)}</span>
-        `;
-        card.addEventListener("click", () => {
-          selectTemplate(template.objectType);
-          closeQuickToolTray();
-        });
-        elements.mapToolsTrayGrid.appendChild(card);
+  function renderMapStyleTray() {
+    if (!elements.mapStyleTray || !elements.mapStyleLauncherBtn || !elements.mapStyleTrayGrid) return;
+    elements.mapStyleTray.classList.toggle("hidden", !state.mapStyleTrayOpen);
+    elements.mapStyleLauncherBtn.setAttribute("aria-expanded", String(state.mapStyleTrayOpen));
+    elements.mapStyleTrayGrid.innerHTML = "";
+    MAP_STYLE_OPTIONS.forEach((styleOption) => {
+      const card = document.createElement("button");
+      card.className = `map-style-card ${state.activeBaseLayerKey === styleOption.key ? "active" : ""}`;
+      card.type = "button";
+      card.dataset.style = styleOption.key;
+      card.innerHTML = `
+        <span class="map-style-card-preview" aria-hidden="true"></span>
+        <span class="map-style-card-chip" style="background:${escapeAttribute(styleOption.color)}">${escapeHtml(styleOption.chip)}</span>
+        <span class="map-style-card-label">${escapeHtml(styleOption.label)}</span>
+        <span class="map-style-card-kind">${escapeHtml(styleOption.description)}</span>
+      `;
+      card.addEventListener("click", () => {
+        setBaseLayer(styleOption.key);
+        closeMapStyleTray();
       });
+      elements.mapStyleTrayGrid.appendChild(card);
+    });
   }
 
   function toggleRightSidebar() {
@@ -1027,14 +1015,14 @@
     scheduleMapResizeRefresh();
   }
 
-  function toggleQuickToolTray() {
-    state.quickToolTrayOpen = !state.quickToolTrayOpen;
-    renderQuickToolTray();
+  function toggleMapStyleTray() {
+    state.mapStyleTrayOpen = !state.mapStyleTrayOpen;
+    renderMapStyleTray();
   }
 
-  function closeQuickToolTray() {
-    state.quickToolTrayOpen = false;
-    renderQuickToolTray();
+  function closeMapStyleTray() {
+    state.mapStyleTrayOpen = false;
+    renderMapStyleTray();
   }
 
   function renderRightSidebarState() {
@@ -1369,7 +1357,6 @@
 
   function selectTemplate(objectType) {
     beginTemplatePlacement(objectType);
-    closeQuickToolTray();
   }
 
   function beginTemplatePlacement(objectType, initialPoint = null) {
