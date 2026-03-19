@@ -3233,8 +3233,14 @@
       const blob = pdf.output("blob");
       if (window.exportPdfHelper?.saveAndSharePdfBlob) {
         try {
-          await window.exportPdfHelper.saveAndSharePdfBlob(blob, filename);
-          setStatus(`ICS 202 PDF shared: ${filename}`);
+          const result = await window.exportPdfHelper.saveAndSharePdfBlob(blob, filename);
+          if (result?.shared) {
+            setStatus(`ICS 202 PDF shared: ${filename}`);
+          } else if (result?.uri) {
+            setStatus(`ICS 202 PDF saved locally: ${filename}`);
+          } else {
+            setStatus(`ICS 202 PDF prepared: ${filename}`);
+          }
           return;
         } catch (_error) {
           // Fall back to browser download.
@@ -5092,8 +5098,14 @@
     const filename = buildExportFilename("cost-report", "pdf");
     if (window.exportPdfHelper?.saveAndSharePdfBlob) {
       try {
-        await window.exportPdfHelper.saveAndSharePdfBlob(blob, filename);
-        setStatus(`PDF shared: ${filename}`);
+        const result = await window.exportPdfHelper.saveAndSharePdfBlob(blob, filename);
+        if (result?.shared) {
+          setStatus(`PDF shared: ${filename}`);
+        } else if (result?.uri) {
+          setStatus(`PDF saved locally: ${filename}`);
+        } else {
+          setStatus(`PDF prepared: ${filename}`);
+        }
         return;
       } catch (_error) {
         // Fall back to browser download.

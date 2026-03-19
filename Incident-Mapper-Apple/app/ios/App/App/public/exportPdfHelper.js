@@ -110,7 +110,8 @@
     return saveAndShareBlob(pdfBlob, filename || "report.pdf", {
       title: "Export PDF Report",
       text: "Here is the report.",
-      dialogTitle: "Share PDF"
+      dialogTitle: "Share PDF",
+      requireSharePrompt: true
     });
   }
 
