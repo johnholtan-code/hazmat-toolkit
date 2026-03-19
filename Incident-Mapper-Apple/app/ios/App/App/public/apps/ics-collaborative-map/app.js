@@ -844,9 +844,6 @@
         }
         state.sessionRefreshNonce += 1;
         renderCostSummary();
-        if (state.selectedObjectId && isCostedResourceObject(state.objects.get(state.selectedObjectId))) {
-          renderSelectedObject();
-        }
       } catch (error) {
         setStatus(formatError(error));
       }
