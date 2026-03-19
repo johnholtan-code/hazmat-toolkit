@@ -217,6 +217,7 @@
     baseLayers: null,
     activeBaseLayerKey: "road",
     objectLayerGroup: null,
+    editHandleLayerGroup: null,
     currentLocationMarker: null,
     currentLocation: null,
     previewLayer: null,
@@ -350,6 +351,7 @@
       { collapsed: true }
     ).addTo(state.map);
     state.objectLayerGroup = L.layerGroup().addTo(state.map);
+    state.editHandleLayerGroup = L.layerGroup().addTo(state.map);
     state.map.on("click", onMapClick);
     state.map.on("baselayerchange", (event) => {
       const nextKey = Object.entries(state.baseLayers || {}).find(([, layer]) => layer === event.layer)?.[0];
@@ -1935,6 +1937,9 @@
       setStatus("This session is read-only or you do not have edit access.");
       return;
     }
+    if (state.drawState.mode === "edit" && state.drawState.template.geometryType !== "point") {
+      return;
+    }
     const point = { lat: roundCoord(event.latlng.lat), lng: roundCoord(event.latlng.lng) };
     if (state.drawState.template.geometryType === "point") {
       try {
@@ -1963,12 +1968,19 @@
     const { template, mode, points = [] } = state.drawState;
     const minPoints = template.geometryType === "line" ? 2 : (template.geometryType === "polygon" ? 3 : 1);
     elements.drawHintText.textContent = mode === "edit"
-      ? `Redrawing ${template.label}. Add points and finish to replace the current geometry.`
+      ? template.geometryType === "point"
+        ? `Move ${template.label} by selecting a new point on the map.`
+        : `Drag the corner handles to reshape ${template.label}, then finish to save.`
       : `${template.label}: add ${template.geometryType === "line" ? "line" : template.geometryType === "polygon" ? "polygon" : "point"} geometry.`;
     elements.finishGeometryBtn.disabled = points.length < minPoints;
   }
 
   function redrawPreviewLayer() {
+    redrawPreviewGeometryOnly();
+    renderGeometryEditHandles();
+  }
+
+  function redrawPreviewGeometryOnly() {
     if (state.previewLayer) {
       state.map.removeLayer(state.previewLayer);
       state.previewLayer = null;
@@ -2012,6 +2024,7 @@
       state.map.removeLayer(state.previewLayer);
       state.previewLayer = null;
     }
+    clearGeometryEditHandles();
     updateDrawControls();
     if (lockObjectId) {
       releaseObjectLock(lockObjectId).catch(() => {});
@@ -2313,14 +2326,20 @@
           color: "#f3c613",
           defaults: {}
         },
-        points: object.geometryType === "point" ? [] : []
+        points: object.geometryType === "point"
+          ? []
+          : (object.geometry.points || []).map((point) => ({
+            lat: roundCoord(point.lat),
+            lng: roundCoord(point.lng)
+          }))
       };
       cancelGeometryPreviewOnly();
+      redrawPreviewLayer();
       updateDrawControls();
       renderPalettes();
       setStatus(object.geometryType === "point"
         ? "Click a new point on the map to move this object."
-        : "Click the map to redraw this geometry, then finish.");
+        : "Drag the corner handles to reshape this geometry, then finish.");
     } catch (error) {
       setStatus(formatError(error));
     }
@@ -2331,6 +2350,48 @@
       state.map.removeLayer(state.previewLayer);
       state.previewLayer = null;
     }
+    clearGeometryEditHandles();
+  }
+
+  function clearGeometryEditHandles() {
+    if (state.editHandleLayerGroup) {
+      state.editHandleLayerGroup.clearLayers();
+    }
+  }
+
+  function renderGeometryEditHandles() {
+    clearGeometryEditHandles();
+    if (!state.editHandleLayerGroup || !state.drawState || state.drawState.mode !== "edit") return;
+    const { template, points = [] } = state.drawState;
+    if (!Array.isArray(points) || !points.length || template.geometryType === "point") return;
+    points.forEach((point, index) => {
+      const handle = L.marker([point.lat, point.lng], {
+        draggable: true,
+        icon: L.divIcon({
+          className: "",
+          html: '<div class="geometry-handle"></div>',
+          iconSize: [18, 18],
+          iconAnchor: [9, 9]
+        }),
+        zIndexOffset: 1000
+      });
+      handle.on("drag", (event) => {
+        const latlng = event.target.getLatLng();
+        state.drawState.points[index] = {
+          lat: roundCoord(latlng.lat),
+          lng: roundCoord(latlng.lng)
+        };
+        redrawPreviewGeometryOnly();
+        updateDrawControls();
+      });
+      handle.on("dragstart", () => {
+        state.map?.dragging?.disable();
+      });
+      handle.on("dragend", () => {
+        state.map?.dragging?.enable();
+      });
+      handle.addTo(state.editHandleLayerGroup);
+    });
   }
 
   async function deleteSelectedObject() {

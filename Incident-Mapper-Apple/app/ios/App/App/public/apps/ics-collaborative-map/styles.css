@@ -860,6 +860,14 @@ button.danger { background: rgba(178,58,72,0.14); color: #f4c9ce; border-color: 
   border: 2px solid rgba(255,255,255,0.75);
   box-shadow: 0 4px 10px rgba(0,0,0,0.25);
 }
+.geometry-handle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f3c613;
+  border: 3px solid rgba(9,16,24,0.92);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+}
 .point-marker-icon {
   width: 34px;
   height: 34px;
