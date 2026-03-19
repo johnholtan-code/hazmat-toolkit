@@ -16,6 +16,12 @@
   const WEATHER_API_BASE_URL = (config.weatherApiBaseUrl || "https://api.open-meteo.com/v1/forecast").replace(/\/$/, "");
   const ICON_MANIFEST_URL = "./icon-manifest.json";
   const ICON_MARKER_OBJECT_TYPE = "IconMarker";
+  const EQUIPMENT_CATEGORY = "Equipment";
+  const CONSUMABLES_CATEGORY = "Consumables";
+  const CUSTOM_EQUIPMENT_ID = "custom_equipment";
+  const CUSTOM_CONSUMABLE_ID = "custom_consumable";
+  const RATE_CATALOGS = window.HAZMAT_RATE_CATALOGS || { equipment: [], consumables: [] };
+  const COSTED_RESOURCE_CATEGORIES = new Set([EQUIPMENT_CATEGORY, CONSUMABLES_CATEGORY]);
   const ICS_ROLES = [
     "Incident Commander",
     "Operations Section Chief",
@@ -80,6 +86,23 @@
     },
     kind: "icon"
   };
+  const COSTED_RESOURCE_FIELD_DEFS = [
+    { key: "displayLabel", label: "Item Name", type: "text" },
+    { key: "company", label: "Company / Agency", type: "text" },
+    { key: "billingModel", label: "Billing Model", type: "select", options: [
+      { value: "hourly", label: "Hourly" },
+      { value: "quantity", label: "Quantity" }
+    ] },
+    { key: "unit", label: "Unit", type: "text" },
+    { key: "quantity", label: "Quantity", type: "number", step: "0.01", min: "0" },
+    { key: "costRate", label: "Cost Rate", type: "number", step: "0.01", min: "0" },
+    { key: "costCode", label: "Cost Code", type: "text" },
+    { key: "placedAt", label: "Placed Time", type: "datetime-local" },
+    { key: "demobilizedAt", label: "Demobilized Time", type: "datetime-local" },
+    { key: "notes", label: "Notes", type: "textarea" }
+  ];
+  const EQUIPMENT_RATE_TEMPLATES = (RATE_CATALOGS.equipment || []).map((entry) => normalizeCostTemplate(entry, EQUIPMENT_CATEGORY));
+  const CONSUMABLE_RATE_TEMPLATES = (RATE_CATALOGS.consumables || []).map((entry) => normalizeCostTemplate(entry, CONSUMABLES_CATEGORY));
   const templateByType = Object.fromEntries([...OBJECT_TEMPLATES, ICON_MARKER_TEMPLATE].map((template) => [template.objectType, template]));
   const elements = {
     shell: document.querySelector(".shell"),
@@ -135,6 +158,8 @@
     guidedSteps: document.getElementById("guidedSteps"),
     startGuidedSetupBtn: document.getElementById("startGuidedSetupBtn"),
     guidedModeBtn: document.getElementById("guidedModeBtn"),
+    exportCostCsvBtn: document.getElementById("exportCostCsvBtn"),
+    exportCostPdfBtn: document.getElementById("exportCostPdfBtn"),
     setIncidentFocusBtn: document.getElementById("setIncidentFocusBtn"),
     centerIncidentBtn: document.getElementById("centerIncidentBtn"),
     weatherLauncherBtn: document.getElementById("weatherLauncherBtn"),
@@ -187,6 +212,8 @@
     cancelGeometryBtn: document.getElementById("cancelGeometryBtn"),
     rightSidebar: document.getElementById("rightSidebar"),
     rightSidebarCollapseBtn: document.getElementById("rightSidebarCollapseBtn"),
+    costSummaryPanel: document.getElementById("costSummaryPanel"),
+    costSummaryBody: document.getElementById("costSummaryBody"),
     viewerQrModal: document.getElementById("viewerQrModal"),
     closeViewerQrBtn: document.getElementById("closeViewerQrBtn"),
     viewerQrImage: document.getElementById("viewerQrImage"),
@@ -309,6 +336,8 @@
     elements.joinSessionBtn.addEventListener("click", onJoinSession);
     elements.startGuidedSetupBtn.addEventListener("click", () => toggleGuidedMode(true));
     elements.guidedModeBtn.addEventListener("click", () => toggleGuidedMode(!state.guidedMode));
+    elements.exportCostCsvBtn.addEventListener("click", exportCostCsv);
+    elements.exportCostPdfBtn.addEventListener("click", exportCostPdf);
     elements.setIncidentFocusBtn.addEventListener("click", onSetIncidentFocusAction);
     elements.centerIncidentBtn.addEventListener("click", onCenterIncidentAction);
     elements.weatherLauncherBtn.addEventListener("click", toggleWeatherPanel);
@@ -814,6 +843,10 @@
           renderSessionMeta();
         }
         state.sessionRefreshNonce += 1;
+        renderCostSummary();
+        if (state.selectedObjectId && isCostedResourceObject(state.objects.get(state.selectedObjectId))) {
+          renderSelectedObject();
+        }
       } catch (error) {
         setStatus(formatError(error));
       }
@@ -1049,6 +1082,7 @@
   function renderAll() {
     renderCommanderAuthPanels();
     renderLandingSectionCollapses();
+    renderExportActions();
     renderIncidentFocusUI();
     renderWeatherUI();
     renderSessionMeta();
@@ -1056,6 +1090,7 @@
     renderPalettes();
     renderMapStyleTray();
     renderGuidedSteps();
+    renderCostSummary();
     renderSelectedObject();
     updateDrawControls();
     renderGuidedControls();
@@ -1709,7 +1744,7 @@
       items.forEach((item) => {
         const button = document.createElement("button");
         const selectionKey = item.selectionKey || item.objectType;
-        button.className = `object-template ${item.kind === "icon" ? "icon-template" : ""} ${state.selectedTemplateType === selectionKey ? "active" : ""}`;
+        button.className = `object-template ${item.kind === "icon" ? "icon-template" : ""} ${item.kind === "costed" ? "cost-template" : ""} ${state.selectedTemplateType === selectionKey ? "active" : ""}`;
         button.type = "button";
         button.disabled = !canCreateObjects();
         button.draggable = canCreateObjects() && item.geometryType === "point";
@@ -1728,6 +1763,14 @@
               <div class="muted">${escapeHtml(item.category)}</div>
             </span>
           `
+          : item.kind === "costed"
+            ? `
+              <span class="cost-template-copy">
+                <strong>${escapeHtml(item.label)}</strong>
+                <div class="muted">${escapeHtml(item.billingModel === "hourly" ? `${formatCurrency(item.costRate || 0)} / ${item.unit || "Hour"}` : `${formatCurrency(item.costRate || 0)} x ${item.unit || "Unit"}`)}</div>
+              </span>
+              <span class="map-badge">${escapeHtml(item.badge || "$")}</span>
+            `
           : `
             <span>
               <strong>${escapeHtml(item.label)}</strong>
@@ -1738,6 +1781,8 @@
         button.addEventListener("click", () => {
           if (item.kind === "icon") {
             selectIconTemplate(item);
+          } else if (item.kind === "costed") {
+            selectCostedTemplate(item);
           } else {
             selectTemplate(item.objectType);
           }
@@ -1854,9 +1899,12 @@
     elements.selectedObjectMeta.innerHTML = "";
     const template = resolveTemplateForObject(object);
     const author = state.participants.find((participant) => participant.id === object.createdByParticipantId);
-    appendMetaRow(elements.selectedObjectMeta, "Type", template?.label || object.objectType);
+    appendMetaRow(elements.selectedObjectMeta, "Type", getObjectDisplayLabel(object, template));
     appendMetaRow(elements.selectedObjectMeta, "Geometry", object.geometryType);
-    if (object.objectType === ICON_MARKER_OBJECT_TYPE) {
+    if (isCostedResourceObject(object)) {
+      appendMetaRow(elements.selectedObjectMeta, "Category", object.fields?.resourceCategory || "Costed Resource");
+      appendMetaRow(elements.selectedObjectMeta, "Current Total", formatCurrency(getCostedResourceTotal(object)));
+    } else if (object.objectType === ICON_MARKER_OBJECT_TYPE) {
       appendMetaRow(elements.selectedObjectMeta, "Category", object.fields?.iconCategory || "Legacy Icons");
     }
     appendMetaRow(elements.selectedObjectMeta, "Author", author ? `${author.displayName} · ${author.icsRole}` : object.createdByParticipantId);
@@ -1875,13 +1923,34 @@
       empty.textContent = "No extra fields for this object.";
       elements.selectedObjectFields.appendChild(empty);
     } else {
-      fields.forEach(([key, value]) => {
+      fields.forEach((field) => {
         const label = document.createElement("label");
-        label.textContent = key;
-        const input = document.createElement("input");
-        input.type = "text";
-        input.value = value ?? "";
-        input.dataset.fieldKey = key;
+        label.className = field.type === "textarea" ? "field-block field-block-textarea" : "field-block";
+        label.textContent = field.label || field.key;
+        const input = field.type === "textarea"
+          ? document.createElement("textarea")
+          : field.type === "select"
+            ? document.createElement("select")
+            : document.createElement("input");
+        if (field.type === "select") {
+          (field.options || []).forEach((option) => {
+            const optionEl = document.createElement("option");
+            optionEl.value = option.value;
+            optionEl.textContent = option.label;
+            input.appendChild(optionEl);
+          });
+          input.value = field.value ?? "";
+        } else if (field.type === "textarea") {
+          input.value = field.value ?? "";
+          input.rows = 3;
+        } else {
+          input.type = field.type || "text";
+          input.value = field.value ?? "";
+          if (field.min != null) input.min = field.min;
+          if (field.step != null) input.step = field.step;
+        }
+        input.dataset.fieldKey = field.key;
+        input.dataset.fieldType = field.type || "text";
         input.disabled = !canEditObject(object);
         label.appendChild(input);
         elements.selectedObjectFields.appendChild(label);
@@ -1900,6 +1969,10 @@
 
   function selectTemplate(objectType) {
     beginTemplatePlacement(objectType);
+  }
+
+  function selectCostedTemplate(costTemplate) {
+    beginCostedPlacement(costTemplate);
   }
 
   function selectIconTemplate(iconDefinition) {
@@ -1936,6 +2009,25 @@
     if (!iconDefinition) return;
     const template = createIconTemplate(iconDefinition);
     state.selectedTemplateType = iconDefinition.selectionKey;
+    state.selectedObjectId = null;
+    renderPalettes();
+    renderSelectedObject();
+    if (initialPoint) {
+      createObject(template, { lat: initialPoint.lat, lng: initialPoint.lng });
+      state.drawState = null;
+      updateDrawControls();
+      return;
+    }
+    state.drawState = { mode: "create", template, points: [] };
+    setStatus(`Selected ${template.label}. Click the map to place it.`);
+    redrawPreviewLayer();
+    updateDrawControls();
+  }
+
+  function beginCostedPlacement(costTemplate, initialPoint = null) {
+    if (!costTemplate) return;
+    const template = createCostedMarkerTemplate(costTemplate);
+    state.selectedTemplateType = costTemplate.selectionKey;
     state.selectedObjectId = null;
     renderPalettes();
     renderSelectedObject();
@@ -1991,8 +2083,14 @@
     const containerPoint = L.point(event.clientX - rect.left, event.clientY - rect.top);
     const latLng = state.map.containerPointToLatLng(containerPoint);
     const iconDefinition = findIconBySelectionKey(state.dragTemplateType);
+    const costTemplate = findCostTemplateBySelectionKey(state.dragTemplateType);
     if (iconDefinition) {
       beginIconPlacement(iconDefinition, {
+        lat: roundCoord(latLng.lat),
+        lng: roundCoord(latLng.lng)
+      });
+    } else if (costTemplate) {
+      beginCostedPlacement(costTemplate, {
         lat: roundCoord(latLng.lat),
         lng: roundCoord(latLng.lng)
       });
@@ -2365,7 +2463,13 @@
     const inputs = elements.selectedObjectFields.querySelectorAll("[data-field-key]");
     const nextFields = { ...(object.fields || {}) };
     inputs.forEach((input) => {
-      nextFields[input.dataset.fieldKey] = input.value;
+      const fieldKey = input.dataset.fieldKey;
+      const fieldType = input.dataset.fieldType || "text";
+      if (!fieldKey) return;
+      nextFields[fieldKey] = parseEditorFieldValue(fieldType, input.value, nextFields[fieldKey]);
+      if (fieldKey === "demobilizedAt" && !nextFields[fieldKey]) {
+        nextFields[fieldKey] = "";
+      }
     });
     await queueUpdateMutation({
       objectId: object.id,
@@ -2376,6 +2480,20 @@
       baseVersion: object.version
     }, true);
     setStatus("Changes saved.");
+  }
+
+  function parseEditorFieldValue(fieldType, rawValue, previousValue) {
+    const value = rawValue ?? "";
+    if (fieldType === "number") {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+    }
+    if (fieldType === "datetime-local") {
+      if (!value) return "";
+      const iso = inputValueToISOString(value);
+      return iso || previousValue || "";
+    }
+    return value;
   }
 
   async function startGeometryEdit() {
@@ -2636,7 +2754,83 @@
     container.appendChild(row);
   }
 
+  function getEquipmentRateTemplates() {
+    return EQUIPMENT_RATE_TEMPLATES;
+  }
+
+  function getConsumableRateTemplates() {
+    return CONSUMABLE_RATE_TEMPLATES;
+  }
+
+  function normalizeCostTemplate(entry, category, overrides = {}) {
+    const isConsumable = category === CONSUMABLES_CATEGORY;
+    const normalizedName = String(overrides.name || entry?.name || `${category.toLowerCase().replace(/\s+/g, "_")}_${createLocalID()}`).trim();
+    const normalizedLabel = String(overrides.label || entry?.label || entry?.equipment || (isConsumable ? "Consumable" : "Equipment")).trim() || (isConsumable ? "Consumable" : "Equipment");
+    return {
+      id: normalizedName,
+      name: normalizedName,
+      objectType: ICON_MARKER_OBJECT_TYPE,
+      geometryType: "point",
+      kind: "costed",
+      selectionKey: `cost:${category}:${normalizedName}`,
+      label: normalizedLabel,
+      category,
+      keywords: buildCostTemplateKeywords(entry, normalizedLabel, category),
+      billingModel: overrides.billingModel || entry?.billingModel || (isConsumable ? "quantity" : "hourly"),
+      unit: overrides.unit || entry?.unit || (isConsumable ? "Unit" : "Hour"),
+      costRate: Number(overrides.costRate ?? entry?.costRate ?? 0) || 0,
+      costCode: String(overrides.costCode || entry?.costCode || "").trim(),
+      description: String(overrides.description || entry?.description || "").trim(),
+      manufacturer: String(overrides.manufacturer || entry?.manufacturer || "").trim(),
+      specification: String(overrides.specification || entry?.specification || "").trim(),
+      customResource: Boolean(overrides.customResource),
+      badge: isConsumable ? "CON" : "EQ"
+    };
+  }
+
+  function buildCostTemplateKeywords(entry, label, category) {
+    return [
+      label,
+      category,
+      entry?.equipment,
+      entry?.manufacturer,
+      entry?.specification,
+      entry?.description,
+      entry?.costCode,
+      entry?.unit
+    ]
+      .filter(Boolean)
+      .map((value) => String(value).trim().toLowerCase())
+      .filter(Boolean);
+  }
+
+  function buildManagedCostPaletteItems(category) {
+    const templates = category === EQUIPMENT_CATEGORY ? getEquipmentRateTemplates() : getConsumableRateTemplates();
+    const customTemplate = normalizeCostTemplate({}, category, {
+      name: category === EQUIPMENT_CATEGORY ? CUSTOM_EQUIPMENT_ID : CUSTOM_CONSUMABLE_ID,
+      label: category === EQUIPMENT_CATEGORY ? "Custom Equipment" : "Custom Consumable",
+      billingModel: category === EQUIPMENT_CATEGORY ? "hourly" : "quantity",
+      unit: category === EQUIPMENT_CATEGORY ? "Hour" : "Unit",
+      customResource: true,
+      description: "Manual costed resource"
+    });
+    return [customTemplate, ...templates];
+  }
+
+  function isCostedResourceObject(object) {
+    return Boolean(
+      object?.objectType === ICON_MARKER_OBJECT_TYPE
+      && COSTED_RESOURCE_CATEGORIES.has(String(object?.fields?.resourceCategory || ""))
+    );
+  }
+
   function collectFieldEntries(object) {
+    if (isCostedResourceObject(object)) {
+      return COSTED_RESOURCE_FIELD_DEFS.map((fieldDef) => ({
+        ...fieldDef,
+        value: getEditableCostFieldValue(object, fieldDef.key)
+      }));
+    }
     const template = resolveTemplateForObject(object);
     const merged = { ...(template?.defaults || {}), ...(object.fields || {}) };
     if (object.objectType === ICON_MARKER_OBJECT_TYPE) {
@@ -2644,8 +2838,22 @@
       delete merged.iconCategory;
       delete merged.iconLabel;
       delete merged.iconAssetPath;
+      delete merged.iconMarkerSize;
     }
-    return Object.entries(merged);
+    return Object.entries(merged).map(([key, value]) => ({
+      key,
+      label: key,
+      type: "text",
+      value: value ?? ""
+    }));
+  }
+
+  function getEditableCostFieldValue(object, key) {
+    const fields = object?.fields || {};
+    if (key === "placedAt" || key === "demobilizedAt") {
+      return isoToInputValue(fields[key]);
+    }
+    return fields[key] ?? "";
   }
 
   function buildInitialFields(template) {
@@ -2657,11 +2865,36 @@
     return fields;
   }
 
+  function buildInitialCostFields(template) {
+    const nowIso = new Date().toISOString();
+    return {
+      displayLabel: template.label,
+      resourceType: template.customResource ? "custom" : "catalog",
+      resourceTemplateId: template.id,
+      resourceCategory: template.category,
+      company: "",
+      billingModel: template.billingModel || "hourly",
+      unit: template.unit || "Unit",
+      quantity: 1,
+      costRate: Number(template.costRate || 0) || 0,
+      costCode: template.costCode || "",
+      description: template.description || "",
+      manufacturer: template.manufacturer || "",
+      specification: template.specification || "",
+      customResource: Boolean(template.customResource),
+      placedAt: nowIso,
+      demobilizedAt: "",
+      notes: ""
+    };
+  }
+
   function buildObjectTooltip(object) {
     const template = resolveTemplateForObject(object);
     const author = state.participants.find((participant) => participant.id === object.createdByParticipantId);
-    const parts = [template?.label || object.objectType];
-    if (object.objectType === ICON_MARKER_OBJECT_TYPE && object.fields?.iconCategory) {
+    const parts = [getObjectDisplayLabel(object, template)];
+    if (isCostedResourceObject(object)) {
+      parts.push(`${object.fields?.resourceCategory || "Costed Resource"} · ${formatCurrency(getCostedResourceTotal(object))}`);
+    } else if (object.objectType === ICON_MARKER_OBJECT_TYPE && object.fields?.iconCategory) {
       parts.push(object.fields.iconCategory);
     }
     if (author) parts.push(`${author.displayName} · ${author.icsRole}`);
@@ -2687,6 +2920,13 @@
 
     OBJECT_TEMPLATES.forEach((template) => {
       ensureGroup(template.category).items.push(template);
+    });
+
+    buildManagedCostPaletteItems(EQUIPMENT_CATEGORY).forEach((item) => {
+      ensureGroup(EQUIPMENT_CATEGORY).items.push(item);
+    });
+    buildManagedCostPaletteItems(CONSUMABLES_CATEGORY).forEach((item) => {
+      ensureGroup(CONSUMABLES_CATEGORY).items.push(item);
     });
 
     const iconCategoriesById = new Map(
@@ -2743,7 +2983,39 @@
     };
   }
 
+  function createCostedMarkerTemplate(costTemplate) {
+    return {
+      ...ICON_MARKER_TEMPLATE,
+      kind: "costed",
+      label: costTemplate.label,
+      category: costTemplate.category,
+      defaults: {
+        ...ICON_MARKER_TEMPLATE.defaults,
+        ...buildInitialCostFields(costTemplate)
+      }
+    };
+  }
+
   function buildIconMarkerIcon(object, template) {
+    if (isCostedResourceObject(object)) {
+      const category = String(object.fields?.resourceCategory || "").toUpperCase();
+      const badge = category.startsWith("CON") ? "CON" : "EQ";
+      const total = formatCurrency(getCostedResourceTotal(object));
+      return L.divIcon({
+        className: "",
+        html: `
+          <div class="cost-marker ${badge === "CON" ? "consumable" : "equipment"}">
+            <div class="cost-marker-badge">${escapeHtml(badge)}</div>
+            <div class="cost-marker-body">
+              <strong>${escapeHtml(object.fields?.displayLabel || template?.label || "Resource")}</strong>
+              <span>${escapeHtml(total)}</span>
+            </div>
+          </div>
+        `,
+        iconSize: [96, 44],
+        iconAnchor: [48, 22]
+      });
+    }
     const iconSize = Number(object.fields?.iconMarkerSize || 40);
     const safeSize = Number.isFinite(iconSize) && iconSize > 0 ? iconSize : 40;
     return L.divIcon({
@@ -2758,8 +3030,25 @@
     return (state.iconCatalog.icons || []).find((icon) => `icon:${icon.id}` === selectionKey) || null;
   }
 
+  function findCostTemplateBySelectionKey(selectionKey) {
+    return [...buildManagedCostPaletteItems(EQUIPMENT_CATEGORY), ...buildManagedCostPaletteItems(CONSUMABLES_CATEGORY)]
+      .find((item) => item.selectionKey === selectionKey) || null;
+  }
+
   function resolveTemplateForObject(object) {
     if (object?.objectType === ICON_MARKER_OBJECT_TYPE) {
+      if (isCostedResourceObject(object)) {
+        return {
+          ...ICON_MARKER_TEMPLATE,
+          kind: "costed",
+          label: object.fields?.displayLabel || object.fields?.iconLabel || ICON_MARKER_TEMPLATE.label,
+          category: object.fields?.resourceCategory || object.fields?.iconCategory || ICON_MARKER_TEMPLATE.category,
+          assetPath: object.fields?.iconAssetPath || "",
+          billingModel: object.fields?.billingModel || "hourly",
+          unit: object.fields?.unit || "Unit",
+          costRate: Number(object.fields?.costRate || 0) || 0
+        };
+      }
       return {
         ...ICON_MARKER_TEMPLATE,
         label: object.fields?.iconLabel || ICON_MARKER_TEMPLATE.label,
@@ -2768,6 +3057,13 @@
       };
     }
     return templateByType[object?.objectType];
+  }
+
+  function getObjectDisplayLabel(object, template = resolveTemplateForObject(object)) {
+    if (isCostedResourceObject(object)) {
+      return object.fields?.displayLabel || template?.label || "Costed Resource";
+    }
+    return template?.label || object?.objectType || "Object";
   }
 
   function resolveAssetPath(assetPath) {
@@ -2884,6 +3180,95 @@
     elements.statusBar.textContent = message;
   }
 
+  function round2(value) {
+    return Math.round((Number(value) || 0) * 100) / 100;
+  }
+
+  function formatCurrency(value) {
+    return `$${round2(value).toFixed(2)}`;
+  }
+
+  function getCostedResourceObjects() {
+    return Array.from(state.objects.values()).filter((object) => !object.isDeleted && isCostedResourceObject(object));
+  }
+
+  function isHourlyBillingModel(model) {
+    return String(model || "hourly").toLowerCase() === "hourly";
+  }
+
+  function getCostedResourceQuantity(object) {
+    const raw = Number(object?.fields?.quantity);
+    if (!Number.isFinite(raw) || raw < 0) return 1;
+    return raw;
+  }
+
+  function getCostedResourceDurationHours(object) {
+    const placedAt = object?.fields?.placedAt;
+    if (!placedAt) return 0;
+    const start = new Date(placedAt).getTime();
+    if (!Number.isFinite(start)) return 0;
+    const end = object?.fields?.demobilizedAt
+      ? new Date(object.fields.demobilizedAt).getTime()
+      : Date.now();
+    if (!Number.isFinite(end) || end < start) return 0;
+    return round2((end - start) / 3600000);
+  }
+
+  function getCostedResourceTotal(object) {
+    const rate = Number(object?.fields?.costRate) || 0;
+    if (isHourlyBillingModel(object?.fields?.billingModel)) {
+      return round2(getCostedResourceDurationHours(object) * rate);
+    }
+    return round2(getCostedResourceQuantity(object) * rate);
+  }
+
+  function getCostSummaryTotals() {
+    const totals = {
+      equipment: 0,
+      consumables: 0,
+      grandTotal: 0,
+      count: 0
+    };
+    getCostedResourceObjects().forEach((object) => {
+      const total = getCostedResourceTotal(object);
+      if (object.fields?.resourceCategory === EQUIPMENT_CATEGORY) {
+        totals.equipment += total;
+      } else if (object.fields?.resourceCategory === CONSUMABLES_CATEGORY) {
+        totals.consumables += total;
+      }
+      totals.grandTotal += total;
+      totals.count += 1;
+    });
+    totals.equipment = round2(totals.equipment);
+    totals.consumables = round2(totals.consumables);
+    totals.grandTotal = round2(totals.grandTotal);
+    return totals;
+  }
+
+  function renderCostSummary() {
+    if (!elements.costSummaryBody || !elements.costSummaryPanel) return;
+    const totals = getCostSummaryTotals();
+    elements.costSummaryPanel.classList.toggle("hidden", !state.activeSession);
+    if (!totals.count) {
+      elements.costSummaryBody.innerHTML = `<div class="muted">No costed resources placed yet.</div>`;
+      return;
+    }
+    elements.costSummaryBody.innerHTML = `
+      <div class="cost-summary-row"><span>Equipment</span><strong>${escapeHtml(formatCurrency(totals.equipment))}</strong></div>
+      <div class="cost-summary-row"><span>Consumables</span><strong>${escapeHtml(formatCurrency(totals.consumables))}</strong></div>
+      <div class="cost-summary-row total"><span>Total</span><strong>${escapeHtml(formatCurrency(totals.grandTotal))}</strong></div>
+      <div class="cost-summary-foot muted">${escapeHtml(`${totals.count} costed item${totals.count === 1 ? "" : "s"} in this session`)}</div>
+    `;
+  }
+
+  function renderExportActions() {
+    const visible = Boolean(state.activeSession) && !state.viewerMode;
+    elements.exportCostCsvBtn.classList.toggle("hidden", !visible);
+    elements.exportCostPdfBtn.classList.toggle("hidden", !visible);
+    elements.exportCostCsvBtn.disabled = !visible || !getCostedResourceObjects().length;
+    elements.exportCostPdfBtn.disabled = !visible || !getCostedResourceObjects().length;
+  }
+
   function formatTemperature(value) {
     if (!Number.isFinite(Number(value))) return "—";
     return `${Math.round(Number(value))}°F`;
@@ -2960,6 +3345,217 @@
       hour: "numeric",
       minute: "2-digit"
     }).format(date);
+  }
+
+  function formatDateTimeForExport(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleString();
+  }
+
+  function normalizeCostRowsForExport() {
+    return getCostedResourceObjects().map((object) => ({
+      objectId: object.id,
+      label: object.fields?.displayLabel || resolveTemplateForObject(object)?.label || "Costed Resource",
+      category: object.fields?.resourceCategory || "",
+      company: object.fields?.company || "",
+      billingModel: object.fields?.billingModel || "hourly",
+      unit: object.fields?.unit || "Unit",
+      quantity: round2(getCostedResourceQuantity(object)),
+      durationHours: round2(getCostedResourceDurationHours(object)),
+      costRate: round2(Number(object.fields?.costRate || 0) || 0),
+      totalCost: round2(getCostedResourceTotal(object)),
+      costCode: object.fields?.costCode || "",
+      placedAt: object.fields?.placedAt || "",
+      demobilizedAt: object.fields?.demobilizedAt || "",
+      notes: object.fields?.notes || "",
+      createdBy: state.participants.find((participant) => participant.id === object.createdByParticipantId)?.displayName || object.createdByParticipantId || "",
+      lat: Number(object.geometry?.lat),
+      lng: Number(object.geometry?.lng)
+    }));
+  }
+
+  async function exportCostCsv() {
+    const rows = normalizeCostRowsForExport();
+    if (!rows.length) {
+      setStatus("No costed resources to export.");
+      return;
+    }
+    const header = [
+      "Object ID",
+      "Item",
+      "Category",
+      "Company / Agency",
+      "Billing Model",
+      "Unit",
+      "Quantity",
+      "Duration Hours",
+      "Cost Rate",
+      "Total Cost",
+      "Cost Code",
+      "Placed Time",
+      "Demobilized Time",
+      "Created By",
+      "Latitude",
+      "Longitude",
+      "Notes"
+    ];
+    const csvRows = rows.map((row) => [
+      row.objectId,
+      row.label,
+      row.category,
+      row.company,
+      row.billingModel,
+      row.unit,
+      row.quantity.toFixed(2),
+      row.durationHours.toFixed(2),
+      row.costRate.toFixed(2),
+      row.totalCost.toFixed(2),
+      row.costCode,
+      formatDateTimeForExport(row.placedAt),
+      formatDateTimeForExport(row.demobilizedAt),
+      row.createdBy,
+      Number.isFinite(row.lat) ? row.lat.toFixed(5) : "",
+      Number.isFinite(row.lng) ? row.lng.toFixed(5) : "",
+      String(row.notes || "").replace(/\n/g, " ")
+    ]);
+    const csv = [header.join(","), ...csvRows.map((row) => row.map((value) => `"${String(value).replace(/"/g, "\"\"")}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const filename = buildExportFilename("cost-summary", "csv");
+    if (window.exportPdfHelper?.saveAndShareBlob) {
+      try {
+        await window.exportPdfHelper.saveAndShareBlob(blob, filename, {
+          title: "Export Cost CSV",
+          text: "Here is the collaborative map cost export.",
+          dialogTitle: "Share CSV"
+        });
+        setStatus(`CSV shared: ${filename}`);
+        return;
+      } catch (_error) {
+        // Fall back to browser download.
+      }
+    }
+    await downloadBlob(blob, filename);
+    setStatus("Cost CSV exported.");
+  }
+
+  async function exportCostPdf() {
+    const rows = normalizeCostRowsForExport();
+    if (!rows.length) {
+      setStatus("No costed resources to export.");
+      return;
+    }
+    const jspdfNs = window.jspdf;
+    if (!jspdfNs?.jsPDF) {
+      setStatus("PDF library unavailable.");
+      return;
+    }
+    const { jsPDF } = jspdfNs;
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "letter" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 36;
+    const incidentName = state.activeSession?.incidentName || "Collaborative Incident";
+    const totals = getCostSummaryTotals();
+    const exportedAt = new Date().toLocaleString();
+
+    doc.setFillColor(13, 21, 36);
+    doc.rect(0, 0, pageW, 52, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("ICS Collaborative Map Cost Report", margin, 32);
+    doc.setTextColor(17, 17, 17);
+    doc.setFontSize(11);
+    doc.text(`Incident: ${incidentName}`, margin, 78);
+    doc.text(`Exported: ${exportedAt}`, margin, 94);
+    doc.text(`Equipment: ${formatCurrency(totals.equipment)}   Consumables: ${formatCurrency(totals.consumables)}   Total: ${formatCurrency(totals.grandTotal)}`, margin, 110);
+
+    const body = rows.map((row) => [
+      row.label,
+      row.category,
+      row.company,
+      row.billingModel,
+      row.unit,
+      row.quantity.toFixed(2),
+      row.durationHours.toFixed(2),
+      formatCurrency(row.costRate),
+      formatCurrency(row.totalCost),
+      formatDateTimeForExport(row.placedAt),
+      formatDateTimeForExport(row.demobilizedAt),
+      row.notes || ""
+    ]);
+
+    if (typeof doc.autoTable === "function") {
+      doc.autoTable({
+        startY: 126,
+        head: [[
+          "Item",
+          "Category",
+          "Company",
+          "Billing",
+          "Unit",
+          "Qty",
+          "Hours",
+          "Rate",
+          "Total",
+          "Placed",
+          "Demob",
+          "Notes"
+        ]],
+        body,
+        styles: { fontSize: 8, cellPadding: 3, overflow: "linebreak" },
+        headStyles: { fillColor: [243, 245, 248], textColor: [17, 17, 17] },
+        margin: { left: margin, right: margin, bottom: 34 }
+      });
+    }
+
+    const totalPages = doc.getNumberOfPages();
+    for (let page = 1; page <= totalPages; page += 1) {
+      doc.setPage(page);
+      doc.setDrawColor(210, 215, 224);
+      doc.line(margin, pageH - 28, pageW - margin, pageH - 28);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(80, 88, 98);
+      doc.text(`${incidentName}`, margin, pageH - 14);
+      doc.text(`Page ${page} of ${totalPages}`, pageW - margin, pageH - 14, { align: "right" });
+    }
+
+    const blob = doc.output("blob");
+    const filename = buildExportFilename("cost-report", "pdf");
+    if (window.exportPdfHelper?.saveAndSharePdfBlob) {
+      try {
+        await window.exportPdfHelper.saveAndSharePdfBlob(blob, filename);
+        setStatus(`PDF shared: ${filename}`);
+        return;
+      } catch (_error) {
+        // Fall back to browser download.
+      }
+    }
+    await downloadBlob(blob, filename);
+    setStatus(`PDF exported: ${filename}`);
+  }
+
+  function buildExportFilename(baseName, extension) {
+    const incident = String(state.activeSession?.incidentName || "incident")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "incident";
+    return `${incident}-${baseName}-${Date.now()}.${extension}`;
+  }
+
+  async function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   function inputValueToISOString(value) {

@@ -27,6 +27,8 @@
         </div>
         <div class="topbar-action-row topbar-action-row-secondary">
           <button id="guidedModeBtn" class="secondary hidden" type="button">10-Minute Setup</button>
+          <button id="exportCostCsvBtn" class="secondary hidden" type="button">Export CSV</button>
+          <button id="exportCostPdfBtn" class="secondary hidden" type="button">Export PDF</button>
         </div>
       </div>
     </header>
@@ -300,6 +302,13 @@
             <div id="guidedSteps" class="guided-steps"></div>
           </div>
 
+          <div id="costSummaryPanel" class="panel compact">
+            <h3>Cost Summary</h3>
+            <div id="costSummaryBody" class="cost-summary-body">
+              <div class="muted">No costed resources placed yet.</div>
+            </div>
+          </div>
+
           <div class="panel compact">
             <h3>Selected Item</h3>
             <div id="selectedObjectEmpty" class="muted">Select an item to inspect or edit it.</div>
@@ -336,6 +345,10 @@
 
   <script src="./vendor/leaflet-1.9.4.js"></script>
   <script src="./config.js"></script>
+  <script src="../../vendor/jspdf-2.5.1.umd.min.js"></script>
+  <script src="../../vendor/jspdf-autotable-3.8.2.min.js"></script>
+  <script src="../../exportPdfHelper.js"></script>
+  <script src="../../staging_rates.js"></script>
   <script src="./icon-manifest.js"></script>
   <script src="./app.js"></script>
 </body>

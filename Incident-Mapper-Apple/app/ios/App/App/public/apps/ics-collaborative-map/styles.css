@@ -742,6 +742,12 @@ button.danger { background: rgba(178,58,72,0.14); color: #f4c9ce; border-color: 
   justify-content: flex-start;
   align-items: center;
 }
+.object-template.cost-template {
+  align-items: center;
+}
+.cost-template-copy {
+  min-width: 0;
+}
 .object-template-icon-wrap {
   width: 52px;
   height: 52px;
@@ -774,6 +780,27 @@ button.danger { background: rgba(178,58,72,0.14); color: #f4c9ce; border-color: 
   border-color: var(--accent);
   background: rgba(243,198,19,0.12);
 }
+.cost-summary-body {
+  display: grid;
+  gap: 10px;
+}
+.cost-summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.cost-summary-row.total {
+  border-color: rgba(243,198,19,0.24);
+  background: rgba(243,198,19,0.08);
+}
+.cost-summary-foot {
+  font-size: 12px;
+}
 
 .meta-list {
   display: grid;
@@ -795,6 +822,65 @@ button.danger { background: rgba(178,58,72,0.14); color: #f4c9ce; border-color: 
   text-align: right;
   max-width: 60%;
   font-size: 14px;
+}
+.cost-marker {
+  min-width: 96px;
+  max-width: 140px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(9,16,24,0.96);
+  color: var(--text);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+}
+.cost-marker.equipment {
+  border-color: rgba(13,110,253,0.35);
+}
+.cost-marker.consumable {
+  border-color: rgba(243,198,19,0.35);
+}
+.cost-marker-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #101418;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.cost-marker.equipment .cost-marker-badge {
+  background: #7cb2ff;
+}
+.cost-marker-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.cost-marker-body strong,
+.cost-marker-body span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cost-marker-body strong {
+  font-size: 11px;
+}
+.cost-marker-body span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.field-block textarea {
+  resize: vertical;
+  min-height: 88px;
 }
 
 .draw-controls {
