@@ -27,6 +27,7 @@
           <button id="endSessionBtn" class="danger hidden" type="button">End Session</button>
         </div>
         <div class="topbar-action-row topbar-action-row-secondary">
+          <button id="ics202WorkspaceBtn" class="secondary hidden" type="button">ICS 202</button>
           <button id="guidedModeBtn" class="secondary hidden" type="button">10-Minute IC Mode</button>
           <button id="afterActionModeBtn" class="secondary hidden" type="button">After-Action Mode</button>
           <button id="exportCostCsvBtn" class="secondary hidden" type="button">Export CSV</button>
@@ -379,6 +380,175 @@
         </aside>
       </section>
     </main>
+
+    <section id="ics202Workspace" class="ics202-workspace hidden" aria-hidden="true">
+      <div class="ics202-topbar">
+        <div class="ics202-topbar-copy">
+          <h2>ICS 202 - Incident Objectives</h2>
+          <p>Build a field-ready operational-period objectives form without leaving the collaborative map workspace.</p>
+        </div>
+        <div class="ics202-topbar-actions">
+          <button id="ics202BackBtn" class="secondary" type="button">Back to Map</button>
+          <button id="ics202SaveBtn" class="primary" type="button">Save</button>
+          <button id="ics202PrintBtn" class="secondary" type="button">Print</button>
+          <button id="ics202ExportPdfBtn" class="secondary" type="button">Export PDF</button>
+          <button id="ics202ClearBtn" class="danger" type="button">Clear Form</button>
+        </div>
+      </div>
+      <div class="ics202-body">
+        <div class="ics202-shell">
+          <div id="ics202ValidationBanner" class="ics202-banner hidden" aria-live="polite">
+            <strong id="ics202ValidationTitle">Review needed</strong>
+            <ul id="ics202ValidationList" class="ics202-warning-list"></ul>
+          </div>
+
+          <div class="ics202-grid">
+            <div class="ics202-main">
+              <section class="ics202-card">
+                <h3>Incident Info</h3>
+                <div class="ics202-field-grid">
+                  <label class="ics202-field">
+                    <span>Incident Name</span>
+                    <input id="ics202IncidentName" type="text" placeholder="Example: Rail Yard Tank Car Leak" />
+                  </label>
+                  <label class="ics202-field">
+                    <span>Incident Number</span>
+                    <input id="ics202IncidentNumber" type="text" placeholder="Optional incident or run number" />
+                  </label>
+                </div>
+              </section>
+
+              <section class="ics202-card">
+                <h3>Operational Period</h3>
+                <div class="ics202-field-grid">
+                  <label class="ics202-field">
+                    <span>Start Date</span>
+                    <input id="ics202OpStartDate" type="date" />
+                  </label>
+                  <label class="ics202-field">
+                    <span>Start Time</span>
+                    <input id="ics202OpStartTime" type="time" />
+                  </label>
+                  <label class="ics202-field">
+                    <span>End Date</span>
+                    <input id="ics202OpEndDate" type="date" />
+                  </label>
+                  <label class="ics202-field">
+                    <span>End Time</span>
+                    <input id="ics202OpEndTime" type="time" />
+                  </label>
+                </div>
+              </section>
+
+              <section class="ics202-card">
+                <h3>Incident Objectives</h3>
+                <p class="hint">Objectives are structured, ordered, and ready for print. Drag to reorder, or use the arrows when working quickly on a tablet.</p>
+                <div class="ics202-objective-toolbar">
+                  <button id="ics202AddObjectiveBtn" class="primary" type="button">Add Objective</button>
+                  <select id="ics202ObjectiveExampleSelect">
+                    <option value="">Select example objective</option>
+                  </select>
+                  <button id="ics202InsertObjectiveExampleBtn" class="secondary" type="button">Insert Example</button>
+                </div>
+                <div id="ics202ObjectivesList" class="ics202-objectives-list"></div>
+              </section>
+
+              <section class="ics202-card">
+                <h3>Command Emphasis</h3>
+                <label class="ics202-field">
+                  <span>Command Emphasis</span>
+                  <textarea id="ics202CommandEmphasis" placeholder="Key command priorities, tactical emphasis, and leadership focus for this operational period."></textarea>
+                </label>
+              </section>
+
+              <section class="ics202-card">
+                <h3>General Situational Awareness</h3>
+                <label class="ics202-field">
+                  <span>Situational Awareness</span>
+                  <textarea id="ics202SituationalAwareness" placeholder="Current conditions, weather, exposures, constraints, and other situational awareness notes."></textarea>
+                </label>
+              </section>
+
+              <section class="ics202-card">
+                <h3>Site Safety Plan</h3>
+                <div class="ics202-toggle-row">
+                  <label><input id="ics202SiteSafetyYes" name="ics202SiteSafetyPlan" type="radio" value="yes" /> Yes</label>
+                  <label><input id="ics202SiteSafetyNo" name="ics202SiteSafetyPlan" type="radio" value="no" checked /> No</label>
+                </div>
+                <label id="ics202SiteSafetyLocationField" class="ics202-field hidden">
+                  <span>Located At</span>
+                  <input id="ics202SiteSafetyLocation" type="text" placeholder="Where is the site safety plan located?" />
+                </label>
+              </section>
+            </div>
+
+            <div class="ics202-side">
+              <section class="ics202-card">
+                <h3>IAP Attachments</h3>
+                <div class="ics202-checklist">
+                  <label><input id="ics202Attachment203" type="checkbox" /> ICS 203</label>
+                  <label><input id="ics202Attachment204" type="checkbox" /> ICS 204</label>
+                  <label><input id="ics202Attachment205" type="checkbox" /> ICS 205</label>
+                  <label><input id="ics202Attachment205A" type="checkbox" /> ICS 205A</label>
+                  <label><input id="ics202Attachment206" type="checkbox" /> ICS 206</label>
+                  <label><input id="ics202Attachment207" type="checkbox" /> ICS 207</label>
+                  <label><input id="ics202Attachment208" type="checkbox" /> ICS 208</label>
+                  <label><input id="ics202AttachmentMapChart" type="checkbox" /> Map/Chart</label>
+                  <label><input id="ics202AttachmentWeather" type="checkbox" /> Weather Forecast</label>
+                  <label><input id="ics202AttachmentOtherEnabled" type="checkbox" /> Other</label>
+                  <label id="ics202AttachmentOtherField" class="ics202-field hidden">
+                    <span>Other Attachment</span>
+                    <input id="ics202AttachmentOtherText" type="text" placeholder="Describe additional attachment" />
+                  </label>
+                </div>
+              </section>
+
+              <section class="ics202-card">
+                <h3>Prepared By</h3>
+                <div class="ics202-field-grid single">
+                  <label class="ics202-field">
+                    <span>Name</span>
+                    <input id="ics202PreparedByName" type="text" placeholder="Prepared by" />
+                  </label>
+                  <label class="ics202-field">
+                    <span>Position / Title</span>
+                    <input id="ics202PreparedByPosition" type="text" placeholder="Planning Section Chief, IC, etc." />
+                  </label>
+                  <label class="ics202-field">
+                    <span>Date / Time</span>
+                    <input id="ics202PreparedByDateTime" type="datetime-local" />
+                  </label>
+                </div>
+              </section>
+
+              <section class="ics202-card">
+                <h3>Approved By IC</h3>
+                <div class="ics202-field-grid single">
+                  <label class="ics202-field">
+                    <span>Name</span>
+                    <input id="ics202ApprovedByName" type="text" placeholder="Incident Commander name" />
+                  </label>
+                  <label class="ics202-field">
+                    <span>Signature</span>
+                    <input id="ics202ApprovedBySignature" type="text" placeholder="Typed signature" />
+                  </label>
+                  <label class="ics202-field">
+                    <span>Date / Time</span>
+                    <input id="ics202ApprovedByDateTime" type="datetime-local" />
+                  </label>
+                </div>
+              </section>
+
+              <section class="ics202-card">
+                <h3>Form Summary</h3>
+                <div id="ics202Summary" class="ics202-summary-list"></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="ics202PrintRoot" class="ics202-print-root" aria-hidden="true"></div>
+    </section>
   </div>
 
   <div id="viewerQrModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="viewerQrTitle">
@@ -401,6 +571,7 @@
 
   <script src="./vendor/leaflet-1.9.4.js"></script>
   <script src="./config.js"></script>
+  <script src="../../vendor/html2canvas-1.4.1.min.js"></script>
   <script src="../../vendor/jspdf-2.5.1.umd.min.js"></script>
   <script src="../../vendor/jspdf-autotable-3.8.2.min.js"></script>
   <script src="../../exportPdfHelper.js"></script>

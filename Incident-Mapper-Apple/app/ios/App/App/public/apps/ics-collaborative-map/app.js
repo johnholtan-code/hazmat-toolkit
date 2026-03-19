@@ -8,7 +8,8 @@
   };
   const STORAGE_KEYS = {
     commanderAuth: "icsCollabCommanderAuth",
-    participantAuth: "icsCollabParticipantAuth"
+    participantAuth: "icsCollabParticipantAuth",
+    ics202Draft: "icsCollabIcs202Draft_v1"
   };
   const POLL_INTERVAL_MS = 4000;
   const UPDATE_FLUSH_MS = 10000;
@@ -75,6 +76,13 @@
   const ICON_CATEGORY_GROUP_OVERRIDES = {
     hazard: "HazMat"
   };
+  const ICS202_OBJECTIVE_EXAMPLES = [
+    "Ensure life safety by evacuating the affected area within 30 minutes.",
+    "Establish hot, warm, and cold zones and restrict access to essential personnel only.",
+    "Initiate continuous air monitoring in downwind areas and report readings every 15 minutes.",
+    "Protect exposures and maintain access/egress routes for mutual-aid resources.",
+    "Complete responder accountability and confirm rehab/safety coverage for the operational period."
+  ];
 
   const ICON_MARKER_TEMPLATE = {
     objectType: ICON_MARKER_OBJECT_TYPE,
@@ -171,6 +179,7 @@
     afterActionModeBtn: document.getElementById("afterActionModeBtn"),
     exportCostCsvBtn: document.getElementById("exportCostCsvBtn"),
     exportCostPdfBtn: document.getElementById("exportCostPdfBtn"),
+    ics202WorkspaceBtn: document.getElementById("ics202WorkspaceBtn"),
     setIncidentFocusBtn: document.getElementById("setIncidentFocusBtn"),
     centerIncidentBtn: document.getElementById("centerIncidentBtn"),
     closeScenarioReviewBtn: document.getElementById("closeScenarioReviewBtn"),
@@ -248,7 +257,52 @@
     closeViewerQrBtn: document.getElementById("closeViewerQrBtn"),
     viewerQrImage: document.getElementById("viewerQrImage"),
     viewerQrLink: document.getElementById("viewerQrLink"),
-    copyViewerLinkBtn: document.getElementById("copyViewerLinkBtn")
+    copyViewerLinkBtn: document.getElementById("copyViewerLinkBtn"),
+    ics202Workspace: document.getElementById("ics202Workspace"),
+    ics202BackBtn: document.getElementById("ics202BackBtn"),
+    ics202SaveBtn: document.getElementById("ics202SaveBtn"),
+    ics202PrintBtn: document.getElementById("ics202PrintBtn"),
+    ics202ExportPdfBtn: document.getElementById("ics202ExportPdfBtn"),
+    ics202ClearBtn: document.getElementById("ics202ClearBtn"),
+    ics202ValidationBanner: document.getElementById("ics202ValidationBanner"),
+    ics202ValidationTitle: document.getElementById("ics202ValidationTitle"),
+    ics202ValidationList: document.getElementById("ics202ValidationList"),
+    ics202IncidentName: document.getElementById("ics202IncidentName"),
+    ics202IncidentNumber: document.getElementById("ics202IncidentNumber"),
+    ics202OpStartDate: document.getElementById("ics202OpStartDate"),
+    ics202OpStartTime: document.getElementById("ics202OpStartTime"),
+    ics202OpEndDate: document.getElementById("ics202OpEndDate"),
+    ics202OpEndTime: document.getElementById("ics202OpEndTime"),
+    ics202AddObjectiveBtn: document.getElementById("ics202AddObjectiveBtn"),
+    ics202ObjectiveExampleSelect: document.getElementById("ics202ObjectiveExampleSelect"),
+    ics202InsertObjectiveExampleBtn: document.getElementById("ics202InsertObjectiveExampleBtn"),
+    ics202ObjectivesList: document.getElementById("ics202ObjectivesList"),
+    ics202CommandEmphasis: document.getElementById("ics202CommandEmphasis"),
+    ics202SituationalAwareness: document.getElementById("ics202SituationalAwareness"),
+    ics202SiteSafetyYes: document.getElementById("ics202SiteSafetyYes"),
+    ics202SiteSafetyNo: document.getElementById("ics202SiteSafetyNo"),
+    ics202SiteSafetyLocationField: document.getElementById("ics202SiteSafetyLocationField"),
+    ics202SiteSafetyLocation: document.getElementById("ics202SiteSafetyLocation"),
+    ics202Attachment203: document.getElementById("ics202Attachment203"),
+    ics202Attachment204: document.getElementById("ics202Attachment204"),
+    ics202Attachment205: document.getElementById("ics202Attachment205"),
+    ics202Attachment205A: document.getElementById("ics202Attachment205A"),
+    ics202Attachment206: document.getElementById("ics202Attachment206"),
+    ics202Attachment207: document.getElementById("ics202Attachment207"),
+    ics202Attachment208: document.getElementById("ics202Attachment208"),
+    ics202AttachmentMapChart: document.getElementById("ics202AttachmentMapChart"),
+    ics202AttachmentWeather: document.getElementById("ics202AttachmentWeather"),
+    ics202AttachmentOtherEnabled: document.getElementById("ics202AttachmentOtherEnabled"),
+    ics202AttachmentOtherField: document.getElementById("ics202AttachmentOtherField"),
+    ics202AttachmentOtherText: document.getElementById("ics202AttachmentOtherText"),
+    ics202PreparedByName: document.getElementById("ics202PreparedByName"),
+    ics202PreparedByPosition: document.getElementById("ics202PreparedByPosition"),
+    ics202PreparedByDateTime: document.getElementById("ics202PreparedByDateTime"),
+    ics202ApprovedByName: document.getElementById("ics202ApprovedByName"),
+    ics202ApprovedBySignature: document.getElementById("ics202ApprovedBySignature"),
+    ics202ApprovedByDateTime: document.getElementById("ics202ApprovedByDateTime"),
+    ics202Summary: document.getElementById("ics202Summary"),
+    ics202PrintRoot: document.getElementById("ics202PrintRoot")
   };
 
   const state = {
@@ -307,11 +361,15 @@
     playbackIndex: 0,
     playbackTimer: null,
     playbackSpeedMs: 900,
-    playbackSavedSnapshot: null
+    playbackSavedSnapshot: null,
+    ics202Open: false,
+    ics202Draft: null,
+    ics202ObjectiveDragIndex: -1
   };
 
   async function init() {
     await loadIconManifest();
+    ensureIcs202Draft();
     if (elements.initialIncidentCommanderRoleInput) {
       elements.initialIncidentCommanderRoleInput.value = "Incident Commander";
     }
@@ -457,6 +515,7 @@
     state.playbackIndex = 0;
     state.playbackMode = false;
     state.playbackSavedSnapshot = null;
+    state.ics202Open = false;
     cancelGeometryPreviewOnly();
     syncMapObjects();
     elements.landingView.classList.add("hidden");
@@ -533,6 +592,7 @@
 
   function closeScenarioReview() {
     if (!isScenarioReviewMode()) return;
+    state.ics202Open = false;
     exitActiveWorkspace();
     renderAll();
     setStatus("Scenario review closed.");
@@ -569,6 +629,7 @@
     elements.afterActionModeBtn.addEventListener("click", onAfterActionModeAction);
     elements.exportCostCsvBtn.addEventListener("click", exportCostCsv);
     elements.exportCostPdfBtn.addEventListener("click", exportCostPdf);
+    elements.ics202WorkspaceBtn.addEventListener("click", openIcs202Workspace);
     elements.setIncidentFocusBtn.addEventListener("click", onSetIncidentFocusAction);
     elements.centerIncidentBtn.addEventListener("click", onCenterIncidentAction);
     elements.closeScenarioReviewBtn.addEventListener("click", closeScenarioReview);
@@ -619,6 +680,7 @@
     elements.playbackScrubber.addEventListener("input", (event) => {
       renderPlaybackFrame(Number(event.target.value || 0));
     });
+    bindIcs202Events();
     window.addEventListener("resize", scheduleMapResizeRefresh);
   }
 
@@ -1003,6 +1065,7 @@
     state.selectedTemplateType = null;
     state.drawState = null;
     state.qrPayload = state.qrPayload || JSON.stringify({ type: "ics_collab_join", joinCode: session.joinCode });
+    state.ics202Open = false;
     elements.landingView.classList.add("hidden");
     elements.appView.classList.remove("hidden");
     elements.shell.classList.toggle("viewer-mode", state.viewerMode);
@@ -1162,6 +1225,7 @@
     elements.activeSessionGalleryPanel.classList.add("hidden");
     elements.commanderSignOutBtn.classList.add("hidden");
     elements.sessionSignOutBtn.classList.add("hidden");
+    state.ics202Open = false;
     if (!state.participantAuth) {
       exitActiveWorkspace();
     }
@@ -1202,6 +1266,7 @@
     state.weatherError = "";
     state.weatherTargetSignature = "";
     state.weatherFetchNonce = 0;
+    state.ics202Open = false;
     resetPlaybackHistoryForSession(null);
     cancelGeometryPreviewOnly();
     syncMapObjects();
@@ -1361,6 +1426,7 @@
     renderPanelCollapses();
     renderModePanelCollapses();
     renderRightSidebarState();
+    renderIcs202Workspace();
   }
 
   function renderGuidedControls() {
@@ -1497,6 +1563,7 @@
     elements.sessionSignOutBtn.classList.toggle("hidden", !signedIn || (!state.activeSession && !isScenarioReviewMode()));
     elements.closeScenarioReviewBtn.classList.toggle("hidden", !isScenarioReviewMode());
     elements.leaveSessionBtn.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode());
+    elements.ics202WorkspaceBtn.classList.toggle("hidden", (!(state.activeSession || isScenarioReviewMode()) || state.viewerMode));
     elements.setIncidentFocusBtn.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode() || !isCommander() || Boolean(getIncidentFocusPoint()));
     elements.centerIncidentBtn.classList.toggle("hidden", !(state.activeSession || isScenarioReviewMode()));
     elements.showViewerQrBtn.classList.toggle("hidden", !isCommander() || !state.activeSession || state.viewerMode || isScenarioReviewMode());
@@ -2551,6 +2618,674 @@
     } catch (error) {
       setStatus(formatError(error));
     }
+  }
+
+  function createEmptyIcs202Draft() {
+    return {
+      incidentName: "",
+      incidentNumber: "",
+      operationalPeriod: {
+        start: "",
+        end: ""
+      },
+      objectives: [""],
+      commandEmphasis: "",
+      situationalAwareness: "",
+      siteSafetyPlanRequired: false,
+      siteSafetyPlanLocation: "",
+      attachments: {
+        ics203: false,
+        ics204: false,
+        ics205: false,
+        ics205A: false,
+        ics206: false,
+        ics207: false,
+        ics208: false,
+        mapChart: false,
+        weather: false,
+        other: ""
+      },
+      preparedBy: {
+        name: "",
+        position: "",
+        datetime: new Date().toISOString()
+      },
+      approvedBy: {
+        name: "",
+        signature: "",
+        datetime: ""
+      }
+    };
+  }
+
+  function sanitizeIcs202Draft(value) {
+    const base = createEmptyIcs202Draft();
+    if (!value || typeof value !== "object") return base;
+    const draft = deepClone(base);
+    draft.incidentName = String(value.incidentName || "").trim();
+    draft.incidentNumber = String(value.incidentNumber || "").trim();
+    draft.operationalPeriod.start = String(value.operationalPeriod?.start || "");
+    draft.operationalPeriod.end = String(value.operationalPeriod?.end || "");
+    draft.objectives = Array.isArray(value.objectives) && value.objectives.length
+      ? value.objectives.map((entry) => String(entry || ""))
+      : [""];
+    draft.commandEmphasis = String(value.commandEmphasis || "");
+    draft.situationalAwareness = String(value.situationalAwareness || "");
+    draft.siteSafetyPlanRequired = Boolean(value.siteSafetyPlanRequired);
+    draft.siteSafetyPlanLocation = String(value.siteSafetyPlanLocation || "");
+    Object.keys(draft.attachments).forEach((key) => {
+      if (key === "other") {
+        draft.attachments.other = String(value.attachments?.other || "");
+      } else {
+        draft.attachments[key] = Boolean(value.attachments?.[key]);
+      }
+    });
+    draft.preparedBy = {
+      name: String(value.preparedBy?.name || ""),
+      position: String(value.preparedBy?.position || ""),
+      datetime: String(value.preparedBy?.datetime || draft.preparedBy.datetime)
+    };
+    draft.approvedBy = {
+      name: String(value.approvedBy?.name || ""),
+      signature: String(value.approvedBy?.signature || ""),
+      datetime: String(value.approvedBy?.datetime || "")
+    };
+    return draft;
+  }
+
+  function ensureIcs202Draft() {
+    if (state.ics202Draft) return state.ics202Draft;
+    const stored = loadStoredJSON(STORAGE_KEYS.ics202Draft);
+    state.ics202Draft = sanitizeIcs202Draft(stored);
+    prefillIcs202DraftFromWorkspace();
+    return state.ics202Draft;
+  }
+
+  function saveIcs202Draft() {
+    ensureIcs202Draft();
+    persistJSON(STORAGE_KEYS.ics202Draft, state.ics202Draft);
+  }
+
+  function prefillIcs202DraftFromWorkspace() {
+    const draft = state.ics202Draft;
+    const session = getWorkspaceSession();
+    if (!draft || !session) return;
+    if (!draft.incidentName) {
+      draft.incidentName = String(session.incidentName || "");
+    }
+    if (!draft.operationalPeriod.start && session.operationalPeriodStart) {
+      draft.operationalPeriod.start = session.operationalPeriodStart;
+    }
+    if (!draft.operationalPeriod.end && session.operationalPeriodEnd) {
+      draft.operationalPeriod.end = session.operationalPeriodEnd;
+    }
+    if (!draft.preparedBy.name && state.commanderAuth?.displayName) {
+      draft.preparedBy.name = state.commanderAuth.displayName;
+    }
+    if (!draft.preparedBy.position) {
+      draft.preparedBy.position = session.commanderICSRole || "Incident Commander";
+    }
+  }
+
+  function formatIcs202DateInput(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const offset = date.getTimezoneOffset();
+    const local = new Date(date.getTime() - offset * 60000);
+    return local.toISOString().slice(0, 10);
+  }
+
+  function formatIcs202TimeInput(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const offset = date.getTimezoneOffset();
+    const local = new Date(date.getTime() - offset * 60000);
+    return local.toISOString().slice(11, 16);
+  }
+
+  function combineIcs202DateTime(dateValue, timeValue) {
+    if (!dateValue || !timeValue) return "";
+    return inputValueToISOString(`${dateValue}T${timeValue}`) || "";
+  }
+
+  function formatIcs202DateTime(value) {
+    if (!value) return "Not provided";
+    return formatDateTime(value);
+  }
+
+  function formatIcs202Multiline(value, fallback = "Not provided") {
+    const text = String(value || "").trim();
+    return text ? escapeHtml(text).replace(/\n/g, "<br />") : escapeHtml(fallback);
+  }
+
+  function getIcs202AttachmentLabels() {
+    const draft = ensureIcs202Draft();
+    const labels = [];
+    if (draft.attachments.ics203) labels.push("ICS 203");
+    if (draft.attachments.ics204) labels.push("ICS 204");
+    if (draft.attachments.ics205) labels.push("ICS 205");
+    if (draft.attachments.ics205A) labels.push("ICS 205A");
+    if (draft.attachments.ics206) labels.push("ICS 206");
+    if (draft.attachments.ics207) labels.push("ICS 207");
+    if (draft.attachments.ics208) labels.push("ICS 208");
+    if (draft.attachments.mapChart) labels.push("Map/Chart");
+    if (draft.attachments.weather) labels.push("Weather Forecast");
+    if (draft.attachments.other.trim()) labels.push(draft.attachments.other.trim());
+    return labels;
+  }
+
+  function validateIcs202({ forFinalize = false } = {}) {
+    const draft = ensureIcs202Draft();
+    const errors = [];
+    const warnings = [];
+    if (!draft.incidentName.trim()) errors.push("Incident Name is required.");
+    if (!draft.objectives.some((objective) => String(objective || "").trim())) errors.push("At least one incident objective is required.");
+    if (!draft.operationalPeriod.start || !draft.operationalPeriod.end) {
+      errors.push("Operational period start and end are required.");
+    } else if (new Date(draft.operationalPeriod.end).getTime() <= new Date(draft.operationalPeriod.start).getTime()) {
+      errors.push("Operational period end must be after the start.");
+    }
+    if (!draft.preparedBy.name.trim()) errors.push("Prepared By name is required.");
+    if (!draft.preparedBy.position.trim()) errors.push("Prepared By position/title is required.");
+    if (draft.siteSafetyPlanRequired && !draft.siteSafetyPlanLocation.trim()) {
+      errors.push("Site Safety Plan location is required when the plan is marked Yes.");
+    }
+    if (forFinalize && !draft.approvedBy.name.trim()) {
+      errors.push("Approved By IC name is required before printing or exporting.");
+    }
+    if (!draft.commandEmphasis.trim()) warnings.push("Command Emphasis is still blank.");
+    if (!draft.situationalAwareness.trim()) warnings.push("General Situational Awareness is still blank.");
+    return { errors, warnings };
+  }
+
+  function updateIcs202ValidationBanner() {
+    const { errors, warnings } = validateIcs202({ forFinalize: false });
+    const items = [...errors, ...warnings];
+    elements.ics202ValidationBanner.classList.toggle("hidden", items.length === 0);
+    if (!items.length) return;
+    elements.ics202ValidationTitle.textContent = errors.length ? "Review needed before final output" : "Optional fields to consider";
+    elements.ics202ValidationList.innerHTML = items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+  }
+
+  function updateIcs202AttachmentsState() {
+    const draft = ensureIcs202Draft();
+    draft.attachments = {
+      ics203: Boolean(elements.ics202Attachment203.checked),
+      ics204: Boolean(elements.ics202Attachment204.checked),
+      ics205: Boolean(elements.ics202Attachment205.checked),
+      ics205A: Boolean(elements.ics202Attachment205A.checked),
+      ics206: Boolean(elements.ics202Attachment206.checked),
+      ics207: Boolean(elements.ics202Attachment207.checked),
+      ics208: Boolean(elements.ics202Attachment208.checked),
+      mapChart: Boolean(elements.ics202AttachmentMapChart.checked),
+      weather: Boolean(elements.ics202AttachmentWeather.checked),
+      other: elements.ics202AttachmentOtherEnabled.checked ? String(elements.ics202AttachmentOtherText.value || "").trim() : ""
+    };
+    elements.ics202AttachmentOtherField.classList.toggle("hidden", !elements.ics202AttachmentOtherEnabled.checked);
+    renderIcs202Summary();
+    updateIcs202ValidationBanner();
+  }
+
+  function syncIcs202OperationalState() {
+    const draft = ensureIcs202Draft();
+    draft.operationalPeriod.start = combineIcs202DateTime(elements.ics202OpStartDate.value, elements.ics202OpStartTime.value);
+    draft.operationalPeriod.end = combineIcs202DateTime(elements.ics202OpEndDate.value, elements.ics202OpEndTime.value);
+    renderIcs202Summary();
+    updateIcs202ValidationBanner();
+  }
+
+  function renderIcs202Objectives() {
+    const draft = ensureIcs202Draft();
+    elements.ics202ObjectivesList.innerHTML = "";
+    draft.objectives.forEach((objective, index) => {
+      const item = document.createElement("div");
+      item.className = "ics202-objective-item";
+      item.draggable = true;
+      item.dataset.index = String(index);
+      item.innerHTML = `
+        <div class="ics202-objective-index">${index + 1}</div>
+        <label class="ics202-field">
+          <span>Objective ${index + 1}</span>
+          <textarea placeholder="Describe the objective for this operational period.">${escapeHtml(objective)}</textarea>
+        </label>
+        <div class="ics202-objective-actions">
+          <button class="secondary" type="button" data-action="up" aria-label="Move objective up">↑</button>
+          <button class="secondary" type="button" data-action="down" aria-label="Move objective down">↓</button>
+          <button class="danger" type="button" data-action="remove" aria-label="Remove objective">×</button>
+        </div>
+      `;
+      const textarea = item.querySelector("textarea");
+      textarea.addEventListener("input", (event) => {
+        draft.objectives[index] = event.target.value;
+        renderIcs202Summary();
+        updateIcs202ValidationBanner();
+      });
+      item.querySelectorAll("button[data-action]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const action = button.dataset.action;
+          if (action === "remove") {
+            removeIcs202Objective(index);
+          } else if (action === "up") {
+            moveIcs202Objective(index, -1);
+          } else if (action === "down") {
+            moveIcs202Objective(index, 1);
+          }
+        });
+      });
+      item.addEventListener("dragstart", () => {
+        state.ics202ObjectiveDragIndex = index;
+        item.classList.add("dragging");
+      });
+      item.addEventListener("dragend", () => {
+        state.ics202ObjectiveDragIndex = -1;
+        item.classList.remove("dragging");
+        elements.ics202ObjectivesList.querySelectorAll(".drag-over").forEach((node) => node.classList.remove("drag-over"));
+      });
+      item.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        item.classList.add("drag-over");
+      });
+      item.addEventListener("dragleave", () => {
+        item.classList.remove("drag-over");
+      });
+      item.addEventListener("drop", (event) => {
+        event.preventDefault();
+        item.classList.remove("drag-over");
+        reorderIcs202Objective(state.ics202ObjectiveDragIndex, index);
+      });
+      elements.ics202ObjectivesList.appendChild(item);
+    });
+  }
+
+  function reorderIcs202Objective(fromIndex, toIndex) {
+    const draft = ensureIcs202Draft();
+    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex || fromIndex >= draft.objectives.length || toIndex >= draft.objectives.length) return;
+    const [moved] = draft.objectives.splice(fromIndex, 1);
+    draft.objectives.splice(toIndex, 0, moved);
+    renderIcs202Objectives();
+    renderIcs202Summary();
+  }
+
+  function moveIcs202Objective(index, delta) {
+    reorderIcs202Objective(index, index + delta);
+  }
+
+  function removeIcs202Objective(index) {
+    const draft = ensureIcs202Draft();
+    if (draft.objectives.length === 1) {
+      draft.objectives[0] = "";
+    } else {
+      draft.objectives.splice(index, 1);
+    }
+    renderIcs202Objectives();
+    renderIcs202Summary();
+    updateIcs202ValidationBanner();
+  }
+
+  function addIcs202Objective(text = "") {
+    const draft = ensureIcs202Draft();
+    if (draft.objectives.length === 1 && !String(draft.objectives[0] || "").trim()) {
+      draft.objectives[0] = text;
+    } else {
+      draft.objectives.push(text);
+    }
+    renderIcs202Objectives();
+    renderIcs202Summary();
+    updateIcs202ValidationBanner();
+  }
+
+  function insertIcs202ObjectiveExample() {
+    const value = String(elements.ics202ObjectiveExampleSelect.value || "");
+    if (!value) {
+      setStatus("Choose an example objective first.");
+      return;
+    }
+    addIcs202Objective(value);
+    elements.ics202ObjectiveExampleSelect.value = "";
+    setStatus("Objective example inserted.");
+  }
+
+  function renderIcs202Summary() {
+    const draft = ensureIcs202Draft();
+    const rows = [
+      { label: "Objectives", value: String(draft.objectives.filter((entry) => String(entry || "").trim()).length) },
+      { label: "Operational Period", value: draft.operationalPeriod.start && draft.operationalPeriod.end ? `${formatDateTime(draft.operationalPeriod.start)} to ${formatDateTime(draft.operationalPeriod.end)}` : "Not set" },
+      { label: "Site Safety Plan", value: draft.siteSafetyPlanRequired ? (draft.siteSafetyPlanLocation.trim() || "Required") : "Not required" },
+      { label: "Attachments", value: getIcs202AttachmentLabels().length ? getIcs202AttachmentLabels().join(", ") : "None selected" },
+      { label: "Prepared By", value: draft.preparedBy.name.trim() || "Not provided" },
+      { label: "Approved By", value: draft.approvedBy.name.trim() || "Pending" }
+    ];
+    elements.ics202Summary.innerHTML = rows.map((row) => `
+      <div class="ics202-summary-row">
+        <span class="label">${escapeHtml(row.label)}</span>
+        <span class="value">${escapeHtml(row.value)}</span>
+      </div>
+    `).join("");
+  }
+
+  function buildIcs202PrintMarkup() {
+    const draft = ensureIcs202Draft();
+    const attachmentLabels = getIcs202AttachmentLabels();
+    const objectives = draft.objectives.filter((entry) => String(entry || "").trim());
+    return `
+      <div class="ics202-print-sheet">
+        <div class="ics202-print-header">
+          <div class="ics202-print-header-badge">ICS 202</div>
+          <div class="ics202-print-header-copy">
+            <h1>Incident Objectives</h1>
+            <p>Operational-period objectives prepared from the ICS Collaborative Map workspace.</p>
+          </div>
+        </div>
+        <div class="ics202-print-two-col">
+          <div class="ics202-print-cell">
+            <div class="ics202-print-section-title">Incident Info</div>
+            <div class="ics202-print-section-body ics202-print-meta">
+              <div><strong>Incident Name:</strong> ${escapeHtml(draft.incidentName || "Not provided")}</div>
+              <div><strong>Incident Number:</strong> ${escapeHtml(draft.incidentNumber || "Not provided")}</div>
+            </div>
+          </div>
+          <div class="ics202-print-cell">
+            <div class="ics202-print-section-title">Operational Period</div>
+            <div class="ics202-print-section-body ics202-print-meta">
+              <div><strong>Start:</strong> ${escapeHtml(formatIcs202DateTime(draft.operationalPeriod.start))}</div>
+              <div><strong>End:</strong> ${escapeHtml(formatIcs202DateTime(draft.operationalPeriod.end))}</div>
+            </div>
+          </div>
+        </div>
+        <div class="ics202-print-section">
+          <div class="ics202-print-section-title">Incident Objectives</div>
+          <div class="ics202-print-section-body">
+            <ol class="ics202-print-objectives">${objectives.map((objective) => `<li>${formatIcs202Multiline(objective, "")}</li>`).join("") || "<li>No objectives entered.</li>"}</ol>
+          </div>
+        </div>
+        <div class="ics202-print-section">
+          <div class="ics202-print-section-title">Command Emphasis</div>
+          <div class="ics202-print-section-body">${formatIcs202Multiline(draft.commandEmphasis)}</div>
+        </div>
+        <div class="ics202-print-section">
+          <div class="ics202-print-section-title">General Situational Awareness</div>
+          <div class="ics202-print-section-body">${formatIcs202Multiline(draft.situationalAwareness)}</div>
+        </div>
+        <div class="ics202-print-two-col">
+          <div class="ics202-print-cell">
+            <div class="ics202-print-section-title">Site Safety Plan</div>
+            <div class="ics202-print-section-body">${draft.siteSafetyPlanRequired ? escapeHtml(draft.siteSafetyPlanLocation || "Required but not entered") : "No"}</div>
+          </div>
+          <div class="ics202-print-cell">
+            <div class="ics202-print-section-title">IAP Attachments</div>
+            <div class="ics202-print-section-body">${escapeHtml(attachmentLabels.length ? attachmentLabels.join(", ") : "None selected")}</div>
+          </div>
+        </div>
+        <div class="ics202-print-section">
+          <div class="ics202-print-section-title">Prepared By / Approved By IC</div>
+          <div class="ics202-print-section-body ics202-print-signatures">
+            <div>
+              <strong>Prepared By</strong>
+              <div>Name: ${escapeHtml(draft.preparedBy.name || "Not provided")}</div>
+              <div>Position/Title: ${escapeHtml(draft.preparedBy.position || "Not provided")}</div>
+              <div>Date/Time: ${escapeHtml(formatIcs202DateTime(draft.preparedBy.datetime))}</div>
+            </div>
+            <div>
+              <strong>Approved By IC</strong>
+              <div>Name: ${escapeHtml(draft.approvedBy.name || "Not provided")}</div>
+              <div class="ics202-print-signature-line">${escapeHtml(draft.approvedBy.signature || "")}</div>
+              <div>Date/Time: ${escapeHtml(formatIcs202DateTime(draft.approvedBy.datetime))}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderIcs202PrintView() {
+    elements.ics202PrintRoot.innerHTML = buildIcs202PrintMarkup();
+  }
+
+  function renderIcs202Workspace() {
+    const visible = Boolean(state.ics202Open && (state.activeSession || isScenarioReviewMode()) && !state.viewerMode);
+    elements.ics202Workspace.classList.toggle("hidden", !visible);
+    elements.ics202Workspace.setAttribute("aria-hidden", String(!visible));
+    if (!visible) return;
+    const draft = ensureIcs202Draft();
+    prefillIcs202DraftFromWorkspace();
+    elements.ics202IncidentName.value = draft.incidentName;
+    elements.ics202IncidentNumber.value = draft.incidentNumber;
+    elements.ics202OpStartDate.value = formatIcs202DateInput(draft.operationalPeriod.start);
+    elements.ics202OpStartTime.value = formatIcs202TimeInput(draft.operationalPeriod.start);
+    elements.ics202OpEndDate.value = formatIcs202DateInput(draft.operationalPeriod.end);
+    elements.ics202OpEndTime.value = formatIcs202TimeInput(draft.operationalPeriod.end);
+    elements.ics202CommandEmphasis.value = draft.commandEmphasis;
+    elements.ics202SituationalAwareness.value = draft.situationalAwareness;
+    elements.ics202SiteSafetyYes.checked = Boolean(draft.siteSafetyPlanRequired);
+    elements.ics202SiteSafetyNo.checked = !draft.siteSafetyPlanRequired;
+    elements.ics202SiteSafetyLocationField.classList.toggle("hidden", !draft.siteSafetyPlanRequired);
+    elements.ics202SiteSafetyLocation.value = draft.siteSafetyPlanLocation;
+    elements.ics202Attachment203.checked = Boolean(draft.attachments.ics203);
+    elements.ics202Attachment204.checked = Boolean(draft.attachments.ics204);
+    elements.ics202Attachment205.checked = Boolean(draft.attachments.ics205);
+    elements.ics202Attachment205A.checked = Boolean(draft.attachments.ics205A);
+    elements.ics202Attachment206.checked = Boolean(draft.attachments.ics206);
+    elements.ics202Attachment207.checked = Boolean(draft.attachments.ics207);
+    elements.ics202Attachment208.checked = Boolean(draft.attachments.ics208);
+    elements.ics202AttachmentMapChart.checked = Boolean(draft.attachments.mapChart);
+    elements.ics202AttachmentWeather.checked = Boolean(draft.attachments.weather);
+    elements.ics202AttachmentOtherEnabled.checked = Boolean(draft.attachments.other.trim());
+    elements.ics202AttachmentOtherField.classList.toggle("hidden", !elements.ics202AttachmentOtherEnabled.checked);
+    elements.ics202AttachmentOtherText.value = draft.attachments.other;
+    elements.ics202PreparedByName.value = draft.preparedBy.name;
+    elements.ics202PreparedByPosition.value = draft.preparedBy.position;
+    elements.ics202PreparedByDateTime.value = isoToInputValue(draft.preparedBy.datetime);
+    elements.ics202ApprovedByName.value = draft.approvedBy.name;
+    elements.ics202ApprovedBySignature.value = draft.approvedBy.signature;
+    elements.ics202ApprovedByDateTime.value = draft.approvedBy.datetime ? isoToInputValue(draft.approvedBy.datetime) : "";
+    if (elements.ics202ObjectiveExampleSelect.options.length <= 1) {
+      ICS202_OBJECTIVE_EXAMPLES.forEach((example) => {
+        const option = document.createElement("option");
+        option.value = example;
+        option.textContent = example;
+        elements.ics202ObjectiveExampleSelect.appendChild(option);
+      });
+    }
+    renderIcs202Objectives();
+    renderIcs202Summary();
+    updateIcs202ValidationBanner();
+    renderIcs202PrintView();
+  }
+
+  function openIcs202Workspace() {
+    if (!(state.activeSession || isScenarioReviewMode()) || state.viewerMode) return;
+    ensureIcs202Draft();
+    prefillIcs202DraftFromWorkspace();
+    state.ics202Open = true;
+    renderIcs202Workspace();
+    setStatus("ICS 202 workspace opened.");
+  }
+
+  function closeIcs202Workspace() {
+    state.ics202Open = false;
+    renderAll();
+    setStatus("Returned to map workspace.");
+  }
+
+  function printIcs202Workspace() {
+    const validation = validateIcs202({ forFinalize: true });
+    if (validation.errors.length) {
+      updateIcs202ValidationBanner();
+      setStatus(validation.errors[0]);
+      return;
+    }
+    renderIcs202PrintView();
+    document.body.classList.add("print-ics202");
+    window.print();
+    window.setTimeout(() => document.body.classList.remove("print-ics202"), 250);
+    setStatus("Printing ICS 202.");
+  }
+
+  async function exportIcs202Pdf() {
+    const validation = validateIcs202({ forFinalize: true });
+    if (validation.errors.length) {
+      updateIcs202ValidationBanner();
+      setStatus(validation.errors[0]);
+      return;
+    }
+    if (typeof window.html2canvas !== "function") {
+      setStatus("PDF export library unavailable.");
+      return;
+    }
+    const jspdfNs = window.jspdf;
+    if (!jspdfNs?.jsPDF) {
+      setStatus("PDF export library unavailable.");
+      return;
+    }
+    renderIcs202PrintView();
+    const canvas = await window.html2canvas(elements.ics202PrintRoot, {
+      backgroundColor: "#ffffff",
+      scale: 2,
+      useCORS: true
+    });
+    const { jsPDF } = jspdfNs;
+    const pdf = new jsPDF({ unit: "pt", format: "letter" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
+    const availableWidth = pageWidth - margin * 2;
+    const availableHeight = pageHeight - margin * 2;
+    const imageWidth = canvas.width;
+    const imageHeight = canvas.height;
+    const scale = Math.min(availableWidth / imageWidth, availableHeight / imageHeight);
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, margin, imageWidth * scale, imageHeight * scale);
+    const incidentSlug = String(ensureIcs202Draft().incidentName || "ics-202")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "ics-202";
+    const filename = `${incidentSlug}-${Date.now()}-ics202.pdf`;
+    const blob = pdf.output("blob");
+    if (window.exportPdfHelper?.saveAndSharePdfBlob) {
+      try {
+        await window.exportPdfHelper.saveAndSharePdfBlob(blob, filename);
+        setStatus(`ICS 202 PDF shared: ${filename}`);
+        return;
+      } catch (_error) {
+        // Fall back to browser download.
+      }
+    }
+    await downloadBlob(blob, filename);
+    setStatus(`ICS 202 PDF exported: ${filename}`);
+  }
+
+  function clearIcs202Form() {
+    if (!window.confirm("Clear the ICS 202 form?")) return;
+    state.ics202Draft = createEmptyIcs202Draft();
+    prefillIcs202DraftFromWorkspace();
+    saveIcs202Draft();
+    renderIcs202Workspace();
+    setStatus("ICS 202 form cleared.");
+  }
+
+  function bindIcs202Events() {
+    if (!elements.ics202Workspace) return;
+    elements.ics202IncidentName.addEventListener("input", (event) => {
+      ensureIcs202Draft().incidentName = event.target.value;
+      renderIcs202Summary();
+      updateIcs202ValidationBanner();
+    });
+    elements.ics202IncidentNumber.addEventListener("input", (event) => {
+      ensureIcs202Draft().incidentNumber = event.target.value;
+    });
+    [elements.ics202OpStartDate, elements.ics202OpStartTime, elements.ics202OpEndDate, elements.ics202OpEndTime].forEach((input) => {
+      input.addEventListener("change", syncIcs202OperationalState);
+    });
+    elements.ics202CommandEmphasis.addEventListener("input", (event) => {
+      ensureIcs202Draft().commandEmphasis = event.target.value;
+      updateIcs202ValidationBanner();
+    });
+    elements.ics202SituationalAwareness.addEventListener("input", (event) => {
+      ensureIcs202Draft().situationalAwareness = event.target.value;
+      updateIcs202ValidationBanner();
+    });
+    [elements.ics202SiteSafetyYes, elements.ics202SiteSafetyNo].forEach((input) => {
+      input.addEventListener("change", () => {
+        const draft = ensureIcs202Draft();
+        draft.siteSafetyPlanRequired = elements.ics202SiteSafetyYes.checked;
+        if (!draft.siteSafetyPlanRequired) draft.siteSafetyPlanLocation = "";
+        renderIcs202Workspace();
+      });
+    });
+    elements.ics202SiteSafetyLocation.addEventListener("input", (event) => {
+      ensureIcs202Draft().siteSafetyPlanLocation = event.target.value;
+      renderIcs202Summary();
+      updateIcs202ValidationBanner();
+    });
+    [
+      elements.ics202Attachment203,
+      elements.ics202Attachment204,
+      elements.ics202Attachment205,
+      elements.ics202Attachment205A,
+      elements.ics202Attachment206,
+      elements.ics202Attachment207,
+      elements.ics202Attachment208,
+      elements.ics202AttachmentMapChart,
+      elements.ics202AttachmentWeather,
+      elements.ics202AttachmentOtherEnabled
+    ].forEach((input) => input.addEventListener("change", updateIcs202AttachmentsState));
+    elements.ics202AttachmentOtherText.addEventListener("input", updateIcs202AttachmentsState);
+    elements.ics202PreparedByName.addEventListener("input", (event) => {
+      ensureIcs202Draft().preparedBy.name = event.target.value;
+      renderIcs202Summary();
+      updateIcs202ValidationBanner();
+    });
+    elements.ics202PreparedByPosition.addEventListener("input", (event) => {
+      ensureIcs202Draft().preparedBy.position = event.target.value;
+      renderIcs202Summary();
+      updateIcs202ValidationBanner();
+    });
+    elements.ics202PreparedByDateTime.addEventListener("change", (event) => {
+      ensureIcs202Draft().preparedBy.datetime = inputValueToISOString(event.target.value) || ensureIcs202Draft().preparedBy.datetime;
+      renderIcs202Summary();
+    });
+    elements.ics202ApprovedByName.addEventListener("input", (event) => {
+      const draft = ensureIcs202Draft();
+      draft.approvedBy.name = event.target.value;
+      if (draft.approvedBy.name.trim() && !draft.approvedBy.datetime) {
+        draft.approvedBy.datetime = new Date().toISOString();
+      }
+      elements.ics202ApprovedByDateTime.value = draft.approvedBy.datetime ? isoToInputValue(draft.approvedBy.datetime) : "";
+      renderIcs202Summary();
+      updateIcs202ValidationBanner();
+    });
+    elements.ics202ApprovedBySignature.addEventListener("input", (event) => {
+      const draft = ensureIcs202Draft();
+      draft.approvedBy.signature = event.target.value;
+      if (draft.approvedBy.signature.trim() && !draft.approvedBy.datetime) {
+        draft.approvedBy.datetime = new Date().toISOString();
+      }
+      elements.ics202ApprovedByDateTime.value = draft.approvedBy.datetime ? isoToInputValue(draft.approvedBy.datetime) : "";
+      renderIcs202Summary();
+      updateIcs202ValidationBanner();
+    });
+    elements.ics202ApprovedByDateTime.addEventListener("change", (event) => {
+      ensureIcs202Draft().approvedBy.datetime = inputValueToISOString(event.target.value) || "";
+      renderIcs202Summary();
+    });
+    elements.ics202AddObjectiveBtn.addEventListener("click", () => addIcs202Objective(""));
+    elements.ics202InsertObjectiveExampleBtn.addEventListener("click", insertIcs202ObjectiveExample);
+    elements.ics202BackBtn.addEventListener("click", closeIcs202Workspace);
+    elements.ics202SaveBtn.addEventListener("click", () => {
+      saveIcs202Draft();
+      updateIcs202ValidationBanner();
+      setStatus("ICS 202 draft saved.");
+    });
+    elements.ics202PrintBtn.addEventListener("click", printIcs202Workspace);
+    elements.ics202ExportPdfBtn.addEventListener("click", () => {
+      void exportIcs202Pdf();
+    });
+    elements.ics202ClearBtn.addEventListener("click", clearIcs202Form);
+    window.addEventListener("afterprint", () => {
+      document.body.classList.remove("print-ics202");
+    });
   }
 
   function deepClone(value) {
