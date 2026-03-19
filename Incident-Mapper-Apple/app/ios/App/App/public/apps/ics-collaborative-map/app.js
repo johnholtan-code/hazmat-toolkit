@@ -225,7 +225,7 @@
     dragTemplateType: null,
     collapsedPaletteCategories: new Set(),
     collapsedPanels: new Set(["session", "sessionPeriod", "incidentCommand", "participants", "palettes"]),
-    collapsedLandingSections: new Set(["createSession", "reviewSessions", "joinSession", "whatHappens", "activeSessions"]),
+    collapsedLandingSections: new Set(["createSession", "joinSession", "whatHappens", "activeSessions"]),
     viewerMode: false,
     viewerJoinCode: null,
     rightSidebarCollapsed: false,
@@ -1816,6 +1816,7 @@
     }
 
     const editable = canEditObject(object);
+    elements.saveFieldsBtn.textContent = "Save Details";
     elements.saveFieldsBtn.disabled = !editable;
     const canUseGeometryButton = editable && object.geometryType !== "point";
     elements.editGeometryBtn.disabled = !canUseGeometryButton;
@@ -1967,6 +1968,7 @@
     if (!active) return;
     const { template, mode, points = [] } = state.drawState;
     const minPoints = template.geometryType === "line" ? 2 : (template.geometryType === "polygon" ? 3 : 1);
+    elements.finishGeometryBtn.textContent = mode === "edit" ? "Save Shape" : "Finish";
     elements.drawHintText.textContent = mode === "edit"
       ? template.geometryType === "point"
         ? `Move ${template.label} by selecting a new point on the map.`
