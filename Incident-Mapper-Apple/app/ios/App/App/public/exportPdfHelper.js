@@ -23,6 +23,39 @@
     });
   }
 
+  function blobToFile(blob, filename) {
+    const safeName = (filename || "export.bin").trim() || "export.bin";
+    try {
+      return new File([blob], safeName, {
+        type: blob.type || "application/octet-stream",
+        lastModified: Date.now()
+      });
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  async function shareViaWebApi(blob, filename, options) {
+    const nav = globalScope.navigator;
+    if (!nav?.share) {
+      throw new Error("Web Share API unavailable");
+    }
+    const file = blobToFile(blob, filename);
+    const payload = {
+      title: options?.title || "Export File",
+      text: options?.text || "Here is the exported file."
+    };
+    if (file && nav.canShare?.({ files: [file] })) {
+      payload.files = [file];
+    }
+    await nav.share(payload);
+    return {
+      uri: null,
+      shared: true,
+      transport: "web-share"
+    };
+  }
+
   async function saveAndShareBlob(blob, filename, options) {
     const safeName = (filename || "export.bin").trim() || "export.bin";
     if (!(blob instanceof Blob)) {
@@ -33,7 +66,7 @@
     const filesystem = plugins.Filesystem;
     const share = plugins.Share;
     if (!filesystem?.writeFile) {
-      throw new Error("Capacitor Filesystem plugin unavailable");
+      return shareViaWebApi(blob, safeName, options);
     }
 
     const base64Data = await blobToBase64(blob);
@@ -83,6 +116,7 @@
 
   globalScope.exportPdfHelper = {
     blobToBase64,
+    blobToFile,
     saveAndShareBlob,
     saveAndSharePdfBlob
   };
