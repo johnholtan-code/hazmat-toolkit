@@ -293,43 +293,53 @@
 
         <aside id="rightSidebar" class="sidebar right">
           <div id="quickFlowPanel" class="panel compact">
-            <h3>10-Minute IC Mode</h3>
-            <label class="inline-checkbox">
-              <input id="guidedSetupToggle" type="checkbox" />
-              <span>Use 10-Minute IC Mode</span>
-            </label>
-            <div class="guided-collapsed-content muted">Turn this on when you want the guided startup workflow.</div>
-            <button id="startGuidedSetupBtn" class="primary" type="button">Focus Next Guided Step</button>
-            <div id="guidedSteps" class="guided-steps"></div>
+            <button id="quickFlowPanelToggle" class="panel-section-toggle" type="button" aria-expanded="true">
+              <span>10-Minute IC Mode</span>
+              <span class="toggle-symbol">−</span>
+            </button>
+            <div id="quickFlowPanelBody" class="panel-section-body">
+              <label class="inline-checkbox">
+                <input id="guidedSetupToggle" type="checkbox" />
+                <span>Use 10-Minute IC Mode</span>
+              </label>
+              <div class="guided-collapsed-content muted">Turn this on when you want the guided startup workflow.</div>
+              <button id="startGuidedSetupBtn" class="primary" type="button">Focus Next Guided Step</button>
+              <div id="guidedSteps" class="guided-steps"></div>
+            </div>
           </div>
 
           <div id="afterActionPanel" class="panel compact">
-            <h3>Playback / After-Action Mode</h3>
-            <div class="muted playback-panel-copy">Replay the incident, scrub the shared timeline, and export a training scenario from this session.</div>
-            <div class="row">
-              <button id="loadPlaybackBtn" class="secondary" type="button">Replay Incident</button>
-              <button id="exitPlaybackBtn" class="secondary hidden" type="button">Exit Playback</button>
-              <button id="exportTrainingScenarioBtn" class="secondary" type="button">Export Training Scenario</button>
-            </div>
-            <div id="playbackEmptyState" class="muted">Load session history to review how the incident developed.</div>
-            <div id="playbackControls" class="playback-controls hidden">
-              <div class="row playback-controls-row">
-                <button id="playbackToggleBtn" class="primary" type="button">Play</button>
-                <button id="playbackRestartBtn" class="secondary" type="button">Restart</button>
-                <button id="playbackStepBackBtn" class="secondary" type="button">Step -</button>
-                <button id="playbackStepForwardBtn" class="secondary" type="button">Step +</button>
-                <label class="playback-speed-field">
-                  <span>Speed</span>
-                  <select id="playbackSpeedSelect">
-                    <option value="1600">0.5x</option>
-                    <option value="900" selected>1x</option>
-                    <option value="500">2x</option>
-                    <option value="250">4x</option>
-                  </select>
-                </label>
+            <button id="afterActionPanelToggle" class="panel-section-toggle" type="button" aria-expanded="true">
+              <span>Playback / After-Action Mode</span>
+              <span class="toggle-symbol">−</span>
+            </button>
+            <div id="afterActionPanelBody" class="panel-section-body">
+              <div class="muted playback-panel-copy">Replay the incident, scrub the shared timeline, and export a training scenario from this session.</div>
+              <div class="row">
+                <button id="loadPlaybackBtn" class="secondary" type="button">Replay Incident</button>
+                <button id="exitPlaybackBtn" class="secondary hidden" type="button">Exit Playback</button>
+                <button id="exportTrainingScenarioBtn" class="secondary" type="button">Export Training Scenario</button>
               </div>
-              <input id="playbackScrubber" class="playback-slider" type="range" min="0" max="0" value="0" />
-              <div id="playbackMeta" class="playback-meta">Load session history to begin playback.</div>
+              <div id="playbackEmptyState" class="muted">Load session history to review how the incident developed.</div>
+              <div id="playbackControls" class="playback-controls hidden">
+                <div class="row playback-controls-row">
+                  <button id="playbackToggleBtn" class="primary" type="button">Play</button>
+                  <button id="playbackRestartBtn" class="secondary" type="button">Restart</button>
+                  <button id="playbackStepBackBtn" class="secondary" type="button">Step -</button>
+                  <button id="playbackStepForwardBtn" class="secondary" type="button">Step +</button>
+                  <label class="playback-speed-field">
+                    <span>Speed</span>
+                    <select id="playbackSpeedSelect">
+                      <option value="1600">0.5x</option>
+                      <option value="900" selected>1x</option>
+                      <option value="500">2x</option>
+                      <option value="250">4x</option>
+                    </select>
+                  </label>
+                </div>
+                <input id="playbackScrubber" class="playback-slider" type="range" min="0" max="0" value="0" />
+                <div id="playbackMeta" class="playback-meta">Load session history to begin playback.</div>
+              </div>
             </div>
           </div>
 

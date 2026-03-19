@@ -185,6 +185,10 @@
     sessionSignOutBtn: document.getElementById("sessionSignOutBtn"),
     showViewerQrBtn: document.getElementById("showViewerQrBtn"),
     quickFlowPanel: document.getElementById("quickFlowPanel"),
+    quickFlowPanelToggle: document.getElementById("quickFlowPanelToggle"),
+    quickFlowPanelBody: document.getElementById("quickFlowPanelBody"),
+    afterActionPanelToggle: document.getElementById("afterActionPanelToggle"),
+    afterActionPanelBody: document.getElementById("afterActionPanelBody"),
     sessionPanel: document.getElementById("sessionPanel"),
     sessionPanelToggle: document.getElementById("sessionPanelToggle"),
     participantsPanel: document.getElementById("participantsPanel"),
@@ -274,6 +278,7 @@
     paletteCollapseInitialized: false,
     paletteSearchQuery: "",
     collapsedPanels: new Set(["session", "sessionPeriod", "incidentCommand", "participants", "palettes"]),
+    collapsedModePanels: new Set(),
     collapsedLandingSections: new Set(["createSession", "joinSession", "whatHappens", "activeSessions"]),
     viewerMode: false,
     viewerJoinCode: null,
@@ -384,6 +389,8 @@
     elements.incidentCommandPanelToggle.addEventListener("click", () => togglePanel("incidentCommand"));
     elements.participantsPanelToggle.addEventListener("click", () => togglePanel("participants"));
     elements.palettesPanelToggle.addEventListener("click", () => togglePanel("palettes"));
+    elements.quickFlowPanelToggle.addEventListener("click", () => toggleModePanel("quickFlow"));
+    elements.afterActionPanelToggle.addEventListener("click", () => toggleModePanel("afterAction"));
     elements.copyJoinLinkBtn.addEventListener("click", copyJoinLink);
     elements.closeViewerQrBtn.addEventListener("click", hideViewerQrModal);
     elements.copyViewerLinkBtn.addEventListener("click", copyViewerLink);
@@ -1148,6 +1155,7 @@
     renderGuidedControls();
     renderAfterActionControls();
     renderPanelCollapses();
+    renderModePanelCollapses();
     renderRightSidebarState();
   }
 
@@ -1232,10 +1240,27 @@
     syncPanelCollapse(elements.palettesPanel, elements.palettesPanelToggle, "palettes");
   }
 
+  function renderModePanelCollapses() {
+    syncModePanelCollapse(elements.quickFlowPanel, elements.quickFlowPanelBody, elements.quickFlowPanelToggle, "quickFlow");
+    syncModePanelCollapse(elements.afterActionPanel, elements.afterActionPanelBody, elements.afterActionPanelToggle, "afterAction");
+  }
+
   function syncPanelCollapse(panelElement, toggleElement, panelKey) {
     if (!panelElement || !toggleElement) return;
     const collapsed = state.collapsedPanels.has(panelKey);
     panelElement.classList.toggle("section-collapsed", collapsed);
+    toggleElement.setAttribute("aria-expanded", String(!collapsed));
+    const symbol = toggleElement.querySelector(".toggle-symbol");
+    if (symbol) {
+      symbol.textContent = collapsed ? "+" : "\u2212";
+    }
+  }
+
+  function syncModePanelCollapse(panelElement, bodyElement, toggleElement, panelKey) {
+    if (!panelElement || !bodyElement || !toggleElement) return;
+    const collapsed = state.collapsedModePanels.has(panelKey);
+    panelElement.classList.toggle("section-collapsed", collapsed);
+    bodyElement.classList.toggle("hidden", collapsed);
     toggleElement.setAttribute("aria-expanded", String(!collapsed));
     const symbol = toggleElement.querySelector(".toggle-symbol");
     if (symbol) {
@@ -1954,6 +1979,15 @@
     renderPanelCollapses();
   }
 
+  function toggleModePanel(panelKey) {
+    if (state.collapsedModePanels.has(panelKey)) {
+      state.collapsedModePanels.delete(panelKey);
+    } else {
+      state.collapsedModePanels.add(panelKey);
+    }
+    renderModePanelCollapses();
+  }
+
   function renderGuidedSteps() {
     elements.guidedSteps.innerHTML = "";
     GUIDED_STEPS.forEach((step) => {
@@ -2268,19 +2302,20 @@
       const filename = `training-scenario-${slugifyFilename(state.activeSession.incidentName || "incident")}-${Date.now()}.json`;
       if (window.exportPdfHelper?.saveAndShareBlob) {
         try {
-          await window.exportPdfHelper.saveAndShareBlob(blob, filename, {
+          const result = await window.exportPdfHelper.saveAndShareBlob(blob, filename, {
             title: "Export Training Scenario",
             text: "Here is the collaborative map training scenario export.",
-            dialogTitle: "Share Training Scenario"
+            dialogTitle: "Share Training Scenario",
+            requireSharePrompt: true
           });
-          setStatus(`Training scenario shared: ${filename}`);
+          setStatus(result?.shared ? `Training scenario shared: ${filename}` : `Training scenario saved: ${filename}`);
           return;
         } catch (_error) {
           // Fall back to browser download when native sharing is unavailable.
         }
       }
       await downloadBlob(blob, filename);
-      setStatus("Training scenario exported.");
+      setStatus(`Training scenario downloaded: ${filename}`);
     } catch (error) {
       setStatus(formatError(error));
     }
@@ -3847,12 +3882,13 @@
     const filename = buildExportFilename("cost-summary", "csv");
     if (window.exportPdfHelper?.saveAndShareBlob) {
       try {
-        await window.exportPdfHelper.saveAndShareBlob(blob, filename, {
+        const result = await window.exportPdfHelper.saveAndShareBlob(blob, filename, {
           title: "Export Cost CSV",
           text: "Here is the collaborative map cost export.",
-          dialogTitle: "Share CSV"
+          dialogTitle: "Share CSV",
+          requireSharePrompt: true
         });
-        setStatus(`CSV shared: ${filename}`);
+        setStatus(result?.shared ? `CSV shared: ${filename}` : `CSV saved: ${filename}`);
         return;
       } catch (_error) {
         // Fall back to browser download.
