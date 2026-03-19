@@ -245,6 +245,21 @@
         <section class="map-stage">
           <div id="map"></div>
           <div class="map-style-dock">
+            <button id="weatherLauncherBtn" class="map-weather-launcher hidden" type="button" aria-expanded="false" aria-controls="weatherPanel" aria-label="Show incident weather">
+              <span class="map-weather-launcher-icon">Wx</span>
+            </button>
+            <section id="weatherPanel" class="weather-panel hidden" aria-live="polite">
+              <div class="weather-panel-header">
+                <div>
+                  <strong>Incident Weather</strong>
+                  <div id="weatherSourceLabel" class="weather-panel-subtitle">Waiting for location…</div>
+                </div>
+                <button id="refreshWeatherBtn" class="weather-refresh-btn" type="button">Refresh</button>
+              </div>
+              <div id="weatherSummary" class="weather-summary">Weather will appear here once a session location is available.</div>
+              <div id="weatherMeta" class="weather-meta muted">No weather loaded yet.</div>
+              <div id="weatherMetrics" class="weather-metrics"></div>
+            </section>
             <button id="viewerCenterIncidentBtn" class="map-focus-launcher hidden" type="button" aria-label="Center on incident">
               <span class="map-focus-launcher-icon">◎</span>
             </button>

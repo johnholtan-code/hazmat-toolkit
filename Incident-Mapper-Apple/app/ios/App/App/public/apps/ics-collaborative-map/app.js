@@ -12,6 +12,8 @@
   };
   const POLL_INTERVAL_MS = 4000;
   const UPDATE_FLUSH_MS = 10000;
+  const WEATHER_REFRESH_MS = 5 * 60 * 1000;
+  const WEATHER_API_BASE_URL = (config.weatherApiBaseUrl || "https://api.open-meteo.com/v1/forecast").replace(/\/$/, "");
   const ICON_MANIFEST_URL = "./icon-manifest.json";
   const ICON_MARKER_OBJECT_TYPE = "IconMarker";
   const ICS_ROLES = [
@@ -134,6 +136,13 @@
     guidedModeBtn: document.getElementById("guidedModeBtn"),
     setIncidentFocusBtn: document.getElementById("setIncidentFocusBtn"),
     centerIncidentBtn: document.getElementById("centerIncidentBtn"),
+    weatherLauncherBtn: document.getElementById("weatherLauncherBtn"),
+    weatherPanel: document.getElementById("weatherPanel"),
+    weatherSourceLabel: document.getElementById("weatherSourceLabel"),
+    weatherSummary: document.getElementById("weatherSummary"),
+    weatherMeta: document.getElementById("weatherMeta"),
+    weatherMetrics: document.getElementById("weatherMetrics"),
+    refreshWeatherBtn: document.getElementById("refreshWeatherBtn"),
     viewerCenterIncidentBtn: document.getElementById("viewerCenterIncidentBtn"),
     guidedSetupToggle: document.getElementById("guidedSetupToggle"),
     mapStyleLauncherBtn: document.getElementById("mapStyleLauncherBtn"),
@@ -220,7 +229,14 @@
     viewerJoinCode: null,
     rightSidebarCollapsed: false,
     mapStyleTrayOpen: false,
-    incidentFocusSignature: ""
+    incidentFocusSignature: "",
+    weatherPanelOpen: false,
+    weatherLoading: false,
+    weatherData: null,
+    weatherError: "",
+    weatherTargetSignature: "",
+    weatherFetchNonce: 0,
+    weatherTimer: null
   };
 
   async function init() {
@@ -289,6 +305,10 @@
     elements.guidedModeBtn.addEventListener("click", () => toggleGuidedMode(!state.guidedMode));
     elements.setIncidentFocusBtn.addEventListener("click", onSetIncidentFocusAction);
     elements.centerIncidentBtn.addEventListener("click", onCenterIncidentAction);
+    elements.weatherLauncherBtn.addEventListener("click", toggleWeatherPanel);
+    elements.refreshWeatherBtn.addEventListener("click", () => {
+      void refreshWeatherForCurrentTarget({ force: true, silent: false });
+    });
     elements.viewerCenterIncidentBtn.addEventListener("click", onCenterIncidentAction);
     elements.guidedSetupToggle.addEventListener("change", (event) => toggleGuidedMode(event.target.checked));
     elements.mapStyleLauncherBtn.addEventListener("click", toggleMapStyleTray);
@@ -338,6 +358,7 @@
         renderMapStyleTray();
       }
     });
+    state.map.on("moveend", onMapMoveEnd);
     const mapContainer = state.map.getContainer();
     mapContainer.addEventListener("dragover", onMapDragOver);
     mapContainer.addEventListener("dragleave", onMapDragLeave);
@@ -418,6 +439,9 @@
           accuracy: accuracy || null
         };
         renderCurrentLocationMarker();
+        if (state.activeSession) {
+          void refreshWeatherForCurrentTarget({ force: false, silent: true });
+        }
         const shouldCenter =
           force ||
           recenter ||
@@ -718,6 +742,8 @@
       requestCurrentLocation({ recenter: true, force: true });
     }
     scheduleMapResizeRefresh();
+    void refreshWeatherForCurrentTarget({ force: true, silent: true });
+    startWeatherPolling();
     startPolling();
   }
 
@@ -853,6 +879,7 @@
 
   function exitActiveWorkspace() {
     clearPolling();
+    clearWeatherPolling();
     state.activeSession = null;
     state.actor = null;
     state.objects = new Map();
@@ -865,6 +892,12 @@
     state.viewerMode = false;
     state.viewerJoinCode = null;
     state.incidentFocusSignature = "";
+    state.weatherPanelOpen = false;
+    state.weatherLoading = false;
+    state.weatherData = null;
+    state.weatherError = "";
+    state.weatherTargetSignature = "";
+    state.weatherFetchNonce = 0;
     cancelGeometryPreviewOnly();
     syncMapObjects();
     updateDrawControls();
@@ -1006,6 +1039,7 @@
     renderCommanderAuthPanels();
     renderLandingSectionCollapses();
     renderIncidentFocusUI();
+    renderWeatherUI();
     renderSessionMeta();
     renderParticipants();
     renderPalettes();
@@ -1150,6 +1184,213 @@
     }
   }
 
+  function toggleWeatherPanel() {
+    if (!state.activeSession) return;
+    state.weatherPanelOpen = !state.weatherPanelOpen;
+    renderWeatherUI();
+    if (state.weatherPanelOpen) {
+      void refreshWeatherForCurrentTarget({ force: false, silent: true });
+    }
+  }
+
+  function renderWeatherUI() {
+    if (!elements.weatherLauncherBtn || !elements.weatherPanel) return;
+    const visible = Boolean(state.activeSession);
+    const target = getWeatherTarget();
+    elements.weatherLauncherBtn.classList.toggle("hidden", !visible);
+    elements.weatherPanel.classList.toggle("hidden", !visible || !state.weatherPanelOpen);
+    elements.weatherLauncherBtn.setAttribute("aria-expanded", String(visible && state.weatherPanelOpen));
+    elements.weatherLauncherBtn.title = state.weatherPanelOpen ? "Hide Incident Weather" : "Show Incident Weather";
+    if (!visible) return;
+
+    elements.weatherSourceLabel.textContent = target
+      ? `${target.sourceLabel} · ${target.label}`
+      : "Waiting for incident or device location…";
+    elements.refreshWeatherBtn.disabled = state.weatherLoading || !target;
+
+    if (state.weatherLoading) {
+      elements.weatherSummary.textContent = "Loading weather…";
+      elements.weatherMeta.textContent = "Pulling current conditions for the active incident area.";
+      elements.weatherMetrics.innerHTML = "";
+      return;
+    }
+
+    if (state.weatherError) {
+      elements.weatherSummary.textContent = "Weather unavailable";
+      elements.weatherMeta.textContent = state.weatherError;
+      elements.weatherMetrics.innerHTML = "";
+      return;
+    }
+
+    if (!state.weatherData) {
+      elements.weatherSummary.textContent = "No weather loaded yet";
+      elements.weatherMeta.textContent = "Open this panel after location is available to pull current conditions.";
+      elements.weatherMetrics.innerHTML = "";
+      return;
+    }
+
+    const { temperatureF, weatherLabel, humidity, windSpeedMph, windDirection, apparentTemperatureF, updatedAt, targetLabel, sourceLabel } = state.weatherData;
+    elements.weatherSummary.textContent = `${formatTemperature(temperatureF)} · ${weatherLabel}`;
+    elements.weatherMeta.textContent = `Tracking ${targetLabel} · Updated ${formatDateTime(updatedAt)}`;
+    elements.weatherMetrics.innerHTML = [
+      createWeatherMetricMarkup("Wind", `${directionToCardinal(windDirection)} ${formatWindDirection(windDirection)} @ ${formatWindSpeed(windSpeedMph)}`),
+      createWeatherMetricMarkup("Humidity", formatPercent(humidity)),
+      createWeatherMetricMarkup("Feels Like", formatTemperature(apparentTemperatureF)),
+      createWeatherMetricMarkup("Source", sourceLabel)
+    ].join("");
+  }
+
+  function createWeatherMetricMarkup(label, value) {
+    return `
+      <div class="weather-metric">
+        <div class="weather-metric-label">${escapeHtml(label)}</div>
+        <div class="weather-metric-value">${escapeHtml(value)}</div>
+      </div>
+    `;
+  }
+
+  function getWeatherTarget() {
+    const incidentFocus = getIncidentFocusPoint();
+    if (incidentFocus) {
+      return {
+        lat: incidentFocus.lat,
+        lng: incidentFocus.lng,
+        label: incidentFocus.label,
+        source: "incident_focus",
+        sourceLabel: "Incident focus"
+      };
+    }
+    if (state.currentLocation) {
+      return {
+        lat: state.currentLocation.lat,
+        lng: state.currentLocation.lng,
+        label: "Current location",
+        source: "current_location",
+        sourceLabel: "Current location"
+      };
+    }
+    if (state.map) {
+      const center = state.map.getCenter();
+      if (center) {
+        return {
+          lat: Number(center.lat),
+          lng: Number(center.lng),
+          label: "Map center",
+          source: "map_center",
+          sourceLabel: "Map center"
+        };
+      }
+    }
+    return null;
+  }
+
+  function weatherTargetSignatureFor(target) {
+    if (!target) return "";
+    return `${target.source}:${roundCoord(target.lat)},${roundCoord(target.lng)}`;
+  }
+
+  async function refreshWeatherForCurrentTarget({ force = false, silent = false } = {}) {
+    const target = getWeatherTarget();
+    if (!target) {
+      state.weatherData = null;
+      state.weatherError = "No incident location is available yet.";
+      renderWeatherUI();
+      return false;
+    }
+
+    const nextSignature = weatherTargetSignatureFor(target);
+    const lastWeatherTime = state.weatherData?.updatedAt ? Date.parse(state.weatherData.updatedAt) : NaN;
+    const isFresh = state.weatherData && state.weatherTargetSignature === nextSignature && Number.isFinite(lastWeatherTime) && (Date.now() - lastWeatherTime) < WEATHER_REFRESH_MS;
+    if (!force && isFresh) {
+      renderWeatherUI();
+      return true;
+    }
+
+    const currentFetchNonce = ++state.weatherFetchNonce;
+    state.weatherLoading = true;
+    state.weatherError = "";
+    renderWeatherUI();
+
+    try {
+      const response = await fetch(buildWeatherUrl(target), { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Weather request failed (${response.status})`);
+      }
+      const payload = await response.json();
+      const current = payload?.current;
+      if (!current) {
+        throw new Error("Weather service returned no current conditions.");
+      }
+      if (currentFetchNonce !== state.weatherFetchNonce) return false;
+      state.weatherTargetSignature = nextSignature;
+      state.weatherData = {
+        targetLabel: target.label,
+        sourceLabel: target.sourceLabel,
+        temperatureF: Number(current.temperature_2m),
+        apparentTemperatureF: Number(current.apparent_temperature),
+        humidity: Number(current.relative_humidity_2m),
+        windSpeedMph: Number(current.wind_speed_10m),
+        windDirection: Number(current.wind_direction_10m),
+        weatherCode: Number(current.weather_code),
+        weatherLabel: weatherCodeToLabel(Number(current.weather_code)),
+        updatedAt: current.time || new Date().toISOString()
+      };
+      state.weatherError = "";
+      if (!silent && state.weatherPanelOpen) {
+        setStatus(`Updated weather for ${target.sourceLabel.toLowerCase()}.`);
+      }
+      return true;
+    } catch (error) {
+      if (currentFetchNonce !== state.weatherFetchNonce) return false;
+      state.weatherData = null;
+      state.weatherError = formatError(error);
+      if (!silent && state.weatherPanelOpen) {
+        setStatus(`Weather unavailable. ${formatError(error)}`);
+      }
+      return false;
+    } finally {
+      if (currentFetchNonce === state.weatherFetchNonce) {
+        state.weatherLoading = false;
+        renderWeatherUI();
+      }
+    }
+  }
+
+  function buildWeatherUrl(target) {
+    const url = new URL(WEATHER_API_BASE_URL);
+    url.searchParams.set("latitude", String(target.lat));
+    url.searchParams.set("longitude", String(target.lng));
+    url.searchParams.set("current", "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m");
+    url.searchParams.set("temperature_unit", "fahrenheit");
+    url.searchParams.set("wind_speed_unit", "mph");
+    url.searchParams.set("precipitation_unit", "inch");
+    url.searchParams.set("timezone", "auto");
+    return url.toString();
+  }
+
+  function onMapMoveEnd() {
+    if (!state.activeSession || !state.weatherPanelOpen) return;
+    const target = getWeatherTarget();
+    if (target?.source === "map_center") {
+      void refreshWeatherForCurrentTarget({ force: false, silent: true });
+    }
+  }
+
+  function startWeatherPolling() {
+    clearWeatherPolling();
+    state.weatherTimer = window.setInterval(() => {
+      if (!state.activeSession) return;
+      void refreshWeatherForCurrentTarget({ force: true, silent: true });
+    }, WEATHER_REFRESH_MS);
+  }
+
+  function clearWeatherPolling() {
+    if (state.weatherTimer) {
+      clearInterval(state.weatherTimer);
+      state.weatherTimer = null;
+    }
+  }
+
   function onCenterIncidentAction() {
     centerOnIncidentFocus({ notify: true, fallbackToBounds: true, fallbackToCurrent: true });
   }
@@ -1168,6 +1409,9 @@
     const nextSignature = incidentFocusSignatureFor(getIncidentFocusPoint());
     const previousSignature = state.incidentFocusSignature || "";
     state.incidentFocusSignature = nextSignature;
+    if (previousSignature !== nextSignature && state.activeSession) {
+      void refreshWeatherForCurrentTarget({ force: true, silent: true });
+    }
     if (!notify || !state.activeSession || !previousSignature || previousSignature === nextSignature) {
       return;
     }
@@ -2502,6 +2746,66 @@
 
   function setStatus(message) {
     elements.statusBar.textContent = message;
+  }
+
+  function formatTemperature(value) {
+    if (!Number.isFinite(Number(value))) return "—";
+    return `${Math.round(Number(value))}°F`;
+  }
+
+  function formatPercent(value) {
+    if (!Number.isFinite(Number(value))) return "—";
+    return `${Math.round(Number(value))}%`;
+  }
+
+  function formatWindSpeed(value) {
+    if (!Number.isFinite(Number(value))) return "—";
+    return `${Math.round(Number(value))} mph`;
+  }
+
+  function formatWindDirection(value) {
+    if (!Number.isFinite(Number(value))) return "—";
+    return `${Math.round(Number(value))}°`;
+  }
+
+  function directionToCardinal(value) {
+    if (!Number.isFinite(Number(value))) return "—";
+    const directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    return directions[Math.round(Number(value) / 45) % 8];
+  }
+
+  function weatherCodeToLabel(code) {
+    const labelMap = {
+      0: "Clear",
+      1: "Mostly clear",
+      2: "Partly cloudy",
+      3: "Overcast",
+      45: "Fog",
+      48: "Freezing fog",
+      51: "Light drizzle",
+      53: "Drizzle",
+      55: "Heavy drizzle",
+      56: "Freezing drizzle",
+      57: "Heavy freezing drizzle",
+      61: "Light rain",
+      63: "Rain",
+      65: "Heavy rain",
+      66: "Freezing rain",
+      67: "Heavy freezing rain",
+      71: "Light snow",
+      73: "Snow",
+      75: "Heavy snow",
+      77: "Snow grains",
+      80: "Rain showers",
+      81: "Heavy rain showers",
+      82: "Violent rain showers",
+      85: "Snow showers",
+      86: "Heavy snow showers",
+      95: "Thunderstorm",
+      96: "Thunderstorm and hail",
+      99: "Severe thunderstorm and hail"
+    };
+    return labelMap[code] || "Current conditions";
   }
 
   function formatError(error) {

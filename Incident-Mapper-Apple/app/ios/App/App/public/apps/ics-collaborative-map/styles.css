@@ -304,6 +304,91 @@ body { height: 100vh; overflow: hidden; }
   font-size: 24px;
   font-weight: 700;
 }
+.map-weather-launcher {
+  min-width: 54px;
+  height: 54px;
+  padding: 0 12px;
+  border-radius: 18px;
+  background: rgba(9,16,24,0.94);
+  color: #8fe0a5;
+  border: 1px solid rgba(143,224,165,0.32);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.28);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.map-weather-launcher-icon {
+  line-height: 1;
+}
+.weather-panel {
+  width: min(290px, calc(100vw - 72px));
+  padding: 14px;
+  border-radius: 22px;
+  border: 1px solid rgba(143,224,165,0.18);
+  background: rgba(11,18,26,0.94);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.34);
+  backdrop-filter: blur(18px);
+  color: var(--text);
+}
+.weather-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.weather-panel-subtitle {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.weather-refresh-btn {
+  min-width: 78px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  font-size: 13px;
+}
+.weather-summary {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.weather-meta {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.weather-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.weather-metric {
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+}
+.weather-metric-label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.weather-metric-value {
+  margin-top: 6px;
+  font-size: 18px;
+  font-weight: 700;
+}
 .map-focus-launcher {
   min-width: 54px;
   height: 54px;
@@ -855,6 +940,9 @@ button.danger { background: rgba(178,58,72,0.14); color: #f4c9ce; border-color: 
     top: 12px;
     right: 12px;
     left: 12px;
+  }
+  .weather-panel {
+    width: 100%;
   }
   .map-style-tray {
     width: 100%;
