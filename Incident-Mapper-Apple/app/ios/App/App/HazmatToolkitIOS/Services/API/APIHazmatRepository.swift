@@ -37,6 +37,25 @@ struct APIHazmatRepository: HazmatRepository {
     func fetchTrackingPoints(for scenarioName: String) async throws -> [GeoTrackingPoint] {
         try await client.listTrackingPoints(scenarioName: scenarioName).map { $0.toDomain() }
     }
+
+    func fetchTrackingReview(for sessionID: UUID) async throws -> SessionTrackingReview {
+        async let participantsTask = client.listSessionParticipants(sessionID: sessionID)
+        async let trackingTask = client.listSessionTracking(sessionID: sessionID, since: nil, limit: nil)
+        async let zoneEventsTask = client.listSessionZoneEvents(sessionID: sessionID, since: nil, limit: nil)
+
+        let participants = try await participantsTask
+        let tracking = try await trackingTask
+        let zoneEvents = try await zoneEventsTask
+
+        let participantNamesByID = Dictionary(uniqueKeysWithValues: participants.map { ($0.id, $0.traineeName) })
+
+        return SessionTrackingReview(
+            sessionID: sessionID,
+            participants: participants.map { $0.toDomain() },
+            points: tracking.items.map { $0.toDomain(participantNamesByID: participantNamesByID) },
+            zoneEvents: zoneEvents.items.map { $0.toDomain() }
+        )
+    }
 }
 
 enum HazmatAPIRepositoryError: LocalizedError {

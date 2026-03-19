@@ -29,7 +29,7 @@ final class AppStore: ObservableObject {
     @Published private(set) var trackingByScenarioName: [String: [GeoTrackingPoint]] = [:]
 
     let allTools = DetectionDevice.allCases
-    let currentTrainerEmail = "trainer@example.com"
+    @Published private(set) var currentTrainerEmail = "trainer@example.com"
     let repositoryModeDescription: String
 
     private let repository: any HazmatRepository
@@ -53,6 +53,18 @@ final class AppStore: ObservableObject {
         return allTools.filter { $0.rawValue.localizedCaseInsensitiveContains(toolSearchText) }
     }
 
+    var supportsTrainerAccounts: Bool {
+        true
+    }
+
+    var isTrainerSignedIn: Bool {
+        !currentTrainerEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var currentTrainerName: String {
+        currentTrainerEmail
+    }
+
     func scenarios(for device: DetectionDevice) -> [Scenario] {
         scenarios
             .filter { $0.detectionDevice == device }
@@ -66,6 +78,12 @@ final class AppStore: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    func signOutTrainer() async {
+        currentTrainerEmail = ""
+        sessionStateByScenarioID = [:]
+        sessionActionInProgressByScenarioID = [:]
     }
 
     func dismissSplashAfterDelay() {

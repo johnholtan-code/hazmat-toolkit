@@ -1051,9 +1051,14 @@ private struct PluminatorNativeModuleHostView: View {
 private struct BundledToolWebView: UIViewRepresentable {
     let bundleRelativePath: String
 
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         let webView = WKWebView(frame: .zero, configuration: config)
+        webView.uiDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true
         webView.scrollView.bounces = true
         webView.scrollView.contentInsetAdjustmentBehavior = .never
@@ -1094,6 +1099,74 @@ private struct BundledToolWebView: UIViewRepresentable {
                 "<html><body style='font-family:-apple-system;padding:20px'><h3>Tool not bundled yet</h3><p>Missing file: <code>\(escaped)</code></p><p>Copy the toolbox-site module files into <code>App/public/toolbox</code>.</p></body></html>",
                 baseURL: nil
             )
+        }
+    }
+
+    final class Coordinator: NSObject, WKUIDelegate {
+        func webView(
+            _ webView: WKWebView,
+            runJavaScriptAlertPanelWithMessage message: String,
+            initiatedByFrame frame: WKFrameInfo,
+            completionHandler: @escaping () -> Void
+        ) {
+            presentAlert(
+                on: webView,
+                title: nil,
+                message: message,
+                actions: [UIAlertAction(title: "OK", style: .default) { _ in completionHandler() }],
+                fallback: completionHandler
+            )
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            runJavaScriptConfirmPanelWithMessage message: String,
+            initiatedByFrame frame: WKFrameInfo,
+            completionHandler: @escaping (Bool) -> Void
+        ) {
+            presentAlert(
+                on: webView,
+                title: nil,
+                message: message,
+                actions: [
+                    UIAlertAction(title: "Cancel", style: .cancel) { _ in completionHandler(false) },
+                    UIAlertAction(title: "OK", style: .default) { _ in completionHandler(true) }
+                ],
+                fallback: { completionHandler(false) }
+            )
+        }
+
+        private func presentAlert(
+            on webView: WKWebView,
+            title: String?,
+            message: String,
+            actions: [UIAlertAction],
+            fallback: @escaping () -> Void
+        ) {
+            DispatchQueue.main.async {
+                guard let presenter = Self.topViewController(from: webView) else {
+                    fallback()
+                    return
+                }
+                let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+                actions.forEach(alert.addAction)
+                presenter.present(alert, animated: true)
+            }
+        }
+
+        private static func topViewController(from webView: WKWebView) -> UIViewController? {
+            var controller = webView.window?.rootViewController
+            if controller == nil {
+                controller = UIApplication.shared.connectedScenes
+                    .compactMap { $0 as? UIWindowScene }
+                    .flatMap(\.windows)
+                    .first(where: \.isKeyWindow)?
+                    .rootViewController
+            }
+            while let presented = controller?.presentedViewController {
+                controller = presented
+            }
+            return controller
         }
     }
 }

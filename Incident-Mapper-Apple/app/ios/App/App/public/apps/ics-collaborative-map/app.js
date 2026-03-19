@@ -40,6 +40,14 @@
     "Air Monitoring Team",
     "Decontamination Group"
   ];
+  const VIEWER_QR_ALLOWED_ROLES = new Set([
+    "Incident Commander",
+    "Operations Section Chief",
+    "Planning Section Chief",
+    "Logistics Section Chief",
+    "Safety Officer",
+    "HazMat Group Supervisor"
+  ]);
   const OBJECT_TEMPLATES = [
     { objectType: "IncidentCommand", label: "Incident Command Post", category: "Command", geometryType: "point", color: "#f3c613", defaults: { incidentName: "", ICName: "", channel: "" } },
     { objectType: "Staging", label: "Staging Area", category: "Command", geometryType: "point", color: "#0d6efd", defaults: { capacity: "", stagingManager: "", apparatusCount: "" } },
@@ -685,7 +693,12 @@
   }
 
   function initMap() {
-    state.map = L.map("map", { zoomControl: true, preferCanvas: true }).setView([39.5, -98.35], 4);
+    state.map = L.map("map", {
+      zoomControl: true,
+      preferCanvas: true,
+      minZoom: 3,
+      maxZoom: 19
+    }).setView([39.5, -98.35], 4);
     state.baseLayers = createBaseLayers();
     state.baseLayers[state.activeBaseLayerKey].addTo(state.map);
     L.control.layers(
@@ -719,14 +732,16 @@
   function createBaseLayers() {
     return {
       road: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
-        maxZoom: 20,
+        maxZoom: 19,
+        maxNativeZoom: 19,
         attribution: "Tiles &copy; Esri",
         crossOrigin: true,
         updateWhenIdle: true,
         keepBuffer: 4
       }),
       satellite: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-        maxZoom: 20,
+        maxZoom: 19,
+        maxNativeZoom: 19,
         attribution: "Tiles &copy; Esri",
         crossOrigin: true,
         updateWhenIdle: true,
@@ -734,6 +749,7 @@
       }),
       topo: L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
         maxZoom: 17,
+        maxNativeZoom: 17,
         subdomains: ["a", "b", "c"],
         attribution: "Map data &copy; OpenStreetMap contributors, SRTM | Map style &copy; OpenTopoMap",
         crossOrigin: true,
@@ -1566,7 +1582,7 @@
     elements.ics202WorkspaceBtn.classList.toggle("hidden", (!(state.activeSession || isScenarioReviewMode()) || state.viewerMode));
     elements.setIncidentFocusBtn.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode() || !isCommander() || Boolean(getIncidentFocusPoint()));
     elements.centerIncidentBtn.classList.toggle("hidden", !(state.activeSession || isScenarioReviewMode()));
-    elements.showViewerQrBtn.classList.toggle("hidden", !isCommander() || !state.activeSession || state.viewerMode || isScenarioReviewMode());
+    elements.showViewerQrBtn.classList.toggle("hidden", !canShareViewerQr() || !state.activeSession || state.viewerMode || isScenarioReviewMode());
     elements.joinLockedNote.classList.toggle("hidden", signedIn);
     toggleLandingCardAccess(signedIn);
   }
@@ -4236,7 +4252,10 @@
   }
 
   function showViewerQrModal() {
-    if (!state.activeSession?.joinCode || isScenarioReviewMode()) return;
+    if (!state.activeSession?.joinCode || isScenarioReviewMode() || !canShareViewerQr()) {
+      setStatus("Only signed-in command staff can share the viewer QR.");
+      return;
+    }
     const viewerLink = buildViewerLink();
     elements.viewerQrLink.value = viewerLink;
     elements.viewerQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(viewerLink)}`;
@@ -4289,6 +4308,13 @@
 
   function isCommander() {
     return state.actor?.permissionTier === "commander" || currentActorType() === "commander";
+  }
+
+  function canShareViewerQr() {
+    if (!state.activeSession || isScenarioReviewMode() || state.viewerMode || !state.actor) return false;
+    if (state.actor.permissionTier === "commander") return true;
+    if (state.actor.permissionTier === "observer") return false;
+    return VIEWER_QR_ALLOWED_ROLES.has(String(state.actor.icsRole || "").trim());
   }
 
   function formatPermissionTier(permissionTier) {
