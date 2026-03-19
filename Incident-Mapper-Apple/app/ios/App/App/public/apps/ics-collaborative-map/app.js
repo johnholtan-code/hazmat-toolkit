@@ -62,8 +62,7 @@
     { key: "topo", label: "Topographic", description: "Terrain and contours", chip: "TOP", color: "#e1c26f" }
   ];
   const ICON_CATEGORY_GROUP_OVERRIDES = {
-    hazard: "HazMat",
-    hazardous_materials: "HazMat"
+    hazard: "HazMat"
   };
 
   const ICON_MARKER_TEMPLATE = {

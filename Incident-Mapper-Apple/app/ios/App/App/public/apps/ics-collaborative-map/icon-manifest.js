@@ -1,4 +1,4 @@
-{
+window.ICS_ICON_MANIFEST = {
   "categories": [
     {
       "id": "access_hazards",
@@ -1719,4 +1719,4 @@
       ]
     }
   ]
-}
+};
