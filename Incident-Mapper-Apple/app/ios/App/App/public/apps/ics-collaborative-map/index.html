@@ -30,8 +30,7 @@
           <button id="ics202WorkspaceBtn" class="secondary hidden" type="button">ICS 202</button>
           <button id="guidedModeBtn" class="secondary hidden" type="button">10-Minute IC Mode</button>
           <button id="afterActionModeBtn" class="secondary hidden" type="button">After-Action Mode</button>
-          <button id="exportCostCsvBtn" class="secondary hidden" type="button">Export CSV</button>
-          <button id="exportCostPdfBtn" class="secondary hidden" type="button">Export PDF</button>
+          <button id="printExportBtn" class="secondary hidden" type="button">Print / Export</button>
         </div>
       </div>
     </header>
@@ -548,7 +547,29 @@
         </div>
       </div>
       <div id="ics202PrintRoot" class="ics202-print-root" aria-hidden="true"></div>
+      <div id="mapPrintRoot" class="map-print-root" aria-hidden="true"></div>
     </section>
+  </div>
+
+  <div id="printExportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="printExportTitle">
+    <div class="modal-card export-modal-card">
+      <div class="modal-header">
+        <h2 id="printExportTitle">Print / Export</h2>
+        <button id="closePrintExportBtn" class="secondary" type="button">Close</button>
+      </div>
+      <p class="muted">Choose how you want to output the current map or cost summary.</p>
+      <div class="export-option-group">
+        <div class="export-option-group-title">Map Output</div>
+        <button id="printMapBtn" class="primary export-option-btn" type="button">Print Map</button>
+        <button id="exportMapPdfBtn" class="secondary export-option-btn" type="button">Export PDF</button>
+      </div>
+      <div class="export-option-group">
+        <div class="export-option-group-title">Cost Output</div>
+        <button id="exportCostCsvBtn" class="secondary export-option-btn" type="button">Export CSV</button>
+        <button id="exportCostPdfBtn" class="secondary export-option-btn" type="button">Export Cost PDF</button>
+      </div>
+      <div id="printExportModalNote" class="muted export-modal-note">Map output fits to the full extent of mapped items with a buffer around the edges.</div>
+    </div>
   </div>
 
   <div id="viewerQrModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="viewerQrTitle">

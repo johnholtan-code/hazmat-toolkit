@@ -180,6 +180,7 @@
     paletteSearchInput: document.getElementById("paletteSearchInput"),
     clearPaletteSearchBtn: document.getElementById("clearPaletteSearchBtn"),
     paletteContainer: document.getElementById("paletteContainer"),
+    printExportBtn: document.getElementById("printExportBtn"),
     participantList: document.getElementById("participantList"),
     guidedSteps: document.getElementById("guidedSteps"),
     startGuidedSetupBtn: document.getElementById("startGuidedSetupBtn"),
@@ -310,7 +311,14 @@
     ics202ApprovedBySignature: document.getElementById("ics202ApprovedBySignature"),
     ics202ApprovedByDateTime: document.getElementById("ics202ApprovedByDateTime"),
     ics202Summary: document.getElementById("ics202Summary"),
-    ics202PrintRoot: document.getElementById("ics202PrintRoot")
+    ics202PrintRoot: document.getElementById("ics202PrintRoot"),
+    map: document.getElementById("map"),
+    mapPrintRoot: document.getElementById("mapPrintRoot"),
+    printExportModal: document.getElementById("printExportModal"),
+    closePrintExportBtn: document.getElementById("closePrintExportBtn"),
+    printMapBtn: document.getElementById("printMapBtn"),
+    exportMapPdfBtn: document.getElementById("exportMapPdfBtn"),
+    printExportModalNote: document.getElementById("printExportModalNote")
   };
 
   const state = {
@@ -635,8 +643,12 @@
     elements.startGuidedSetupBtn.addEventListener("click", () => toggleGuidedMode(true));
     elements.guidedModeBtn.addEventListener("click", () => toggleGuidedMode(!state.guidedMode));
     elements.afterActionModeBtn.addEventListener("click", onAfterActionModeAction);
+    elements.printExportBtn.addEventListener("click", showPrintExportModal);
     elements.exportCostCsvBtn.addEventListener("click", exportCostCsv);
     elements.exportCostPdfBtn.addEventListener("click", exportCostPdf);
+    elements.closePrintExportBtn.addEventListener("click", hidePrintExportModal);
+    elements.printMapBtn.addEventListener("click", printMapExport);
+    elements.exportMapPdfBtn.addEventListener("click", exportMapPdf);
     elements.ics202WorkspaceBtn.addEventListener("click", openIcs202Workspace);
     elements.setIncidentFocusBtn.addEventListener("click", onSetIncidentFocusAction);
     elements.centerIncidentBtn.addEventListener("click", onCenterIncidentAction);
@@ -661,6 +673,11 @@
     elements.afterActionPanelToggle.addEventListener("click", () => toggleModePanel("afterAction"));
     elements.copyJoinLinkBtn.addEventListener("click", copyJoinLink);
     elements.closeViewerQrBtn.addEventListener("click", hideViewerQrModal);
+    elements.printExportModal.addEventListener("click", (event) => {
+      if (event.target === elements.printExportModal) {
+        hidePrintExportModal();
+      }
+    });
     elements.copyViewerLinkBtn.addEventListener("click", copyViewerLink);
     elements.endSessionBtn.addEventListener("click", endSession);
     elements.updateOperationalPeriodBtn.addEventListener("click", updateOperationalPeriod);
@@ -1914,6 +1931,16 @@
   function closeMapStyleTray() {
     state.mapStyleTrayOpen = false;
     renderMapStyleTray();
+  }
+
+  function showPrintExportModal() {
+    if (elements.printExportBtn?.disabled) return;
+    renderExportActions();
+    elements.printExportModal.classList.remove("hidden");
+  }
+
+  function hidePrintExportModal() {
+    elements.printExportModal.classList.add("hidden");
   }
 
   function renderRightSidebarState() {
@@ -4884,10 +4911,22 @@
 
   function renderExportActions() {
     const visible = (Boolean(state.activeSession) || isScenarioReviewMode()) && !state.viewerMode;
-    elements.exportCostCsvBtn.classList.toggle("hidden", !visible);
-    elements.exportCostPdfBtn.classList.toggle("hidden", !visible);
-    elements.exportCostCsvBtn.disabled = !visible || !getCostedResourceObjects().length;
-    elements.exportCostPdfBtn.disabled = !visible || !getCostedResourceObjects().length;
+    const hasCostRows = Boolean(getCostedResourceObjects().length);
+    const hasMapObjects = Boolean(state.layers.size);
+    elements.printExportBtn.classList.toggle("hidden", !visible);
+    if (!visible) {
+      hidePrintExportModal();
+    }
+    elements.printExportBtn.disabled = !visible || (!hasMapObjects && !hasCostRows);
+    elements.exportCostCsvBtn.disabled = !hasCostRows;
+    elements.exportCostPdfBtn.disabled = !hasCostRows;
+    elements.printMapBtn.disabled = !hasMapObjects;
+    elements.exportMapPdfBtn.disabled = !hasMapObjects;
+    if (elements.printExportModalNote) {
+      elements.printExportModalNote.textContent = hasMapObjects
+        ? "Map output fits to the full extent of mapped items with a buffer around the edges."
+        : "Place one or more map items to enable map print and PDF export.";
+    }
   }
 
   function formatTemperature(value) {
@@ -4997,7 +5036,235 @@
     }));
   }
 
+  function getMapExportLayers() {
+    return Array.from(state.layers.values()).filter((layer) => {
+      try {
+        return Boolean(layer && (typeof layer.getBounds === "function" || typeof layer.getLatLng === "function"));
+      } catch (_error) {
+        return false;
+      }
+    });
+  }
+
+  function getMapExportBounds() {
+    const layers = getMapExportLayers();
+    if (!layers.length) return null;
+    try {
+      return L.featureGroup(layers).getBounds();
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function waitForMapMoveEnd() {
+    return new Promise((resolve) => {
+      if (!state.map) {
+        resolve();
+        return;
+      }
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+      state.map.once("moveend", () => {
+        window.requestAnimationFrame(() => {
+          window.setTimeout(finish, 180);
+        });
+      });
+      window.setTimeout(finish, 600);
+    });
+  }
+
+  function waitForActiveTilesLoaded() {
+    return new Promise((resolve) => {
+      const layer = state.baseLayers?.[state.activeBaseLayerKey];
+      if (!layer || !layer._loading) {
+        window.setTimeout(resolve, 250);
+        return;
+      }
+      let finished = false;
+      const done = () => {
+        if (finished) return;
+        finished = true;
+        resolve();
+      };
+      layer.once("load", () => {
+        window.setTimeout(done, 200);
+      });
+      window.setTimeout(done, 2000);
+    });
+  }
+
+  function buildMapPrintMarkup(imageDataUrl) {
+    const incidentName = state.activeSession?.incidentName || state.scenarioReview?.incidentName || "Collaborative Incident";
+    const exportedAt = new Date().toLocaleString();
+    const totalItems = state.layers.size;
+    return `
+      <div class="map-print-sheet">
+        <div class="map-print-header">
+          <div class="map-print-title">ICS Collaborative Map</div>
+          <div class="map-print-meta">
+            <div>${escapeHtml(incidentName)}</div>
+            <div>${escapeHtml(exportedAt)}</div>
+          </div>
+        </div>
+        <div class="map-print-frame">
+          <img src="${escapeAttribute(imageDataUrl)}" alt="Printed collaborative map" />
+        </div>
+        <div class="map-print-footer">
+          <span>${escapeHtml(`${totalItems} mapped item${totalItems === 1 ? "" : "s"}`)}</span>
+          <span>Buffered to full mapped extent</span>
+        </div>
+      </div>
+    `;
+  }
+
+  async function captureBufferedMapImage() {
+    if (!state.map || !elements.map) {
+      setStatus("Map is unavailable.");
+      return null;
+    }
+    const bounds = getMapExportBounds();
+    if (!bounds || !bounds.isValid()) {
+      setStatus("Place one or more map items before printing the map.");
+      return null;
+    }
+    if (typeof window.html2canvas !== "function") {
+      setStatus("Map capture library unavailable.");
+      return null;
+    }
+
+    const previousCenter = state.map.getCenter();
+    const previousZoom = state.map.getZoom();
+    const previousMapStyleTrayOpen = state.mapStyleTrayOpen;
+    const previousWeatherPanelOpen = state.weatherPanelOpen;
+    hidePrintExportModal();
+    closeMapStyleTray();
+    state.weatherPanelOpen = false;
+    renderWeatherPanel();
+
+    try {
+      state.map.invalidateSize({ pan: false, animate: false });
+      state.map.fitBounds(bounds.pad(0.18), {
+        padding: [56, 56],
+        maxZoom: 16,
+        animate: false
+      });
+      await waitForMapMoveEnd();
+      await waitForActiveTilesLoaded();
+      const canvas = await window.html2canvas(elements.map, {
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        scale: Math.min(window.devicePixelRatio || 1, 2),
+        logging: false
+      });
+      return {
+        imageDataUrl: canvas.toDataURL("image/png"),
+        width: canvas.width,
+        height: canvas.height
+      };
+    } catch (error) {
+      console.error("Unable to capture map export.", error);
+      setStatus("Map capture failed.");
+      return null;
+    } finally {
+      state.mapStyleTrayOpen = previousMapStyleTrayOpen;
+      renderMapStyleTray();
+      state.weatherPanelOpen = previousWeatherPanelOpen;
+      renderWeatherPanel();
+      state.map.setView(previousCenter, previousZoom, { animate: false });
+      await waitForMapMoveEnd();
+      await waitForActiveTilesLoaded();
+      scheduleMapResizeRefresh();
+    }
+  }
+
+  function printMapMarkup(markup) {
+    if (!elements.mapPrintRoot) return;
+    elements.mapPrintRoot.innerHTML = markup;
+    document.body.classList.add("print-map");
+    const cleanup = () => {
+      document.body.classList.remove("print-map");
+      elements.mapPrintRoot.innerHTML = "";
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.print();
+    window.setTimeout(cleanup, 1200);
+  }
+
+  async function printMapExport() {
+    const capture = await captureBufferedMapImage();
+    if (!capture) return;
+    printMapMarkup(buildMapPrintMarkup(capture.imageDataUrl));
+    setStatus("Map print prepared.");
+  }
+
+  async function exportMapPdf() {
+    const capture = await captureBufferedMapImage();
+    if (!capture) return;
+    const jspdfNs = window.jspdf;
+    if (!jspdfNs?.jsPDF) {
+      setStatus("PDF library unavailable.");
+      return;
+    }
+    const { jsPDF } = jspdfNs;
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "letter" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 28;
+    const headerHeight = 42;
+    const footerHeight = 20;
+    const usableW = pageW - margin * 2;
+    const usableH = pageH - margin * 2 - headerHeight - footerHeight;
+    const imageRatio = capture.width / capture.height;
+    let imageW = usableW;
+    let imageH = imageW / imageRatio;
+    if (imageH > usableH) {
+      imageH = usableH;
+      imageW = imageH * imageRatio;
+    }
+    const incidentName = state.activeSession?.incidentName || state.scenarioReview?.incidentName || "Collaborative Incident";
+    const exportedAt = new Date().toLocaleString();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("ICS Collaborative Map", margin, margin + 14);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(incidentName, margin, margin + 30);
+    doc.text(exportedAt, pageW - margin, margin + 14, { align: "right" });
+    doc.addImage(capture.imageDataUrl, "PNG", margin, margin + headerHeight, imageW, imageH);
+    doc.setDrawColor(0, 0, 0);
+    doc.rect(margin, margin + headerHeight, imageW, imageH);
+    doc.setFontSize(9);
+    doc.text(`${state.layers.size} mapped item${state.layers.size === 1 ? "" : "s"} | buffered to mapped extent`, margin, pageH - margin);
+
+    const blob = doc.output("blob");
+    const filename = buildExportFilename("map", "pdf");
+    if (window.exportPdfHelper?.saveAndSharePdfBlob) {
+      try {
+        const result = await window.exportPdfHelper.saveAndSharePdfBlob(blob, filename);
+        if (result?.shared) {
+          setStatus(`Map PDF shared: ${filename}`);
+        } else if (result?.uri) {
+          setStatus(`Map PDF saved locally: ${filename}`);
+        } else {
+          setStatus(`Map PDF prepared: ${filename}`);
+        }
+        return;
+      } catch (_error) {
+        // Fall back to browser download.
+      }
+    }
+    await downloadBlob(blob, filename);
+    setStatus(`Map PDF exported: ${filename}`);
+  }
+
   async function exportCostCsv() {
+    hidePrintExportModal();
     const rows = normalizeCostRowsForExport();
     if (!rows.length) {
       setStatus("No costed resources to export.");
@@ -5063,6 +5330,7 @@
   }
 
   async function exportCostPdf() {
+    hidePrintExportModal();
     const rows = normalizeCostRowsForExport();
     if (!rows.length) {
       setStatus("No costed resources to export.");
@@ -5167,7 +5435,7 @@
   }
 
   function buildExportFilename(baseName, extension) {
-    const incident = String(state.activeSession?.incidentName || "incident")
+    const incident = String(state.activeSession?.incidentName || state.scenarioReview?.incidentName || "incident")
       .trim()
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")

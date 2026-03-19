@@ -342,6 +342,57 @@ body { height: 100vh; overflow: hidden; }
   font-size: 10pt;
   line-height: 1.2;
 }
+.map-print-root {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 7.5in;
+  padding: 0;
+  background: #fff;
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.map-print-sheet {
+  width: 7.5in;
+  margin: 0 auto;
+  color: #000;
+  background: #fff;
+}
+.map-print-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-end;
+  border-bottom: 2px solid #000;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+.map-print-title {
+  font-size: 14pt;
+  font-weight: 700;
+}
+.map-print-meta {
+  text-align: right;
+  font-size: 9pt;
+  line-height: 1.3;
+}
+.map-print-frame {
+  border: 1px solid #000;
+  padding: 8px;
+}
+.map-print-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #000;
+}
+.map-print-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 9pt;
+}
 .ics202-print-container {
   width: 7.5in;
   margin: 0 auto;
@@ -998,6 +1049,28 @@ button.danger { background: rgba(178,58,72,0.14); color: #f4c9ce; border-color: 
   display: grid;
   gap: 14px;
 }
+.export-modal-card {
+  width: min(460px, 100%);
+}
+.export-option-group {
+  display: grid;
+  gap: 10px;
+}
+.export-option-group-title {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.export-option-btn {
+  width: 100%;
+  justify-content: center;
+}
+.export-modal-note {
+  border-top: 1px solid var(--stroke);
+  padding-top: 12px;
+}
 .modal-header {
   display: flex;
   align-items: center;
@@ -1413,6 +1486,43 @@ button.danger { background: rgba(178,58,72,0.14); color: #f4c9ce; border-color: 
   @page {
     size: letter portrait;
     margin: 0.5in;
+  }
+  body.print-map .shell > *:not(.layout),
+  body.print-map .modal,
+  body.print-map #landingView,
+  body.print-map #ics202Workspace,
+  body.print-map #ics202PrintRoot {
+    display: none !important;
+  }
+  body.print-map .shell {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+  body.print-map .shell .layout {
+    display: block;
+    overflow: visible;
+  }
+  body.print-map .shell #appView {
+    display: block !important;
+    background: #fff;
+    width: auto;
+    padding: 0;
+  }
+  body.print-map .shell #appView > *:not(#mapPrintRoot) {
+    display: none !important;
+  }
+  body.print-map .shell #mapPrintRoot {
+    position: static;
+    left: auto;
+    top: auto;
+    width: 7.5in;
+    padding: 0;
+    display: block !important;
+  }
+  body.print-map {
+    margin: 0;
+    background: #fff;
   }
   body.print-ics202 .shell > *:not(#ics202Workspace) {
     display: none !important;
