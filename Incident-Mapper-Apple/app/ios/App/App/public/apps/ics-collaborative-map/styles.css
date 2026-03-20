@@ -828,6 +828,26 @@ body[data-theme="light"] .map-sidebar-toggle {
   display: grid;
   gap: var(--space-2);
 }
+.auth-inline-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+.auth-link-btn {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  box-shadow: none;
+}
+.auth-link-btn:hover {
+  background: transparent;
+  color: var(--text);
+}
+.auth-link-btn:disabled {
+  color: var(--muted);
+  opacity: 0.65;
+}
 .create-session-grid,
 .join-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
