@@ -268,6 +268,12 @@ body[data-theme="light"] .super-admin-topbar {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
 }
+.super-admin-filter-row {
+  display: grid;
+  grid-template-columns: minmax(240px, 360px);
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
 .super-admin-organization-card {
   gap: var(--space-3);
 }
@@ -1978,7 +1984,8 @@ button.danger { background: rgba(182,59,59,0.14); color: #f4c9ce; border-color: 
   }
   .super-admin-stat-grid,
   .super-admin-form-grid,
-  .super-admin-inline-grid {
+  .super-admin-inline-grid,
+  .super-admin-filter-row {
     grid-template-columns: minmax(0, 1fr);
   }
 }

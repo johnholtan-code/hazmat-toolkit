@@ -378,6 +378,7 @@
     superAdminFirstAdminEmailInput: document.getElementById("superAdminFirstAdminEmailInput"),
     superAdminCreateOrgBtn: document.getElementById("superAdminCreateOrgBtn"),
     superAdminOrganizationsList: document.getElementById("superAdminOrganizationsList"),
+    superAdminUsersOrgFilter: document.getElementById("superAdminUsersOrgFilter"),
     superAdminUsersList: document.getElementById("superAdminUsersList"),
     superAdminAccessList: document.getElementById("superAdminAccessList"),
     map: document.getElementById("map"),
@@ -487,6 +488,7 @@
     ics202Draft: null,
     superAdminOpen: false,
     superAdminTab: "overview",
+    superAdminUsersOrgFilter: "",
     ics202ObjectiveDragIndex: -1
   };
 
@@ -892,6 +894,10 @@
     elements.superAdminTabUsers?.addEventListener("click", () => setSuperAdminTab("users"));
     elements.superAdminTabAccess?.addEventListener("click", () => setSuperAdminTab("access"));
     elements.superAdminCreateOrgBtn?.addEventListener("click", onCreateSuperAdminOrganization);
+    elements.superAdminUsersOrgFilter?.addEventListener("change", (event) => {
+      state.superAdminUsersOrgFilter = String(event.target.value || "");
+      renderSuperAdminUsers();
+    });
     bindIcs202Events();
     window.addEventListener("resize", scheduleMapResizeRefresh);
   }
@@ -3396,13 +3402,26 @@
   }
 
   function renderSuperAdminUsers() {
-    if (!elements.superAdminUsersList) return;
+    if (!elements.superAdminUsersList || !elements.superAdminUsersOrgFilter) return;
+    const organizations = Array.isArray(state.superAdminData.organizations) ? state.superAdminData.organizations : [];
+    const currentFilter = String(state.superAdminUsersOrgFilter || "");
+    elements.superAdminUsersOrgFilter.innerHTML = '<option value="">All Departments</option>';
+    organizations.forEach((organization) => {
+      const option = document.createElement("option");
+      option.value = String(organization.id || "");
+      option.textContent = organization.organizationName || "Department";
+      elements.superAdminUsersOrgFilter.appendChild(option);
+    });
+    elements.superAdminUsersOrgFilter.value = currentFilter;
     elements.superAdminUsersList.innerHTML = "";
-    const users = Array.isArray(state.superAdminData.users) ? state.superAdminData.users : [];
+    const users = (Array.isArray(state.superAdminData.users) ? state.superAdminData.users : []).filter((user) => {
+      if (!currentFilter) return true;
+      return String(user.organizationId || "") === currentFilter;
+    });
     if (!users.length) {
       const empty = document.createElement("div");
       empty.className = "muted";
-      empty.textContent = "No licensed users found.";
+      empty.textContent = currentFilter ? "No users found for the selected department." : "No licensed users found.";
       elements.superAdminUsersList.appendChild(empty);
       return;
     }
