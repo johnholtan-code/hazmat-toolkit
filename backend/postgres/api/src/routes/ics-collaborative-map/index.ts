@@ -1854,7 +1854,7 @@ async function fetchSessionByID(pool: { query: PoolClient['query'] }, sessionID:
         on org.id = s.organization_id
       left join collab_counties county
         on county.id = org.county_id
-      where id = $1::uuid
+      where s.id = $1::uuid
       limit 1
     `,
     [sessionID]
