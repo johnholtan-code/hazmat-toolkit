@@ -4036,8 +4036,20 @@
 
   async function placeIsolationZonesAt(spillLatLng, config, editContext = null) {
     const groupId = editContext?.groupId || createLocalID();
-    const initialTemplate = templateByType[ISOLATION_ZONE_OBJECT_TYPE];
-    const protectiveTemplate = templateByType[PROTECTIVE_ACTION_ZONE_OBJECT_TYPE];
+    const initialTemplate = templateByType[ISOLATION_ZONE_OBJECT_TYPE] || {
+      objectType: ISOLATION_ZONE_OBJECT_TYPE,
+      label: "Initial Isolation Zone",
+      geometryType: "polygon",
+      color: "#9ca3af",
+      defaults: {}
+    };
+    const protectiveTemplate = templateByType[PROTECTIVE_ACTION_ZONE_OBJECT_TYPE] || {
+      objectType: PROTECTIVE_ACTION_ZONE_OBJECT_TYPE,
+      label: "Protective Action Zone",
+      geometryType: "polygon",
+      color: "#6b7280",
+      defaults: {}
+    };
     const initialObjectId = editContext?.initialObjectId || createLocalID();
     const protectiveObjectId = editContext?.protectiveObjectId || createLocalID();
     const initialFields = buildIsolationZoneFields("initial", groupId, spillLatLng, config);
@@ -4055,8 +4067,8 @@
       const buildLocalObject = (objectId, template, geometry, fields, previousObject = null) => ({
         id: objectId,
         sessionId: state.scenarioReview.id,
-        objectType: template.objectType,
-        geometryType: template.geometryType,
+        objectType: template.objectType || ISOLATION_ZONE_OBJECT_TYPE,
+        geometryType: template.geometryType || "polygon",
         geometry: deepClone(geometry),
         fields: deepClone(fields),
         createdByParticipantId: previousObject?.createdByParticipantId || state.actor?.id || "scenario-review-local",
@@ -4089,8 +4101,8 @@
         clientMutationId: createLocalID(),
         objectId: initialObjectId,
         mutationType: editContext ? "update" : "create",
-        objectType: initialTemplate.objectType,
-        geometryType: initialTemplate.geometryType,
+        objectType: ISOLATION_ZONE_OBJECT_TYPE,
+        geometryType: "polygon",
         geometry: initialGeometry,
         fields: initialFields,
         ...(editContext ? { baseVersion: state.objects.get(initialObjectId)?.version || 0 } : {})
@@ -4099,8 +4111,8 @@
         clientMutationId: createLocalID(),
         objectId: protectiveObjectId,
         mutationType: editContext ? "update" : "create",
-        objectType: protectiveTemplate.objectType,
-        geometryType: protectiveTemplate.geometryType,
+        objectType: PROTECTIVE_ACTION_ZONE_OBJECT_TYPE,
+        geometryType: "polygon",
         geometry: protectiveGeometry,
         fields: protectiveFields,
         ...(editContext ? { baseVersion: state.objects.get(protectiveObjectId)?.version || 0 } : {})
