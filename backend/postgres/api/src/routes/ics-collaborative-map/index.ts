@@ -92,6 +92,10 @@ type UpdateIncidentCommandBody = {
   commanderName?: string;
 };
 
+type UpdateViewerAccessBody = {
+  enabled?: boolean;
+};
+
 type LockBody = {
   baseVersion?: number;
 };
@@ -109,6 +113,7 @@ type CollabSessionRow = {
   commander_ics_role: string;
   join_code: string;
   join_code_expires_at: string;
+  viewer_access_enabled: boolean;
   session_status: SessionStatus;
   operational_period_start: string;
   operational_period_end: string;
@@ -198,6 +203,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         throw new NotFoundError('Collaborative session not found for viewer link.');
       }
       const refreshed = await refreshSessionStatusIfExpired(app.pg, session.id);
+      ensureViewerAccessEnabled(refreshed);
       const snapshot = await buildSessionSnapshot(app.pg, refreshed.id);
       return reply.send({
         session: mapSession(refreshed, app.config.icsCollabPublicBaseUrl ?? request.headers.origin),
@@ -220,6 +226,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         throw new NotFoundError('Collaborative session not found for viewer link.');
       }
       const refreshed = await refreshSessionStatusIfExpired(app.pg, session.id);
+      ensureViewerAccessEnabled(refreshed);
       const deltas = await listMutationsSince(app.pg, refreshed.id, sinceVersion);
       return reply.send({
         session: mapSession(refreshed, app.config.icsCollabPublicBaseUrl ?? request.headers.origin),
@@ -245,6 +252,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
             commander_ics_role,
             join_code,
             join_code_expires_at,
+            viewer_access_enabled,
             session_status,
             operational_period_start,
             operational_period_end,
@@ -344,6 +352,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
               commander_ics_role,
               join_code,
               join_code_expires_at,
+              viewer_access_enabled,
               session_status,
               operational_period_start,
               operational_period_end
@@ -357,6 +366,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
               commander_ics_role,
               join_code,
               join_code_expires_at,
+              viewer_access_enabled,
               session_status,
               operational_period_start,
               operational_period_end,
@@ -592,6 +602,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
             commander_ics_role,
             join_code,
             join_code_expires_at,
+            viewer_access_enabled,
             session_status,
             operational_period_start,
             operational_period_end,
@@ -630,6 +641,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
             commander_ics_role,
             join_code,
             join_code_expires_at,
+            viewer_access_enabled,
             session_status,
             operational_period_start,
             operational_period_end,
@@ -643,6 +655,42 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
       return reply.send(mapSession(result.rows[0], app.config.icsCollabPublicBaseUrl ?? request.headers.origin));
     } catch (error) {
       return sendRouteError(reply, request, error, 'Failed to update Incident Commander assignment.');
+    }
+  });
+
+  app.patch<{ Params: { sessionId: string }; Body: UpdateViewerAccessBody }>('/v1/ics-collab/sessions/:sessionId/viewer-access', async (request, reply) => {
+    try {
+      const actor = await resolveSessionActor(app, request.params.sessionId, request.headers.authorization, { requireCommander: true });
+      if (typeof request.body?.enabled !== 'boolean') {
+        return reply.code(400).send({ error: 'BAD_REQUEST', message: 'enabled boolean is required.' });
+      }
+      const result = await app.pg.query<CollabSessionRow>(
+        `
+          update collab_map_sessions
+          set viewer_access_enabled = $2
+          where id = $1::uuid
+          returning
+            id::text as id,
+            trainer_ref,
+            incident_name,
+            commander_name,
+            commander_ics_role,
+            join_code,
+            join_code_expires_at,
+            viewer_access_enabled,
+            session_status,
+            operational_period_start,
+            operational_period_end,
+            last_mutation_version::text as last_mutation_version,
+            ended_at,
+            created_at,
+            updated_at
+        `,
+        [actor.session.id, request.body.enabled]
+      );
+      return reply.send(mapSession(result.rows[0], app.config.icsCollabPublicBaseUrl ?? request.headers.origin));
+    } catch (error) {
+      return sendRouteError(reply, request, error, 'Failed to update viewer access.');
     }
   });
 
@@ -825,6 +873,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
             commander_ics_role,
             join_code,
             join_code_expires_at,
+            viewer_access_enabled,
             session_status,
             operational_period_start,
             operational_period_end,
@@ -1210,6 +1259,7 @@ async function fetchSessionByID(pool: { query: PoolClient['query'] }, sessionID:
         commander_ics_role,
         join_code,
         join_code_expires_at,
+        viewer_access_enabled,
         session_status,
         operational_period_start,
         operational_period_end,
@@ -1237,6 +1287,7 @@ async function fetchSessionByJoinCode(pool: { query: PoolClient['query'] }, join
         commander_ics_role,
         join_code,
         join_code_expires_at,
+        viewer_access_enabled,
         session_status,
         operational_period_start,
         operational_period_end,
@@ -1570,6 +1621,7 @@ function mapSession(row: CollabSessionRow, publicBaseUrl?: string) {
     commanderICSRole: row.commander_ics_role,
     joinCode: row.join_code,
     joinCodeExpiresAt: row.join_code_expires_at,
+    viewerAccessEnabled: row.viewer_access_enabled !== false,
     status: row.session_status,
     operationalPeriodStart: row.operational_period_start,
     operationalPeriodEnd: row.operational_period_end,
@@ -1579,6 +1631,12 @@ function mapSession(row: CollabSessionRow, publicBaseUrl?: string) {
     updatedAt: row.updated_at,
     joinUrl
   };
+}
+
+function ensureViewerAccessEnabled(session: CollabSessionRow) {
+  if (session.viewer_access_enabled === false) {
+    throw new ViewerAccessDisabledError('Viewer access has been turned off for this session.');
+  }
 }
 
 function mapParticipant(row: CollabParticipantRow) {
@@ -1777,9 +1835,13 @@ function sendRouteError(reply: FastifyReply, request: FastifyRequest, error: unk
   if (error instanceof ConflictError) {
     return reply.code(409).send({ error: 'CONFLICT', message: error.message });
   }
+  if (error instanceof ViewerAccessDisabledError) {
+    return reply.code(403).send({ error: 'VIEWER_ACCESS_DISABLED', message: error.message });
+  }
   return reply.code(500).send({ error: 'INTERNAL_ERROR', message: fallbackMessage });
 }
 
 class ValidationError extends Error {}
 class ConflictError extends Error {}
 class NotFoundError extends Error {}
+class ViewerAccessDisabledError extends Error {}

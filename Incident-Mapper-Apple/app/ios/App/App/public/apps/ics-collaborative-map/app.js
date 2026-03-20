@@ -220,6 +220,7 @@
     leaveSessionBtn: document.getElementById("leaveSessionBtn"),
     sessionSignOutBtn: document.getElementById("sessionSignOutBtn"),
     showViewerQrBtn: document.getElementById("showViewerQrBtn"),
+    toggleViewerAccessBtn: document.getElementById("toggleViewerAccessBtn"),
     quickFlowPanel: document.getElementById("quickFlowPanel"),
     quickFlowPanelToggle: document.getElementById("quickFlowPanelToggle"),
     quickFlowPanelBody: document.getElementById("quickFlowPanelBody"),
@@ -766,6 +767,7 @@
     elements.leaveSessionBtn.addEventListener("click", leaveCurrentSession);
     elements.sessionSignOutBtn.addEventListener("click", signOutCommander);
     elements.showViewerQrBtn.addEventListener("click", showViewerQrModal);
+    elements.toggleViewerAccessBtn?.addEventListener("click", toggleViewerAccess);
     elements.incidentOverviewPanelToggle.addEventListener("click", () => togglePanel("incidentOverview"));
     elements.sessionPanelToggle.addEventListener("click", () => togglePanel("session"));
     elements.sessionPeriodPanelToggle.addEventListener("click", () => togglePanel("sessionPeriod"));
@@ -1147,6 +1149,9 @@
       await openSession(response.session, state.actor, "viewer", response.snapshot);
       setStatus(`Viewing ${response.session.incidentName} in read-only mode.`);
     } catch (error) {
+      if (isViewerAccessDisabledError(error)) {
+        exitActiveWorkspace();
+      }
       setStatus(formatError(error));
     }
   }
@@ -1339,6 +1344,12 @@
         state.sessionRefreshNonce += 1;
         renderCostSummary();
       } catch (error) {
+        if (state.viewerMode && isViewerAccessDisabledError(error)) {
+          exitActiveWorkspace();
+          renderAll();
+          setStatus("Viewer access has been turned off for this session.");
+          return;
+        }
         setStatus(formatError(error));
       }
     }, POLL_INTERVAL_MS);
@@ -1803,7 +1814,11 @@
     elements.isolationToolBtn.classList.toggle("hidden", !(Boolean(state.activeSession) || isScenarioReviewMode()) || state.viewerMode);
     elements.setIncidentFocusBtn.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode() || !isCommander() || Boolean(getIncidentFocusPoint()));
     elements.centerIncidentBtn.classList.toggle("hidden", !(state.activeSession || isScenarioReviewMode()));
-    elements.showViewerQrBtn.classList.toggle("hidden", !canShareViewerQr() || !state.activeSession || state.viewerMode || isScenarioReviewMode());
+    const viewerQrAllowed = canShareViewerQr() && isViewerAccessEnabled();
+    const viewerToggleVisible = canToggleViewerAccess();
+    elements.showViewerQrBtn.classList.toggle("hidden", !viewerQrAllowed || !state.activeSession || state.viewerMode || isScenarioReviewMode());
+    elements.toggleViewerAccessBtn.classList.toggle("hidden", !viewerToggleVisible || !state.activeSession || state.viewerMode || isScenarioReviewMode());
+    elements.toggleViewerAccessBtn.textContent = isViewerAccessEnabled() ? "Disable Viewer Access" : "Enable Viewer Access";
     elements.joinLockedNote.classList.toggle("hidden", signedIn);
     toggleLandingCardAccess(signedIn);
   }
@@ -2920,6 +2935,7 @@
       elements.incidentCommandPanel.classList.add("hidden");
     } else {
       appendMetaRow(elements.sessionMeta, "Join Code", session.joinCode);
+      appendMetaRow(elements.sessionMeta, "Viewer Access", isViewerAccessEnabled(session) ? "Enabled" : "Disabled");
       appendMetaRow(elements.sessionMeta, "Period", `${formatDateTime(session.operationalPeriodStart)} → ${formatDateTime(session.operationalPeriodEnd)}`);
       elements.copyJoinLinkBtn.classList.toggle("hidden", !session.joinCode);
       elements.endSessionBtn.classList.toggle("hidden", !isCommander());
@@ -5261,6 +5277,30 @@
     }
   }
 
+  async function toggleViewerAccess() {
+    if (!state.activeSession || isScenarioReviewMode() || !canToggleViewerAccess()) return;
+    const nextEnabled = !isViewerAccessEnabled();
+    const prompt = nextEnabled
+      ? "Enable viewer QR access for this session again?"
+      : "Disable viewer QR access for this session? Existing viewers will lose access on their next refresh.";
+    if (!window.confirm(prompt)) return;
+    try {
+      const session = await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(state.activeSession.id)}/viewer-access`, {
+        method: "PATCH",
+        actorType: "commander",
+        body: { enabled: nextEnabled }
+      });
+      state.activeSession = session;
+      if (!nextEnabled) {
+        hideViewerQrModal();
+      }
+      renderAll();
+      setStatus(nextEnabled ? "Viewer access enabled." : "Viewer access disabled. QR links are now off.");
+    } catch (error) {
+      setStatus(formatError(error));
+    }
+  }
+
   function buildViewerLink(session = state.activeSession) {
     if (!session?.joinCode) return "";
     const baseUrl = runtimeConfig.publicBaseUrl || `${window.location.origin}${window.location.pathname}`;
@@ -5277,6 +5317,10 @@
   function showViewerQrModal() {
     if (!state.activeSession?.joinCode || isScenarioReviewMode() || !canShareViewerQr()) {
       setStatus("Only signed-in command staff can share the viewer QR.");
+      return;
+    }
+    if (!isViewerAccessEnabled()) {
+      setStatus("Viewer access is currently disabled for this session.");
       return;
     }
     const viewerLink = buildViewerLink();
@@ -5333,11 +5377,19 @@
     return state.actor?.permissionTier === "commander" || currentActorType() === "commander";
   }
 
+  function isViewerAccessEnabled(session = state.activeSession) {
+    return session?.viewerAccessEnabled !== false;
+  }
+
   function canShareViewerQr() {
     if (!state.activeSession || isScenarioReviewMode() || state.viewerMode || !state.actor) return false;
     if (state.actor.permissionTier === "commander") return true;
     if (state.actor.permissionTier === "observer") return false;
     return VIEWER_QR_ALLOWED_ROLES.has(String(state.actor.icsRole || "").trim());
+  }
+
+  function canToggleViewerAccess() {
+    return isCommander() && !isScenarioReviewMode() && !state.viewerMode && Boolean(state.activeSession);
   }
 
   function formatPermissionTier(permissionTier) {
@@ -5972,9 +6024,16 @@
     return labelMap[code] || "Current conditions";
   }
 
+  function isViewerAccessDisabledError(error) {
+    return error?.payload?.error === "VIEWER_ACCESS_DISABLED";
+  }
+
   function formatError(error) {
     if (!error) return "Unknown error.";
     if (typeof error === "string") return error;
+    if (isViewerAccessDisabledError(error)) {
+      return error?.message || "Viewer access has been turned off for this session.";
+    }
     return error.message || "Unknown error.";
   }
 
