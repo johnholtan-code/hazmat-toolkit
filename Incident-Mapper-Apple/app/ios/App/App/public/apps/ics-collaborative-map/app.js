@@ -334,6 +334,7 @@
     distanceUnitSelect: document.getElementById("distanceUnitSelect"),
     isolationErgMaterialInput: document.getElementById("isolationErgMaterialInput"),
     isolationErgMaterialList: document.getElementById("isolationErgMaterialList"),
+    isolationErgSuggestions: document.getElementById("isolationErgSuggestions"),
     isolationSpillSizeSelect: document.getElementById("isolationSpillSizeSelect"),
     isolationTimeOfDaySelect: document.getElementById("isolationTimeOfDaySelect"),
     isolationTransportContainerField: document.getElementById("isolationTransportContainerField"),
@@ -703,7 +704,19 @@
     elements.closeIsolationToolBtn.addEventListener("click", closeIsolationToolModal);
     elements.cancelIsolationToolBtn.addEventListener("click", closeIsolationToolModal);
     elements.startIsolationPlacementBtn.addEventListener("click", beginIsolationPlacementFlow);
-    elements.isolationErgMaterialInput?.addEventListener("change", () => renderIsolationErgControls({ autofill: true }));
+    elements.isolationErgMaterialInput?.addEventListener("input", () => {
+      renderIsolationErgSuggestions();
+      renderIsolationErgControls({ autofill: Boolean(getSelectedErgMaterial()) });
+    });
+    elements.isolationErgMaterialInput?.addEventListener("focus", () => {
+      renderIsolationErgSuggestions();
+    });
+    elements.isolationErgMaterialInput?.addEventListener("change", () => {
+      renderIsolationErgControls({ autofill: Boolean(getSelectedErgMaterial()) });
+    });
+    elements.isolationErgMaterialInput?.addEventListener("blur", () => {
+      window.setTimeout(() => hideIsolationErgSuggestions(), 120);
+    });
     elements.isolationSpillSizeSelect?.addEventListener("change", () => renderIsolationErgControls({ autofill: true }));
     elements.isolationTimeOfDaySelect?.addEventListener("change", () => renderIsolationErgControls({ autofill: true }));
     elements.isolationTransportContainerSelect?.addEventListener("change", () => renderIsolationErgControls({ autofill: true }));
@@ -2075,9 +2088,13 @@
     elements.isolationErgMaterialList.innerHTML = "";
     state.ergCatalog.materials.forEach((material) => {
       const option = document.createElement("option");
-      option.value = `${material.displayName} (UN${material.unNumber})`;
+      option.value = getErgMaterialDisplayValue(material);
       elements.isolationErgMaterialList.appendChild(option);
     });
+  }
+
+  function getErgMaterialDisplayValue(material) {
+    return `${material.displayName} (UN${material.unNumber})`;
   }
 
   function convertDistanceToMeters(value, unit) {
@@ -2113,16 +2130,63 @@
   function resolveErgMaterialFromInput(value) {
     const key = normalizeErgLookupKey(value);
     if (!key) return null;
-    const direct = state.ergCatalog.lookup.get(key);
-    if (direct) return direct;
-    return state.ergCatalog.materials.find((material) => {
-      const names = [material.displayName, ...(material.materialNames || []), material.unNumber ? `un${material.unNumber}` : ""];
-      return names.some((name) => normalizeErgLookupKey(name).includes(key));
-    }) || null;
+    return state.ergCatalog.lookup.get(key) || null;
   }
 
   function getSelectedErgMaterial() {
     return resolveErgMaterialFromInput(elements.isolationErgMaterialInput?.value);
+  }
+
+  function findErgMaterialMatches(query) {
+    const key = normalizeErgLookupKey(query);
+    if (!key) return [];
+    return state.ergCatalog.materials.filter((material) => {
+      const haystacks = [
+        material.displayName,
+        ...(material.materialNames || []),
+        material.unNumber,
+        material.unNumber ? `un${material.unNumber}` : "",
+        getErgMaterialDisplayValue(material)
+      ];
+      return haystacks.some((value) => normalizeErgLookupKey(value).includes(key));
+    }).slice(0, 8);
+  }
+
+  function hideIsolationErgSuggestions() {
+    if (!elements.isolationErgSuggestions) return;
+    elements.isolationErgSuggestions.innerHTML = "";
+    elements.isolationErgSuggestions.classList.add("hidden");
+  }
+
+  function applyErgMaterialSelection(material) {
+    if (!material || !elements.isolationErgMaterialInput) return;
+    elements.isolationErgMaterialInput.value = getErgMaterialDisplayValue(material);
+    hideIsolationErgSuggestions();
+    renderIsolationErgControls({ autofill: true });
+  }
+
+  function renderIsolationErgSuggestions(query = elements.isolationErgMaterialInput?.value || "") {
+    if (!elements.isolationErgSuggestions) return;
+    const matches = findErgMaterialMatches(query);
+    if (!matches.length || !query.trim()) {
+      hideIsolationErgSuggestions();
+      return;
+    }
+    elements.isolationErgSuggestions.innerHTML = "";
+    matches.forEach((material) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "isolation-suggestion";
+      button.setAttribute("role", "option");
+      const aliases = (material.materialNames || []).filter((name) => name !== material.displayName).slice(0, 2);
+      button.innerHTML = `<strong>${escapeHtml(material.displayName)}</strong><span>UN${escapeHtml(material.unNumber)}${aliases.length ? ` · ${escapeHtml(aliases.join(", "))}` : ""}</span>`;
+      button.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        applyErgMaterialSelection(material);
+      });
+      elements.isolationErgSuggestions.appendChild(button);
+    });
+    elements.isolationErgSuggestions.classList.remove("hidden");
   }
 
   function getCurrentIsolationUnit() {
@@ -2525,7 +2589,7 @@
     elements.windDirectionInput.value = String(Math.round(activeConfig.windFrom));
     if (elements.isolationErgMaterialInput) {
       elements.isolationErgMaterialInput.value = activeConfig.ergMaterialName
-        ? activeConfig.ergUnNumber ? `${activeConfig.ergMaterialName} (UN${activeConfig.ergUnNumber})` : activeConfig.ergMaterialName
+        ? activeConfig.ergUnNumber ? getErgMaterialDisplayValue({ displayName: activeConfig.ergMaterialName, unNumber: activeConfig.ergUnNumber }) : activeConfig.ergMaterialName
         : "";
     }
     if (elements.isolationSpillSizeSelect) elements.isolationSpillSizeSelect.value = activeConfig.ergSpillSize === "large" ? "large" : "small";
@@ -2543,10 +2607,12 @@
       renderIsolationErgControls({ autofill: Boolean(activeConfig.ergSource === "erg") });
     }
     renderIsolationWindControls();
+    hideIsolationErgSuggestions();
     elements.isolationToolModal.classList.remove("hidden");
   }
 
   function closeIsolationToolModal() {
+    hideIsolationErgSuggestions();
     elements.isolationToolModal.classList.add("hidden");
     elements.startIsolationPlacementBtn.textContent = "Place on Map";
   }

@@ -581,7 +581,10 @@
       </div>
       <label class="isolation-field">
         <span class="isolation-label">Chemical / Material</span>
-        <input id="isolationErgMaterialInput" type="text" list="isolationErgMaterialList" placeholder="Search ERG material or UN number" autocomplete="off" />
+        <div class="isolation-search-shell">
+          <input id="isolationErgMaterialInput" type="text" placeholder="Search ERG material or UN number" autocomplete="off" />
+          <div id="isolationErgSuggestions" class="isolation-suggestions hidden" role="listbox" aria-label="ERG material suggestions"></div>
+        </div>
       </label>
       <datalist id="isolationErgMaterialList"></datalist>
       <div class="isolation-grid">
