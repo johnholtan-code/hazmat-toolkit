@@ -2730,13 +2730,17 @@
     sessions.forEach((session) => {
       const card = document.createElement("div");
       card.className = "session-card";
+      const top = document.createElement("div");
+      top.className = "session-card-top";
+      const content = document.createElement("div");
+      content.className = "session-card-content";
       const title = document.createElement("strong");
       title.textContent = session.incidentName;
       const meta = document.createElement("div");
       meta.className = "muted";
       meta.textContent = `${session.status.toUpperCase()} · ${formatDateTime(session.operationalPeriodStart)} to ${formatDateTime(session.operationalPeriodEnd)}`;
       const row = document.createElement("div");
-      row.className = "row";
+      row.className = "row session-card-actions";
       const openBtn = document.createElement("button");
       openBtn.className = "secondary";
       openBtn.type = "button";
@@ -2767,7 +2771,9 @@
         }
       });
       row.append(openBtn, copyBtn);
-      card.append(title, meta, row);
+      content.append(title, meta);
+      top.append(content, row);
+      card.append(top);
       elements.commanderSessionList.appendChild(card);
     });
   }

@@ -1277,6 +1277,24 @@ button.danger { background: rgba(178,58,72,0.14); color: #f4c9ce; border-color: 
   gap: var(--space-2);
   min-width: 0;
 }
+.session-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.session-card-content {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.session-card-actions {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  align-items: flex-start;
+}
 .session-card strong,
 .session-card .muted {
   min-width: 0;
