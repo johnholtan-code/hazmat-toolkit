@@ -1537,7 +1537,9 @@
         evacMeters: Math.max(1, Number(fields.evacMeters || 0) || 0),
         windFrom: ((Number(fields.windFrom) || 270) % 360 + 360) % 360,
         useLiveWind: fields.useLiveWind !== false,
-        manualOverride: Boolean(fields.manualOverride)
+        manualOverride: Boolean(fields.manualOverride),
+        lastWindUpdatedAt: String(fields.lastWindUpdatedAt || ""),
+        windSource: String(fields.windSource || "")
       }
     };
   }
@@ -2067,6 +2069,8 @@
       windFrom: round2(config.windFrom),
       useLiveWind: Boolean(config.useLiveWind),
       manualOverride: Boolean(config.manualOverride),
+      lastWindUpdatedAt: config.lastWindUpdatedAt || "",
+      windSource: config.windSource || (config.useLiveWind && !config.manualOverride ? "live" : "manual"),
       spillLat: roundCoord(spillLatLng.lat),
       spillLng: roundCoord(spillLatLng.lng)
     };
@@ -2081,9 +2085,16 @@
     const manualEnabled = !useLiveWind || manualOverride;
     elements.isolationManualWindField.classList.toggle("hidden", !manualEnabled);
     elements.windDirectionInput.disabled = !manualEnabled;
+    if (elements.startIsolationPlacementBtn) {
+      elements.startIsolationPlacementBtn.textContent = state.isolationEditContext
+        ? (useLiveWind && !manualOverride ? "Refresh Wind / Update Zone" : "Update Selected Zones")
+        : "Place on Map";
+    }
+    const lastWindUpdatedAt = state.isolationEditContext?.config?.lastWindUpdatedAt || "";
+    const updateNote = lastWindUpdatedAt ? ` Last wind update: ${formatDateTime(lastWindUpdatedAt)}.` : "";
     elements.isolationWindHint.textContent = useLiveWind && !manualOverride
-      ? "0 = from North, 90 = from East. Zone extends downwind away from the spill. Live wind will be fetched from the spill point after placement."
-      : "0 = from North, 90 = from East. Zone extends downwind away from the spill.";
+      ? `0 = from North, 90 = from East. Zone extends downwind away from the spill. Live wind will be fetched from the spill point after placement.${updateNote}`
+      : `0 = from North, 90 = from East. Zone extends downwind away from the spill.${updateNote}`;
   }
 
   async function fetchWindDirectionForLatLng(latlng) {
@@ -2119,7 +2130,9 @@
       evacMeters: convertDistanceToMeters(elements.evacuationDistanceInput?.value || 300, elements.distanceUnitSelect?.value || "ft"),
       windFrom: ((Number(elements.windDirectionInput?.value) || 270) % 360 + 360) % 360,
       useLiveWind: true,
-      manualOverride: false
+      manualOverride: false,
+      lastWindUpdatedAt: "",
+      windSource: ""
     };
     elements.distanceUnitSelect.value = activeConfig.unit;
     elements.isolationDistanceInput.value = String(Math.round(convertMetersToDistance(activeConfig.initialMeters, activeConfig.unit)));
@@ -2128,7 +2141,6 @@
     if (elements.isolationUseLiveWindToggle) elements.isolationUseLiveWindToggle.checked = activeConfig.useLiveWind !== false;
     if (elements.isolationManualOverrideToggle) elements.isolationManualOverrideToggle.checked = Boolean(activeConfig.manualOverride);
     renderIsolationWindControls();
-    elements.startIsolationPlacementBtn.textContent = state.isolationEditContext ? "Update Selected Zones" : "Place on Map";
     elements.isolationToolModal.classList.remove("hidden");
   }
 
@@ -2152,18 +2164,35 @@
       setStatus("Isolation and evacuation distances must be greater than zero.");
       return;
     }
-    const config = { unit, initialMeters, evacMeters, windFrom, useLiveWind, manualOverride };
+    const config = {
+      unit,
+      initialMeters,
+      evacMeters,
+      windFrom,
+      useLiveWind,
+      manualOverride,
+      lastWindUpdatedAt: state.isolationEditContext?.config?.lastWindUpdatedAt || "",
+      windSource: state.isolationEditContext?.config?.windSource || ""
+    };
     if (state.isolationEditContext?.spillLatLng) {
       let resolvedConfig = config;
       if (config.useLiveWind && !config.manualOverride) {
         try {
           resolvedConfig = {
             ...config,
-            windFrom: await fetchWindDirectionForLatLng(state.isolationEditContext.spillLatLng)
+            windFrom: await fetchWindDirectionForLatLng(state.isolationEditContext.spillLatLng),
+            lastWindUpdatedAt: new Date().toISOString(),
+            windSource: "live"
           };
         } catch (error) {
           setStatus(`Live wind unavailable. Using manual wind setting. ${formatError(error)}`);
         }
+      } else {
+        resolvedConfig = {
+          ...config,
+          lastWindUpdatedAt: config.lastWindUpdatedAt || new Date().toISOString(),
+          windSource: "manual"
+        };
       }
       void placeIsolationZonesAt(state.isolationEditContext.spillLatLng, resolvedConfig, state.isolationEditContext);
       closeIsolationToolModal();
@@ -3713,6 +3742,8 @@
       appendMetaRow(elements.selectedObjectMeta, "Distance", `${Math.round(convertMetersToDistance(Number(object.fields?.initialMeters || 0), object.fields?.distanceUnit || "ft"))} ${object.fields?.distanceUnit || "ft"}`);
       appendMetaRow(elements.selectedObjectMeta, "Downwind", `${Math.round(convertMetersToDistance(Number(object.fields?.evacMeters || 0), object.fields?.distanceUnit || "ft"))} ${object.fields?.distanceUnit || "ft"}`);
       appendMetaRow(elements.selectedObjectMeta, "Wind From", `${Math.round(Number(object.fields?.windFrom || 0))}°`);
+      appendMetaRow(elements.selectedObjectMeta, "Wind Source", object.fields?.windSource === "live" ? "Live Weather" : "Manual");
+      appendMetaRow(elements.selectedObjectMeta, "Last Wind Update", object.fields?.lastWindUpdatedAt ? formatDateTime(object.fields.lastWindUpdatedAt) : "Not yet updated");
     } else if (object.objectType === ICON_MARKER_OBJECT_TYPE) {
       appendMetaRow(elements.selectedObjectMeta, "Category", object.fields?.iconCategory || "Legacy Icons");
     }
@@ -3975,12 +4006,20 @@
         try {
           config = {
             ...config,
-            windFrom: await fetchWindDirectionForLatLng(spillPoint)
+            windFrom: await fetchWindDirectionForLatLng(spillPoint),
+            lastWindUpdatedAt: new Date().toISOString(),
+            windSource: "live"
           };
           setStatus("Live wind applied at spill point.");
         } catch (error) {
           setStatus(`Live wind unavailable. Using manual wind setting. ${formatError(error)}`);
         }
+      } else {
+        config = {
+          ...config,
+          lastWindUpdatedAt: config.lastWindUpdatedAt || new Date().toISOString(),
+          windSource: "manual"
+        };
       }
       await placeIsolationZonesAt(spillPoint, config);
     } catch (error) {
