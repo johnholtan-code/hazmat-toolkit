@@ -28,6 +28,7 @@
         </div>
         <div class="topbar-action-row topbar-action-row-secondary">
           <button id="ics202WorkspaceBtn" class="secondary hidden" type="button">ICS 202</button>
+          <button id="isolationToolBtn" class="secondary hidden" type="button">Isolation Tool</button>
           <button id="guidedModeBtn" class="secondary hidden" type="button">10-Minute IC Mode</button>
           <button id="afterActionModeBtn" class="secondary hidden" type="button">After-Action Mode</button>
           <button id="printExportBtn" class="secondary hidden" type="button">Print / Export</button>
@@ -569,6 +570,39 @@
         <button id="exportCostPdfBtn" class="secondary export-option-btn" type="button">Export Cost PDF</button>
       </div>
       <div id="printExportModalNote" class="muted export-modal-note">Map output fits to the full extent of mapped items with a buffer around the edges and opens a save/share sheet on supported devices.</div>
+    </div>
+  </div>
+
+  <div id="isolationToolModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="isolationToolTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="isolationToolTitle">Initial Isolation / Evacuation Tool</h2>
+        <button id="closeIsolationToolBtn" class="secondary" type="button">Close</button>
+      </div>
+      <label>
+        Initial Isolation Distance
+        <input id="isolationDistanceInput" type="number" min="0" step="1" value="100" />
+      </label>
+      <label>
+        Evacuation Distance (Downwind)
+        <input id="evacuationDistanceInput" type="number" min="0" step="1" value="300" />
+      </label>
+      <label>
+        Units
+        <select id="distanceUnitSelect">
+          <option value="ft" selected>Feet</option>
+          <option value="m">Meters</option>
+        </select>
+      </label>
+      <label>
+        Wind Direction (From, Degrees)
+        <input id="windDirectionInput" type="number" min="0" max="359" step="1" value="270" />
+      </label>
+      <div class="muted">Tap Place on Map, then tap the spill point to place both the initial isolation zone and the downwind protective action zone.</div>
+      <div class="row">
+        <button id="cancelIsolationToolBtn" class="secondary" type="button">Cancel</button>
+        <button id="startIsolationPlacementBtn" class="primary" type="button">Place on Map</button>
+      </div>
     </div>
   </div>
 

@@ -48,6 +48,8 @@
     "Safety Officer",
     "HazMat Group Supervisor"
   ]);
+  const ISOLATION_ZONE_OBJECT_TYPE = "InitialIsolationZone";
+  const PROTECTIVE_ACTION_ZONE_OBJECT_TYPE = "ProtectiveActionZone";
   const OBJECT_TEMPLATES = [
     { objectType: "IncidentCommand", label: "Incident Command Post", category: "Command", geometryType: "point", color: "#f3c613", defaults: { incidentName: "", ICName: "", channel: "" } },
     { objectType: "Staging", label: "Staging Area", category: "Command", geometryType: "point", color: "#0d6efd", defaults: { capacity: "", stagingManager: "", apparatusCount: "" } },
@@ -63,6 +65,8 @@
     { objectType: "HazardSource", label: "Hazard Source", category: "HazMat", geometryType: "point", color: "#c2255c", defaults: { hazardType: "", product: "" } },
     { objectType: "MonitoringPoint", label: "Air Monitoring Location", category: "HazMat", geometryType: "point", color: "#12b886", defaults: { sensorType: "", value: "", units: "" } },
     { objectType: "DeconCorridor", label: "Decon Corridor", category: "HazMat", geometryType: "line", color: "#15aabf", defaults: {} },
+    { objectType: ISOLATION_ZONE_OBJECT_TYPE, label: "Initial Isolation Zone", category: "HazMat", geometryType: "polygon", color: "#9ca3af", defaults: {} },
+    { objectType: PROTECTIVE_ACTION_ZONE_OBJECT_TYPE, label: "Protective Action Zone", category: "HazMat", geometryType: "polygon", color: "#6b7280", defaults: {} },
     { objectType: "CollapseZone", label: "Collapse Zone", category: "Safety", geometryType: "polygon", color: "#fa5252", defaults: {} },
     { objectType: "SafetyHazard", label: "Safety Hazard", category: "Safety", geometryType: "polygon", color: "#b23a48", defaults: { severity: "" } },
     { objectType: "EvacuationZone", label: "Evacuation Zone", category: "Safety", geometryType: "polygon", color: "#9775fa", defaults: { evacuationLevel: "" } },
@@ -181,6 +185,7 @@
     clearPaletteSearchBtn: document.getElementById("clearPaletteSearchBtn"),
     paletteContainer: document.getElementById("paletteContainer"),
     printExportBtn: document.getElementById("printExportBtn"),
+    isolationToolBtn: document.getElementById("isolationToolBtn"),
     participantList: document.getElementById("participantList"),
     guidedSteps: document.getElementById("guidedSteps"),
     startGuidedSetupBtn: document.getElementById("startGuidedSetupBtn"),
@@ -318,7 +323,15 @@
     closePrintExportBtn: document.getElementById("closePrintExportBtn"),
     printMapBtn: document.getElementById("printMapBtn"),
     exportMapPdfBtn: document.getElementById("exportMapPdfBtn"),
-    printExportModalNote: document.getElementById("printExportModalNote")
+    printExportModalNote: document.getElementById("printExportModalNote"),
+    isolationToolModal: document.getElementById("isolationToolModal"),
+    closeIsolationToolBtn: document.getElementById("closeIsolationToolBtn"),
+    cancelIsolationToolBtn: document.getElementById("cancelIsolationToolBtn"),
+    startIsolationPlacementBtn: document.getElementById("startIsolationPlacementBtn"),
+    isolationDistanceInput: document.getElementById("isolationDistanceInput"),
+    evacuationDistanceInput: document.getElementById("evacuationDistanceInput"),
+    distanceUnitSelect: document.getElementById("distanceUnitSelect"),
+    windDirectionInput: document.getElementById("windDirectionInput")
   };
 
   const state = {
@@ -370,6 +383,8 @@
     weatherTargetSignature: "",
     weatherFetchNonce: 0,
     weatherTimer: null,
+    pendingIsolationConfig: null,
+    isolationEditContext: null,
     playbackMode: false,
     playbackHistory: [],
     playbackSessionId: null,
@@ -644,11 +659,15 @@
     elements.guidedModeBtn.addEventListener("click", () => toggleGuidedMode(!state.guidedMode));
     elements.afterActionModeBtn.addEventListener("click", onAfterActionModeAction);
     elements.printExportBtn.addEventListener("click", showPrintExportModal);
+    elements.isolationToolBtn.addEventListener("click", openIsolationToolModal);
     elements.exportCostCsvBtn.addEventListener("click", exportCostCsv);
     elements.exportCostPdfBtn.addEventListener("click", exportCostPdf);
     elements.closePrintExportBtn.addEventListener("click", hidePrintExportModal);
     elements.printMapBtn.addEventListener("click", printMapExport);
     elements.exportMapPdfBtn.addEventListener("click", exportMapPdf);
+    elements.closeIsolationToolBtn.addEventListener("click", closeIsolationToolModal);
+    elements.cancelIsolationToolBtn.addEventListener("click", closeIsolationToolModal);
+    elements.startIsolationPlacementBtn.addEventListener("click", beginIsolationPlacementFlow);
     elements.ics202WorkspaceBtn.addEventListener("click", openIcs202Workspace);
     elements.setIncidentFocusBtn.addEventListener("click", onSetIncidentFocusAction);
     elements.centerIncidentBtn.addEventListener("click", onCenterIncidentAction);
@@ -676,6 +695,11 @@
     elements.printExportModal.addEventListener("click", (event) => {
       if (event.target === elements.printExportModal) {
         hidePrintExportModal();
+      }
+    });
+    elements.isolationToolModal.addEventListener("click", (event) => {
+      if (event.target === elements.isolationToolModal) {
+        closeIsolationToolModal();
       }
     });
     elements.copyViewerLinkBtn.addEventListener("click", copyViewerLink);
@@ -1445,6 +1469,7 @@
     renderLandingSectionCollapses();
     renderExportActions();
     renderIncidentFocusUI();
+    renderIsolationToolUI();
     renderWeatherUI();
     renderSessionMeta();
     renderParticipants();
@@ -1467,6 +1492,54 @@
     elements.guidedModeBtn.textContent = state.guidedMode ? "Hide IC Mode" : "10-Minute IC Mode";
     elements.quickFlowPanel.classList.toggle("collapsed", !state.guidedMode);
     elements.appView.classList.toggle("guided-collapsed", !state.guidedMode);
+  }
+
+  function isIsolationZoneObject(object) {
+    return Boolean(object && (
+      object.objectType === ISOLATION_ZONE_OBJECT_TYPE
+      || object.objectType === PROTECTIVE_ACTION_ZONE_OBJECT_TYPE
+      || object.fields?.isolationGroupId
+    ));
+  }
+
+  function getIsolationGroupObjects(seedObject) {
+    if (!seedObject || !isIsolationZoneObject(seedObject)) return [];
+    const groupId = String(seedObject.fields?.isolationGroupId || "").trim();
+    if (!groupId) return [seedObject];
+    return Array.from(state.objects.values()).filter((object) => String(object.fields?.isolationGroupId || "").trim() === groupId);
+  }
+
+  function getIsolationEditContextFromSelection() {
+    const selected = state.selectedObjectId ? state.objects.get(state.selectedObjectId) : null;
+    if (!selected || !isIsolationZoneObject(selected)) return null;
+    const groupObjects = getIsolationGroupObjects(selected);
+    const initialObject = groupObjects.find((object) => object.objectType === ISOLATION_ZONE_OBJECT_TYPE) || selected;
+    const protectiveObject = groupObjects.find((object) => object.objectType === PROTECTIVE_ACTION_ZONE_OBJECT_TYPE) || selected;
+    const fields = selected.fields || initialObject.fields || protectiveObject.fields || {};
+    const spillLat = Number(fields.spillLat);
+    const spillLng = Number(fields.spillLng);
+    return {
+      groupId: String(fields.isolationGroupId || "").trim(),
+      initialObjectId: initialObject?.id || "",
+      protectiveObjectId: protectiveObject?.id || "",
+      spillLatLng: Number.isFinite(spillLat) && Number.isFinite(spillLng)
+        ? { lat: spillLat, lng: spillLng }
+        : getObjectFocusPoint(initialObject),
+      config: {
+        unit: fields.distanceUnit === "m" ? "m" : "ft",
+        initialMeters: Math.max(1, Number(fields.initialMeters || 0) || 0),
+        evacMeters: Math.max(1, Number(fields.evacMeters || 0) || 0),
+        windFrom: ((Number(fields.windFrom) || 270) % 360 + 360) % 360
+      }
+    };
+  }
+
+  function renderIsolationToolUI() {
+    if (!elements.isolationToolBtn) return;
+    const available = (Boolean(state.activeSession) || isScenarioReviewMode()) && !state.viewerMode;
+    const editContext = getIsolationEditContextFromSelection();
+    elements.isolationToolBtn.disabled = !available || !canCreateObjects();
+    elements.isolationToolBtn.textContent = editContext ? "Isolation Config" : "Isolation Tool";
   }
 
   function renderAfterActionControls() {
@@ -1597,6 +1670,7 @@
     elements.closeScenarioReviewBtn.classList.toggle("hidden", !isScenarioReviewMode());
     elements.leaveSessionBtn.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode());
     elements.ics202WorkspaceBtn.classList.toggle("hidden", (!(state.activeSession || isScenarioReviewMode()) || state.viewerMode));
+    elements.isolationToolBtn.classList.toggle("hidden", !(Boolean(state.activeSession) || isScenarioReviewMode()) || state.viewerMode);
     elements.setIncidentFocusBtn.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode() || !isCommander() || Boolean(getIncidentFocusPoint()));
     elements.centerIncidentBtn.classList.toggle("hidden", !(state.activeSession || isScenarioReviewMode()));
     elements.showViewerQrBtn.classList.toggle("hidden", !canShareViewerQr() || !state.activeSession || state.viewerMode || isScenarioReviewMode());
@@ -1931,6 +2005,117 @@
   function closeMapStyleTray() {
     state.mapStyleTrayOpen = false;
     renderMapStyleTray();
+  }
+
+  function convertDistanceToMeters(value, unit) {
+    const numeric = Math.max(0, Number(value) || 0);
+    return unit === "ft" ? numeric * 0.3048 : numeric;
+  }
+
+  function convertMetersToDistance(valueMeters, unit) {
+    const numeric = Math.max(0, Number(valueMeters) || 0);
+    return unit === "ft" ? numeric / 0.3048 : numeric;
+  }
+
+  function destinationPoint(lat, lng, bearingDeg, distanceMeters) {
+    const R = 6371000;
+    const lat1 = (Number(lat) * Math.PI) / 180;
+    const lng1 = (Number(lng) * Math.PI) / 180;
+    const d = Number(distanceMeters) / R;
+    const brng = (Number(bearingDeg) * Math.PI) / 180;
+    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(brng));
+    const lng2 = lng1 + Math.atan2(Math.sin(brng) * Math.sin(d) * Math.cos(lat1), Math.cos(d) - Math.sin(lat1) * Math.sin(lat2));
+    return {
+      lat: roundCoord((lat2 * 180) / Math.PI),
+      lng: roundCoord((((lng2 * 180) / Math.PI) + 540) % 360 - 180)
+    };
+  }
+
+  function buildCirclePolygonPoints(center, radiusMeters, segments = 36) {
+    const points = [];
+    for (let step = 0; step < segments; step += 1) {
+      points.push(destinationPoint(center.lat, center.lng, (step / segments) * 360, radiusMeters));
+    }
+    return points;
+  }
+
+  function buildProtectiveActionPolygonPoints(center, windFrom, evacMeters, initialMeters = 0) {
+    const downwind = (Number(windFrom) + 180) % 360;
+    const nearDistance = Math.max(initialMeters * 0.65, evacMeters * 0.22, 20);
+    const nearAngle = 14;
+    const farAngle = 34;
+    return [
+      destinationPoint(center.lat, center.lng, downwind - nearAngle, nearDistance),
+      destinationPoint(center.lat, center.lng, downwind - farAngle, evacMeters),
+      destinationPoint(center.lat, center.lng, downwind + farAngle, evacMeters),
+      destinationPoint(center.lat, center.lng, downwind + nearAngle, nearDistance)
+    ];
+  }
+
+  function buildIsolationZoneFields(role, groupId, spillLatLng, config) {
+    return {
+      isolationGroupId: groupId,
+      isolationRole: role,
+      distanceUnit: config.unit,
+      initialMeters: round2(config.initialMeters),
+      evacMeters: round2(config.evacMeters),
+      windFrom: round2(config.windFrom),
+      spillLat: roundCoord(spillLatLng.lat),
+      spillLng: roundCoord(spillLatLng.lng)
+    };
+  }
+
+  function openIsolationToolModal() {
+    if (!canCreateObjects()) {
+      setStatus("Only active editors can use the Isolation Tool.");
+      return;
+    }
+    const pendingConfig = state.pendingIsolationConfig;
+    state.pendingIsolationConfig = null;
+    state.isolationEditContext = getIsolationEditContextFromSelection();
+    const activeConfig = state.isolationEditContext?.config || pendingConfig || {
+      unit: elements.distanceUnitSelect?.value === "m" ? "m" : "ft",
+      initialMeters: convertDistanceToMeters(elements.isolationDistanceInput?.value || 100, elements.distanceUnitSelect?.value || "ft"),
+      evacMeters: convertDistanceToMeters(elements.evacuationDistanceInput?.value || 300, elements.distanceUnitSelect?.value || "ft"),
+      windFrom: ((Number(elements.windDirectionInput?.value) || 270) % 360 + 360) % 360
+    };
+    elements.distanceUnitSelect.value = activeConfig.unit;
+    elements.isolationDistanceInput.value = String(Math.round(convertMetersToDistance(activeConfig.initialMeters, activeConfig.unit)));
+    elements.evacuationDistanceInput.value = String(Math.round(convertMetersToDistance(activeConfig.evacMeters, activeConfig.unit)));
+    elements.windDirectionInput.value = String(Math.round(activeConfig.windFrom));
+    elements.startIsolationPlacementBtn.textContent = state.isolationEditContext ? "Update Selected Zones" : "Place on Map";
+    elements.isolationToolModal.classList.remove("hidden");
+  }
+
+  function closeIsolationToolModal() {
+    elements.isolationToolModal.classList.add("hidden");
+    elements.startIsolationPlacementBtn.textContent = "Place on Map";
+  }
+
+  function beginIsolationPlacementFlow() {
+    if (!canCreateObjects()) {
+      setStatus("Only active editors can use the Isolation Tool.");
+      return;
+    }
+    const unit = elements.distanceUnitSelect.value === "m" ? "m" : "ft";
+    const initialMeters = convertDistanceToMeters(elements.isolationDistanceInput.value, unit);
+    const evacMeters = convertDistanceToMeters(elements.evacuationDistanceInput.value, unit);
+    const windFrom = ((Number(elements.windDirectionInput.value) || 270) % 360 + 360) % 360;
+    if (initialMeters <= 0 || evacMeters <= 0) {
+      setStatus("Isolation and evacuation distances must be greater than zero.");
+      return;
+    }
+    const config = { unit, initialMeters, evacMeters, windFrom };
+    if (state.isolationEditContext?.spillLatLng) {
+      void placeIsolationZonesAt(state.isolationEditContext.spillLatLng, config, state.isolationEditContext);
+      closeIsolationToolModal();
+      state.isolationEditContext = null;
+      return;
+    }
+    state.pendingIsolationConfig = config;
+    state.isolationEditContext = null;
+    closeIsolationToolModal();
+    setStatus("Isolation tool armed. Tap the spill point on the map.");
   }
 
   function showPrintExportModal() {
@@ -3463,6 +3648,11 @@
     if (isCostedResourceObject(object)) {
       appendMetaRow(elements.selectedObjectMeta, "Category", object.fields?.resourceCategory || "Costed Resource");
       appendMetaRow(elements.selectedObjectMeta, "Current Total", formatCurrency(getCostedResourceTotal(object)));
+    } else if (isIsolationZoneObject(object)) {
+      appendMetaRow(elements.selectedObjectMeta, "Tool", "Isolation Tool");
+      appendMetaRow(elements.selectedObjectMeta, "Distance", `${Math.round(convertMetersToDistance(Number(object.fields?.initialMeters || 0), object.fields?.distanceUnit || "ft"))} ${object.fields?.distanceUnit || "ft"}`);
+      appendMetaRow(elements.selectedObjectMeta, "Downwind", `${Math.round(convertMetersToDistance(Number(object.fields?.evacMeters || 0), object.fields?.distanceUnit || "ft"))} ${object.fields?.distanceUnit || "ft"}`);
+      appendMetaRow(elements.selectedObjectMeta, "Wind From", `${Math.round(Number(object.fields?.windFrom || 0))}°`);
     } else if (object.objectType === ICON_MARKER_OBJECT_TYPE) {
       appendMetaRow(elements.selectedObjectMeta, "Category", object.fields?.iconCategory || "Legacy Icons");
     }
@@ -3519,9 +3709,9 @@
     const editable = canEditObject(object);
     elements.saveFieldsBtn.textContent = "Save Details";
     elements.saveFieldsBtn.disabled = !editable;
-    const canUseGeometryButton = editable && object.geometryType !== "point";
+    const canUseGeometryButton = editable && object.geometryType !== "point" && !isIsolationZoneObject(object);
     elements.editGeometryBtn.disabled = !canUseGeometryButton;
-    elements.editGeometryBtn.classList.toggle("hidden", object.geometryType === "point");
+    elements.editGeometryBtn.classList.toggle("hidden", object.geometryType === "point" || isIsolationZoneObject(object));
     elements.deleteObjectBtn.disabled = !editable;
     elements.selectedObjectActions.classList.toggle("hidden", state.viewerMode || !editable);
   }
@@ -3674,6 +3864,25 @@
   }
 
   async function onMapClick(event) {
+    if (state.pendingIsolationConfig) {
+      if (!canCreateObjects()) {
+        setStatus("This session is read-only or you do not have edit access.");
+        state.pendingIsolationConfig = null;
+        return;
+      }
+      const spillPoint = {
+        lat: roundCoord(event.latlng.lat),
+        lng: roundCoord(event.latlng.lng)
+      };
+      const config = state.pendingIsolationConfig;
+      state.pendingIsolationConfig = null;
+      try {
+        await placeIsolationZonesAt(spillPoint, config);
+      } catch (error) {
+        setStatus(formatError(error));
+      }
+      return;
+    }
     if (!state.drawState) return;
     if (!canCreateObjects() && state.drawState.mode === "create") {
       setStatus("This session is read-only or you do not have edit access.");
@@ -3818,6 +4027,89 @@
     });
     applyMutationResponse(result);
     setStatus(`${template.label} placed.`);
+  }
+
+  async function placeIsolationZonesAt(spillLatLng, config, editContext = null) {
+    const groupId = editContext?.groupId || createLocalID();
+    const initialTemplate = templateByType[ISOLATION_ZONE_OBJECT_TYPE];
+    const protectiveTemplate = templateByType[PROTECTIVE_ACTION_ZONE_OBJECT_TYPE];
+    const initialObjectId = editContext?.initialObjectId || createLocalID();
+    const protectiveObjectId = editContext?.protectiveObjectId || createLocalID();
+    const initialFields = buildIsolationZoneFields("initial", groupId, spillLatLng, config);
+    const protectiveFields = buildIsolationZoneFields("protective", groupId, spillLatLng, config);
+    const initialGeometry = {
+      points: buildCirclePolygonPoints(spillLatLng, config.initialMeters)
+    };
+    const protectiveGeometry = {
+      points: buildProtectiveActionPolygonPoints(spillLatLng, config.windFrom, config.evacMeters, config.initialMeters)
+    };
+
+    if (isScenarioReviewMode()) {
+      const existingGroup = editContext ? new Set(getIsolationGroupObjects(state.objects.get(editContext.initialObjectId) || state.objects.get(editContext.protectiveObjectId))) : new Set();
+      const baseNow = new Date().toISOString();
+      const buildLocalObject = (objectId, template, geometry, fields, previousObject = null) => ({
+        id: objectId,
+        sessionId: state.scenarioReview.id,
+        objectType: template.objectType,
+        geometryType: template.geometryType,
+        geometry: deepClone(geometry),
+        fields: deepClone(fields),
+        createdByParticipantId: previousObject?.createdByParticipantId || state.actor?.id || "scenario-review-local",
+        updatedByParticipantId: state.actor?.id || previousObject?.updatedByParticipantId || "scenario-review-local",
+        version: Number(previousObject?.version || 0) + 1,
+        isDeleted: false,
+        activeLockParticipantId: null,
+        lockExpiresAt: null,
+        createdAt: previousObject?.createdAt || baseNow,
+        updatedAt: baseNow
+      });
+      const previousInitial = state.objects.get(initialObjectId) || null;
+      const previousProtective = state.objects.get(protectiveObjectId) || null;
+      existingGroup.forEach((object) => {
+        if (object.id !== initialObjectId && object.id !== protectiveObjectId) {
+          state.objects.delete(object.id);
+        }
+      });
+      state.objects.set(initialObjectId, buildLocalObject(initialObjectId, initialTemplate, initialGeometry, initialFields, previousInitial));
+      state.objects.set(protectiveObjectId, buildLocalObject(protectiveObjectId, protectiveTemplate, protectiveGeometry, protectiveFields, previousProtective));
+      state.selectedObjectId = protectiveObjectId;
+      syncMapObjects();
+      renderAll();
+      setStatus(editContext ? "Isolation and evacuation zones updated." : "Isolation and evacuation zones placed.");
+      return;
+    }
+
+    const mutations = [
+      {
+        clientMutationId: createLocalID(),
+        objectId: initialObjectId,
+        mutationType: editContext ? "update" : "create",
+        objectType: initialTemplate.objectType,
+        geometryType: initialTemplate.geometryType,
+        geometry: initialGeometry,
+        fields: initialFields,
+        ...(editContext ? { baseVersion: state.objects.get(initialObjectId)?.version || 0 } : {})
+      },
+      {
+        clientMutationId: createLocalID(),
+        objectId: protectiveObjectId,
+        mutationType: editContext ? "update" : "create",
+        objectType: protectiveTemplate.objectType,
+        geometryType: protectiveTemplate.geometryType,
+        geometry: protectiveGeometry,
+        fields: protectiveFields,
+        ...(editContext ? { baseVersion: state.objects.get(protectiveObjectId)?.version || 0 } : {})
+      }
+    ];
+    const result = await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(state.activeSession.id)}/mutations`, {
+      method: "POST",
+      actorType: currentActorType(),
+      body: { mutations }
+    });
+    applyMutationResponse(result);
+    state.selectedObjectId = protectiveObjectId;
+    renderSelectedObject();
+    setStatus(editContext ? "Isolation and evacuation zones updated." : "Isolation and evacuation zones placed.");
   }
 
   function queueGeometryUpdate(objectId, geometry, flushNow) {
@@ -4115,6 +4407,10 @@
       setStatus("You cannot edit this geometry.");
       return;
     }
+    if (isIsolationZoneObject(object)) {
+      setStatus("Use the Isolation Tool to update these zones.");
+      return;
+    }
     if (!sessionIsActive()) {
       setStatus("This session is now read-only.");
       return;
@@ -4211,13 +4507,14 @@
       return;
     }
     if (!window.confirm("Delete this map object?")) return;
+    const groupObjects = isIsolationZoneObject(object) ? getIsolationGroupObjects(object) : [object];
     if (isScenarioReviewMode()) {
-      state.objects.delete(object.id);
+      groupObjects.forEach((entry) => state.objects.delete(entry.id));
       state.selectedObjectId = null;
       syncMapObjects();
       renderSelectedObject();
       renderAll();
-      setStatus("Object deleted from editable scenario.");
+      setStatus(groupObjects.length > 1 ? "Isolation zones deleted from editable scenario." : "Object deleted from editable scenario.");
       return;
     }
     try {
@@ -4225,18 +4522,18 @@
         method: "POST",
         actorType: currentActorType(),
         body: {
-          mutations: [{
+          mutations: groupObjects.map((entry) => ({
             clientMutationId: createLocalID(),
-            objectId: object.id,
+            objectId: entry.id,
             mutationType: "delete",
-            baseVersion: object.version
-          }]
+            baseVersion: entry.version
+          }))
         }
       });
       applyMutationResponse(result);
       state.selectedObjectId = null;
       renderSelectedObject();
-      setStatus("Object deleted.");
+      setStatus(groupObjects.length > 1 ? "Isolation zones deleted." : "Object deleted.");
     } catch (error) {
       setStatus(formatError(error));
     }
@@ -4476,6 +4773,9 @@
         value: getEditableCostFieldValue(object, fieldDef.key)
       }));
     }
+    if (isIsolationZoneObject(object)) {
+      return [];
+    }
     const template = resolveTemplateForObject(object);
     const merged = { ...(template?.defaults || {}), ...(object.fields || {}) };
     if (object.objectType === ICON_MARKER_OBJECT_TYPE) {
@@ -4540,6 +4840,12 @@
     const parts = [getObjectDisplayLabel(object, template)];
     if (isCostedResourceObject(object)) {
       parts.push(`${object.fields?.resourceCategory || "Costed Resource"} · ${formatCurrency(getCostedResourceTotal(object))}`);
+    } else if (isIsolationZoneObject(object)) {
+      const unit = object.fields?.distanceUnit || "ft";
+      const distanceMeters = object.objectType === ISOLATION_ZONE_OBJECT_TYPE
+        ? Number(object.fields?.initialMeters || 0)
+        : Number(object.fields?.evacMeters || 0);
+      parts.push(`${Math.round(convertMetersToDistance(distanceMeters, unit))} ${unit} · wind ${Math.round(Number(object.fields?.windFrom || 0))}°`);
     } else if (object.objectType === ICON_MARKER_OBJECT_TYPE && object.fields?.iconCategory) {
       parts.push(object.fields.iconCategory);
     }
@@ -5465,7 +5771,28 @@
     return `${incident}-${baseName}-${Date.now()}.${extension}`;
   }
 
+  function isIosLikeDevice() {
+    const ua = navigator.userAgent || "";
+    const iOSUa = /iPad|iPhone|iPod/.test(ua);
+    const iPadOs = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    return iOSUa || iPadOs;
+  }
+
   async function downloadBlob(blob, filename) {
+    try {
+      if (isIosLikeDevice() && typeof File === "function" && navigator.share) {
+        const file = new File([blob], filename, { type: blob.type || "application/octet-stream" });
+        const payload = { files: [file], title: filename };
+        const canShare = typeof navigator.canShare === "function" ? navigator.canShare(payload) : true;
+        if (canShare) {
+          await navigator.share(payload);
+          return;
+        }
+      }
+    } catch (_error) {
+      // Fall through to download anchor.
+    }
+
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
