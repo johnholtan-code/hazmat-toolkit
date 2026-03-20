@@ -775,7 +775,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
               where soa.session_id = s.id
                 and soa.organization_id = $1::uuid
             )
-            or (s.organization_id is null and s.trainer_ref = $2)
+            or (s.organization_id is null and lower(s.trainer_ref) = lower($2))
           )
           order by s.created_at desc
         `,
@@ -783,7 +783,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
       );
       return reply.send(result.rows.map((row) => ({
         ...mapSession(row, app.config.icsCollabPublicBaseUrl ?? request.headers.origin),
-        isOwner: row.trainer_ref === trainer.trainerRef,
+        isOwner: row.trainer_ref.trim().toLowerCase() === trainer.trainerRef.trim().toLowerCase(),
         accessType: row.organization_id && row.organization_id === membership.organization_id ? 'owned' : (row.organization_id ? 'shared' : 'legacy')
       })));
     } catch (error) {
@@ -830,13 +830,13 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
             and s.operational_period_end > now()
             and (
               s.organization_id = $1::uuid
-              or exists (
-                select 1
-                from collab_map_session_org_access soa
-                where soa.session_id = s.id
-                  and soa.organization_id = $1::uuid
+            or exists (
+              select 1
+              from collab_map_session_org_access soa
+              where soa.session_id = s.id
+                and soa.organization_id = $1::uuid
               )
-              or (s.organization_id is null and s.trainer_ref = $2)
+              or (s.organization_id is null and lower(s.trainer_ref) = lower($2))
             )
           order by s.created_at desc
         `,
@@ -855,7 +855,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         organizationId: row.organization_id,
         organizationName: row.organization_name,
         accessType: row.organization_id && row.organization_id === membership.organization_id ? 'owned' : (row.organization_id ? 'shared' : 'legacy'),
-        isOwner: row.owner_trainer_ref === trainer.trainerRef
+        isOwner: row.owner_trainer_ref.trim().toLowerCase() === trainer.trainerRef.trim().toLowerCase()
       })));
     } catch (error) {
       return sendTrainerError(reply, request, error, 'Failed to list active collaborative sessions.');
