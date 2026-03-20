@@ -1831,24 +1831,24 @@ async function fetchSessionByID(pool: { query: PoolClient['query'] }, sessionID:
   const result = await pool.query<CollabSessionRow>(
     `
       select
-        id::text as id,
-        trainer_ref,
+        s.id::text as id,
+        s.trainer_ref,
         s.organization_id::text as organization_id,
         org.organization_name,
         county.county_name,
-        incident_name,
-        commander_name,
-        commander_ics_role,
-        join_code,
-        join_code_expires_at,
-        viewer_access_enabled,
-        session_status,
-        operational_period_start,
-            operational_period_end,
-            last_mutation_version::text as last_mutation_version,
-            ended_at,
-            s.created_at,
-            s.updated_at
+        s.incident_name,
+        s.commander_name,
+        s.commander_ics_role,
+        s.join_code,
+        s.join_code_expires_at,
+        s.viewer_access_enabled,
+        s.session_status,
+        s.operational_period_start,
+        s.operational_period_end,
+        s.last_mutation_version::text as last_mutation_version,
+        s.ended_at,
+        s.created_at,
+        s.updated_at
       from collab_map_sessions s
       left join collab_organizations org
         on org.id = s.organization_id
