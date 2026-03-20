@@ -37,6 +37,8 @@ const OBJECT_TYPES = [
   'RIT',
   'SafetyHazard',
   'EvacuationZone',
+  'InitialIsolationZone',
+  'ProtectiveActionZone',
   'IconMarker'
 ] as const;
 
