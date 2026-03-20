@@ -1422,6 +1422,21 @@ button.danger { background: rgba(182,59,59,0.14); color: #f4c9ce; border-color: 
   justify-content: flex-end;
   align-items: flex-start;
 }
+.session-card-join-code {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--stroke);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
 .session-card strong,
 .session-card .muted {
   min-width: 0;

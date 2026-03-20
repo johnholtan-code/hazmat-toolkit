@@ -2836,6 +2836,9 @@
       meta.textContent = `${session.status.toUpperCase()} · ${formatDateTime(session.operationalPeriodStart)} to ${formatDateTime(session.operationalPeriodEnd)}`;
       const row = document.createElement("div");
       row.className = "row session-card-actions";
+      const joinCode = document.createElement("span");
+      joinCode.className = "session-card-join-code";
+      joinCode.textContent = session.joinCode || "No code";
       const openBtn = document.createElement("button");
       openBtn.className = "secondary";
       openBtn.type = "button";
@@ -2856,7 +2859,7 @@
       const copyBtn = document.createElement("button");
       copyBtn.className = "secondary";
       copyBtn.type = "button";
-      copyBtn.textContent = "Copy Join";
+      copyBtn.textContent = "Copy Join Link";
       copyBtn.addEventListener("click", async () => {
         try {
           await writeToClipboard(session.joinUrl || session.joinCode);
@@ -2865,7 +2868,7 @@
           setStatus("Copy failed.");
         }
       });
-      row.append(openBtn, copyBtn);
+      row.append(joinCode, openBtn, copyBtn);
       content.append(title, meta);
       top.append(content, row);
       card.append(top);
