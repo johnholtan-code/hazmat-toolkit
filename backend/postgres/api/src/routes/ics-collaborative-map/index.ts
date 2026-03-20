@@ -1510,7 +1510,7 @@ async function resolveSessionActorWithClient(
     authorization,
     'x-trainer-ref': undefined
   });
-  if (trainer.trainerRef !== currentSession.trainer_ref) {
+  if (trainer.trainerRef.trim().toLowerCase() !== currentSession.trainer_ref.trim().toLowerCase()) {
     throw new TrainerForbiddenError('Commander does not have access to this collaborative session.');
   }
   let commanderParticipant = await fetchCommanderParticipant(client, currentSession.id, trainer.trainerRef);
@@ -2046,7 +2046,10 @@ function canManageMapNotes(actor: SessionActor) {
 }
 
 function ensureOwningCommander(actor: SessionActor) {
-  if (actor.actorType !== 'commander' || actor.trainerRef !== actor.session.trainer_ref) {
+  if (
+    actor.actorType !== 'commander'
+    || actor.trainerRef.trim().toLowerCase() !== actor.session.trainer_ref.trim().toLowerCase()
+  ) {
     throw new TrainerForbiddenError('Only the owning session commander can manage department access.');
   }
 }
