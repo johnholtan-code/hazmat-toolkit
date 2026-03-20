@@ -4924,7 +4924,7 @@
     elements.exportMapPdfBtn.disabled = !hasMapObjects;
     if (elements.printExportModalNote) {
       elements.printExportModalNote.textContent = hasMapObjects
-        ? "Map output fits to the full extent of mapped items with a buffer around the edges."
+        ? "Map output fits to the full extent of mapped items with a buffer around the edges and opens a save/share sheet on supported devices."
         : "Place one or more map items to enable map print and PDF export.";
     }
   }
@@ -5198,8 +5198,30 @@
   async function printMapExport() {
     const capture = await captureBufferedMapImage();
     if (!capture) return;
-    printMapMarkup(buildMapPrintMarkup(capture.imageDataUrl));
-    setStatus("Map print prepared.");
+    const filename = buildExportFilename("map", "png");
+    const blob = await (await fetch(capture.imageDataUrl)).blob();
+    if (window.exportPdfHelper?.saveAndShareBlob) {
+      try {
+        const result = await window.exportPdfHelper.saveAndShareBlob(blob, filename, {
+          title: "Save Map",
+          text: "Save or share this collaborative map image.",
+          dialogTitle: "Save Map",
+          requireSharePrompt: true
+        });
+        if (result?.shared) {
+          setStatus(`Map image shared: ${filename}`);
+        } else if (result?.uri) {
+          setStatus(`Map image saved locally: ${filename}`);
+        } else {
+          setStatus(`Map image prepared: ${filename}`);
+        }
+        return;
+      } catch (error) {
+        console.error("Unable to open map image save/share prompt.", error);
+      }
+    }
+    await downloadBlob(blob, filename);
+    setStatus(`Map image downloaded: ${filename}`);
   }
 
   async function exportMapPdf() {
@@ -5255,12 +5277,12 @@
           setStatus(`Map PDF prepared: ${filename}`);
         }
         return;
-      } catch (_error) {
-        // Fall back to browser download.
+      } catch (error) {
+        console.error("Unable to open map PDF share/save prompt.", error);
       }
     }
     await downloadBlob(blob, filename);
-    setStatus(`Map PDF exported: ${filename}`);
+    setStatus(`Map PDF downloaded: ${filename}`);
   }
 
   async function exportCostCsv() {
