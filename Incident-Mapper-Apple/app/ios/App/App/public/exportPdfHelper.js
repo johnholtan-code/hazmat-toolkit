@@ -83,12 +83,21 @@
     let shared = false;
     if (share?.share) {
       try {
-        await share.share({
-          title: shareTitle,
-          text: shareText,
-          url: writeRes.uri,
-          dialogTitle
-        });
+        try {
+          await share.share({
+            title: shareTitle,
+            text: shareText,
+            files: [writeRes.uri],
+            dialogTitle
+          });
+        } catch (_filesError) {
+          await share.share({
+            title: shareTitle,
+            text: shareText,
+            url: writeRes.uri,
+            dialogTitle
+          });
+        }
         shared = true;
       } catch (error) {
         if (options?.requireSharePrompt) {
