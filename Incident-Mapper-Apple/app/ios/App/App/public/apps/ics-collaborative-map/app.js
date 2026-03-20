@@ -2051,12 +2051,15 @@
 
   function buildProtectiveActionPolygonPoints(center, windFrom, evacMeters, initialMeters = 0) {
     const downwind = (Number(windFrom) + 180) % 360;
-    const farAngle = 34;
-    return [
-      { lat: roundCoord(center.lat), lng: roundCoord(center.lng) },
-      destinationPoint(center.lat, center.lng, downwind - farAngle, evacMeters),
-      destinationPoint(center.lat, center.lng, downwind + farAngle, evacMeters)
-    ];
+    const crosswindHalfWidth = Math.max(evacMeters / 2, initialMeters, 1);
+    const arcCenter = destinationPoint(center.lat, center.lng, downwind, evacMeters);
+    const points = [{ lat: roundCoord(center.lat), lng: roundCoord(center.lng) }];
+    const arcSteps = 10;
+    for (let step = 0; step <= arcSteps; step += 1) {
+      const offset = 90 - (180 * (step / arcSteps));
+      points.push(destinationPoint(arcCenter.lat, arcCenter.lng, downwind + offset, crosswindHalfWidth));
+    }
+    return points;
   }
 
   function buildIsolationZoneFields(role, groupId, spillLatLng, config) {
