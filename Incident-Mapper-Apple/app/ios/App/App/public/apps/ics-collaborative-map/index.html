@@ -522,6 +522,25 @@
 
           <section id="superAdminAccessPanel" class="super-admin-panel hidden">
             <div class="panel compact">
+              <h3>Standing Department Access</h3>
+              <div class="super-admin-form-grid">
+                <label class="field-block">
+                  Source Department
+                  <select id="superAdminStandingSourceSelect">
+                    <option value="">Select source department</option>
+                  </select>
+                </label>
+                <label class="field-block">
+                  Target Department
+                  <select id="superAdminStandingTargetSelect">
+                    <option value="">Select target department</option>
+                  </select>
+                </label>
+              </div>
+              <button id="superAdminCreateStandingAccessBtn" class="primary" type="button">Grant Standing Access</button>
+              <div id="superAdminStandingAccessList" class="session-list"></div>
+            </div>
+            <div class="panel compact">
               <h3>Mutual-Aid Session Access</h3>
               <div id="superAdminAccessList" class="session-list"></div>
             </div>

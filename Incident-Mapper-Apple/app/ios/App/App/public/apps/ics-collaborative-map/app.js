@@ -382,6 +382,10 @@
     superAdminOrganizationsList: document.getElementById("superAdminOrganizationsList"),
     superAdminUsersOrgFilter: document.getElementById("superAdminUsersOrgFilter"),
     superAdminUsersList: document.getElementById("superAdminUsersList"),
+    superAdminStandingSourceSelect: document.getElementById("superAdminStandingSourceSelect"),
+    superAdminStandingTargetSelect: document.getElementById("superAdminStandingTargetSelect"),
+    superAdminCreateStandingAccessBtn: document.getElementById("superAdminCreateStandingAccessBtn"),
+    superAdminStandingAccessList: document.getElementById("superAdminStandingAccessList"),
     superAdminAccessList: document.getElementById("superAdminAccessList"),
     map: document.getElementById("map"),
     mapPrintRoot: document.getElementById("mapPrintRoot"),
@@ -423,7 +427,8 @@
       overview: null,
       organizations: [],
       users: [],
-      access: []
+      access: [],
+      standingAccess: []
     },
     organizationContext: null,
     organizationRoster: [],
@@ -491,6 +496,8 @@
     superAdminOpen: false,
     superAdminTab: "overview",
     superAdminUsersOrgFilter: "",
+    superAdminStandingSourceFilter: "",
+    superAdminStandingTargetFilter: "",
     ics202ObjectiveDragIndex: -1
   };
 
@@ -901,6 +908,13 @@
       state.superAdminUsersOrgFilter = String(event.target.value || "");
       renderSuperAdminUsers();
     });
+    elements.superAdminStandingSourceSelect?.addEventListener("change", (event) => {
+      state.superAdminStandingSourceFilter = String(event.target.value || "");
+    });
+    elements.superAdminStandingTargetSelect?.addEventListener("change", (event) => {
+      state.superAdminStandingTargetFilter = String(event.target.value || "");
+    });
+    elements.superAdminCreateStandingAccessBtn?.addEventListener("click", onCreateStandingOrganizationAccess);
     bindIcs202Events();
     window.addEventListener("resize", scheduleMapResizeRefresh);
   }
@@ -1163,7 +1177,7 @@
       headers: supabaseHeaders(),
       body: JSON.stringify({ email, password })
     });
-    return await parseSupabaseAuthResponse(response);
+    return await parseSupabaseAuthResponse(response, { flow: "signin" });
   }
 
   async function supabaseSignUp(email, password, displayName) {
@@ -1187,7 +1201,7 @@
         }
       })
     });
-    return await parseSupabaseAuthResponse(response);
+    return await parseSupabaseAuthResponse(response, { flow: "signup" });
   }
 
   async function supabaseRequestPasswordReset(email) {
@@ -1282,7 +1296,7 @@
   async function loadSuperAdminContext() {
     if (!state.commanderAuth?.accessToken) {
       state.superAdminContext = null;
-      state.superAdminData = { overview: null, organizations: [], users: [], access: [] };
+      state.superAdminData = { overview: null, organizations: [], users: [], access: [], standingAccess: [] };
       return null;
     }
     try {
@@ -1291,7 +1305,7 @@
       return state.superAdminContext;
     } catch (_error) {
       state.superAdminContext = null;
-      state.superAdminData = { overview: null, organizations: [], users: [], access: [] };
+      state.superAdminData = { overview: null, organizations: [], users: [], access: [], standingAccess: [] };
       return null;
     }
   }
@@ -1332,21 +1346,23 @@
 
   async function refreshSuperAdminWorkspace(options = {}) {
     if (!state.commanderAuth?.accessToken || !state.superAdminContext?.email) {
-      state.superAdminData = { overview: null, organizations: [], users: [], access: [] };
+      state.superAdminData = { overview: null, organizations: [], users: [], access: [], standingAccess: [] };
       return null;
     }
     try {
-      const [overview, organizations, users, access] = await Promise.all([
+      const [overview, organizations, users, access, standingAccess] = await Promise.all([
         apiFetch("/v1/ics-collab/super-admin/overview", { actorType: "commander" }),
         apiFetch("/v1/ics-collab/super-admin/organizations", { actorType: "commander" }),
         apiFetch("/v1/ics-collab/super-admin/users", { actorType: "commander" }),
-        apiFetch("/v1/ics-collab/super-admin/access", { actorType: "commander" })
+        apiFetch("/v1/ics-collab/super-admin/access", { actorType: "commander" }),
+        apiFetch("/v1/ics-collab/super-admin/standing-access", { actorType: "commander" })
       ]);
       state.superAdminData = {
         overview: overview || null,
         organizations: Array.isArray(organizations) ? organizations : [],
         users: Array.isArray(users) ? users : [],
-        access: Array.isArray(access) ? access : []
+        access: Array.isArray(access) ? access : [],
+        standingAccess: Array.isArray(standingAccess) ? standingAccess : []
       };
       renderSuperAdminWorkspace();
       if (options.notify) {
@@ -1507,6 +1523,61 @@
         body: payload
       });
       await refreshSuperAdminWorkspace();
+      setStatus(successMessage);
+    } catch (error) {
+      setStatus(formatError(error));
+    }
+  }
+
+  async function onCreateStandingOrganizationAccess() {
+    if (!state.superAdminContext?.email) {
+      setStatus("Super admin access is required.");
+      return;
+    }
+    const sourceOrganizationId = String(elements.superAdminStandingSourceSelect?.value || "").trim();
+    const targetOrganizationId = String(elements.superAdminStandingTargetSelect?.value || "").trim();
+    if (!sourceOrganizationId || !targetOrganizationId) {
+      setStatus("Choose both the source and target departments.");
+      return;
+    }
+    if (sourceOrganizationId === targetOrganizationId) {
+      setStatus("A department cannot grant standing access to itself.");
+      return;
+    }
+    setStatus("Granting standing department access…");
+    try {
+      const standingAccess = await apiFetch("/v1/ics-collab/super-admin/standing-access", {
+        method: "POST",
+        actorType: "commander",
+        body: {
+          sourceOrganizationId,
+          targetOrganizationId
+        }
+      });
+      state.superAdminData.standingAccess = Array.isArray(standingAccess) ? standingAccess : state.superAdminData.standingAccess;
+      state.superAdminStandingSourceFilter = "";
+      state.superAdminStandingTargetFilter = "";
+      renderSuperAdminAccess();
+      setStatus("Standing department access granted.");
+    } catch (error) {
+      setStatus(formatError(error));
+    }
+  }
+
+  async function revokeStandingOrganizationAccess(sourceOrganizationId, targetOrganizationId, successMessage) {
+    if (!state.superAdminContext?.email) {
+      setStatus("Super admin access is required.");
+      return;
+    }
+    try {
+      await apiFetch(`/v1/ics-collab/super-admin/standing-access/${encodeURIComponent(sourceOrganizationId)}/${encodeURIComponent(targetOrganizationId)}`, {
+        method: "DELETE",
+        actorType: "commander"
+      });
+      state.superAdminData.standingAccess = (Array.isArray(state.superAdminData.standingAccess) ? state.superAdminData.standingAccess : []).filter((entry) => {
+        return !(String(entry.sourceOrganizationId) === String(sourceOrganizationId) && String(entry.targetOrganizationId) === String(targetOrganizationId));
+      });
+      renderSuperAdminAccess();
       setStatus(successMessage);
     } catch (error) {
       setStatus(formatError(error));
@@ -1788,7 +1859,7 @@
     }
     state.commanderAuth = null;
     state.superAdminContext = null;
-    state.superAdminData = { overview: null, organizations: [], users: [], access: [] };
+    state.superAdminData = { overview: null, organizations: [], users: [], access: [], standingAccess: [] };
     state.organizationContext = null;
     state.organizationRoster = [];
     state.organizationSummary = null;
@@ -3575,7 +3646,62 @@
   }
 
   function renderSuperAdminAccess() {
-    if (!elements.superAdminAccessList) return;
+    if (!elements.superAdminAccessList || !elements.superAdminStandingAccessList || !elements.superAdminStandingSourceSelect || !elements.superAdminStandingTargetSelect) return;
+    const organizations = (Array.isArray(state.superAdminData.organizations) ? state.superAdminData.organizations : []).filter((organization) => {
+      return organization.licenseStatus === "active";
+    });
+    const sourceValue = String(state.superAdminStandingSourceFilter || "");
+    const targetValue = String(state.superAdminStandingTargetFilter || "");
+    elements.superAdminStandingSourceSelect.innerHTML = '<option value="">Select source department</option>';
+    elements.superAdminStandingTargetSelect.innerHTML = '<option value="">Select target department</option>';
+    organizations.forEach((organization) => {
+      const sourceOption = document.createElement("option");
+      sourceOption.value = String(organization.id || "");
+      sourceOption.textContent = organization.organizationName || "Department";
+      elements.superAdminStandingSourceSelect.appendChild(sourceOption);
+      const targetOption = document.createElement("option");
+      targetOption.value = String(organization.id || "");
+      targetOption.textContent = organization.organizationName || "Department";
+      elements.superAdminStandingTargetSelect.appendChild(targetOption);
+    });
+    elements.superAdminStandingSourceSelect.value = sourceValue;
+    elements.superAdminStandingTargetSelect.value = targetValue;
+
+    elements.superAdminStandingAccessList.innerHTML = "";
+    const standingRows = Array.isArray(state.superAdminData.standingAccess) ? state.superAdminData.standingAccess : [];
+    if (!standingRows.length) {
+      const empty = document.createElement("div");
+      empty.className = "muted";
+      empty.textContent = "No standing department access is active.";
+      elements.superAdminStandingAccessList.appendChild(empty);
+    } else {
+      standingRows.forEach((entry) => {
+        const card = document.createElement("div");
+        card.className = "participant-card department-admin-member";
+        const title = document.createElement("strong");
+        title.textContent = `${entry.targetOrganizationName} can view ${entry.sourceOrganizationName}`;
+        const meta = document.createElement("div");
+        meta.className = "muted";
+        meta.textContent = `Source: ${entry.sourceOrganizationName}${entry.sourceCountyName ? ` · ${entry.sourceCountyName}` : ""} · Target: ${entry.targetOrganizationName}${entry.targetCountyName ? ` · ${entry.targetCountyName}` : ""}`;
+        const actions = document.createElement("div");
+        actions.className = "row department-admin-member-actions";
+        const revokeBtn = document.createElement("button");
+        revokeBtn.className = "secondary";
+        revokeBtn.type = "button";
+        revokeBtn.textContent = "Revoke";
+        revokeBtn.addEventListener("click", () => {
+          void revokeStandingOrganizationAccess(
+            entry.sourceOrganizationId,
+            entry.targetOrganizationId,
+            `Standing access from ${entry.sourceOrganizationName} to ${entry.targetOrganizationName} revoked.`
+          );
+        });
+        actions.appendChild(revokeBtn);
+        card.append(title, meta, actions);
+        elements.superAdminStandingAccessList.appendChild(card);
+      });
+    }
+
     elements.superAdminAccessList.innerHTML = "";
     const accessRows = Array.isArray(state.superAdminData.access) ? state.superAdminData.access : [];
     if (!accessRows.length) {
@@ -3624,7 +3750,9 @@
       meta.className = "muted";
       const accessLabel = session.accessType === "shared"
         ? `SHARED · ${session.organizationName || "Outside Department"}`
-        : (session.organizationName || "Department");
+        : (session.accessType === "standing"
+          ? `STANDING ACCESS · ${session.organizationName || "Outside Department"}`
+          : (session.organizationName || "Department"));
       meta.textContent = `${visibleStatus} · ${accessLabel} · ${formatDateTime(session.operationalPeriodStart)} to ${formatDateTime(session.operationalPeriodEnd)}`;
       const row = document.createElement("div");
       row.className = "row session-card-actions";
@@ -3754,7 +3882,13 @@
     appendMetaRow(elements.sessionMeta, isScenarioReviewMode() ? "Source" : "Session Owner", isScenarioReviewMode() ? (state.scenarioReview?.fileName || "Scenario file") : (ownerParticipant ? ownerParticipant.displayName : "Owner"));
     if (!isScenarioReviewMode()) {
       appendMetaRow(elements.sessionMeta, "Department", session.organizationName || "Legacy Session");
-      appendMetaRow(elements.sessionMeta, "Access", session.accessType === "shared" ? "Mutual Aid / Shared" : "Department");
+      appendMetaRow(
+        elements.sessionMeta,
+        "Access",
+        session.accessType === "shared"
+          ? "Mutual Aid / Shared"
+          : (session.accessType === "standing" ? "Standing Access" : "Department")
+      );
     }
     appendMetaRow(elements.sessionMeta, "Incident Commander", `${session.commanderName} · ${session.commanderICSRole}`);
     appendMetaRow(elements.sessionMeta, "Status", visibleStatus);
@@ -6738,16 +6872,54 @@
     return `${window.location.origin}${window.location.pathname}`;
   }
 
-  async function parseSupabaseAuthResponse(response) {
+  function getSupabaseAuthErrorDetails(payload, response) {
+    return (
+      payload?.msg_description ||
+      payload?.error_description ||
+      payload?.error ||
+      payload?.message ||
+      `HTTP ${response.status}`
+    );
+  }
+
+  function getFriendlySupabaseAuthError(payload, response, flow = "auth") {
+    const details = String(getSupabaseAuthErrorDetails(payload, response) || "").trim();
+    const normalized = details.toLowerCase();
+
+    if (flow === "signup") {
+      if (
+        normalized.includes("already registered")
+        || normalized.includes("already exists")
+        || normalized.includes("already been registered")
+        || normalized.includes("user already registered")
+      ) {
+        return "This email already has an account. Try Sign In or Forgot Password.";
+      }
+      if (
+        response.status === 422
+        || normalized.includes("stale")
+        || normalized.includes("signup")
+      ) {
+        return "This signup is stuck in a stale state. Reset password or contact support.";
+      }
+    }
+
+    if (
+      normalized.includes("email not confirmed")
+      || normalized.includes("email address not authorized")
+      || normalized.includes("confirm your email")
+      || normalized.includes("email link")
+    ) {
+      return "Your email still needs to be confirmed. Check your inbox.";
+    }
+
+    return `Supabase auth request failed: ${details}`;
+  }
+
+  async function parseSupabaseAuthResponse(response, options = {}) {
     const payload = await parseJsonSafely(response);
     if (!response.ok) {
-      const details =
-        payload?.msg_description ||
-        payload?.error_description ||
-        payload?.error ||
-        payload?.message ||
-        `HTTP ${response.status}`;
-      throw new Error(`Supabase auth request failed: ${details}`);
+      throw new Error(getFriendlySupabaseAuthError(payload, response, options.flow));
     }
     return payload;
   }

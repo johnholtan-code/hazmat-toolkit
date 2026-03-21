@@ -112,6 +112,11 @@ type UpdateSessionOrgAccessBody = {
   organizationId?: string;
 };
 
+type CreateStandingOrganizationAccessBody = {
+  sourceOrganizationId?: string;
+  targetOrganizationId?: string;
+};
+
 type CreateOrganizationMemberBody = {
   email?: string;
   displayName?: string;
@@ -226,6 +231,18 @@ type SuperAdminSessionAccessRow = {
   shared_organization_name: string;
   shared_county_name: string | null;
   operational_period_end: string;
+  updated_at: string;
+};
+
+type SuperAdminStandingAccessRow = {
+  source_organization_id: string;
+  source_organization_name: string;
+  source_county_name: string | null;
+  target_organization_id: string;
+  target_organization_name: string;
+  target_county_name: string | null;
+  created_by_trainer_ref: string;
+  created_at: string;
   updated_at: string;
 };
 
@@ -581,6 +598,70 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
+  app.get('/v1/ics-collab/super-admin/standing-access', async (request, reply) => {
+    try {
+      const trainer = await requireTrainerIdentity(app, request.headers);
+      await requireSuperAdmin(app.pg, trainer);
+      const access = await listSuperAdminStandingAccess(app.pg);
+      return reply.send(access.map(mapSuperAdminStandingAccess));
+    } catch (error) {
+      return sendTrainerError(reply, request, error, 'Failed to fetch standing department access.');
+    }
+  });
+
+  app.post<{ Body: CreateStandingOrganizationAccessBody }>('/v1/ics-collab/super-admin/standing-access', async (request, reply) => {
+    try {
+      const trainer = await requireTrainerIdentity(app, request.headers);
+      await requireSuperAdmin(app.pg, trainer);
+      const sourceOrganizationId = normalizeUUID(request.body?.sourceOrganizationId);
+      const targetOrganizationId = normalizeUUID(request.body?.targetOrganizationId);
+      if (!sourceOrganizationId || !targetOrganizationId) {
+        return reply.code(400).send({ error: 'BAD_REQUEST', message: 'sourceOrganizationId and targetOrganizationId are required.' });
+      }
+      if (sourceOrganizationId === targetOrganizationId) {
+        return reply.code(400).send({ error: 'BAD_REQUEST', message: 'A department cannot grant standing access to itself.' });
+      }
+      const [sourceOrganization, targetOrganization] = await Promise.all([
+        fetchOrganizationByID(app.pg, sourceOrganizationId),
+        fetchOrganizationByID(app.pg, targetOrganizationId)
+      ]);
+      if (!sourceOrganization || !targetOrganization) {
+        return reply.code(404).send({ error: 'NOT_FOUND', message: 'Source or target department not found.' });
+      }
+      if (sourceOrganization.license_status !== 'active' || targetOrganization.license_status !== 'active') {
+        return reply.code(409).send({ error: 'INACTIVE_LICENSE', message: 'Standing access can only be created between active licensed departments.' });
+      }
+      const created = await createStandingOrganizationAccess(app.pg, {
+        sourceOrganizationId,
+        targetOrganizationId,
+        createdByTrainerRef: trainer.trainerRef
+      });
+      if (!created) {
+        return reply.code(409).send({ error: 'DUPLICATE_STANDING_ACCESS', message: 'Standing department access already exists.' });
+      }
+      const access = await listSuperAdminStandingAccess(app.pg);
+      return reply.code(201).send(access.map(mapSuperAdminStandingAccess));
+    } catch (error) {
+      return sendTrainerError(reply, request, error, 'Failed to create standing department access.');
+    }
+  });
+
+  app.delete<{ Params: { sourceOrganizationId: string; targetOrganizationId: string } }>('/v1/ics-collab/super-admin/standing-access/:sourceOrganizationId/:targetOrganizationId', async (request, reply) => {
+    try {
+      const trainer = await requireTrainerIdentity(app, request.headers);
+      await requireSuperAdmin(app.pg, trainer);
+      const sourceOrganizationId = normalizeUUID(request.params.sourceOrganizationId);
+      const targetOrganizationId = normalizeUUID(request.params.targetOrganizationId);
+      if (!sourceOrganizationId || !targetOrganizationId) {
+        return reply.code(400).send({ error: 'BAD_REQUEST', message: 'Valid sourceOrganizationId and targetOrganizationId are required.' });
+      }
+      await deleteStandingOrganizationAccess(app.pg, sourceOrganizationId, targetOrganizationId);
+      return reply.code(204).send();
+    } catch (error) {
+      return sendTrainerError(reply, request, error, 'Failed to revoke standing department access.');
+    }
+  });
+
   app.get('/v1/ics-collab/admin/organization', async (request, reply) => {
     try {
       const trainer = await requireTrainerIdentity(app, request.headers);
@@ -741,7 +822,7 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
     try {
       const trainer = await requireTrainerIdentity(app, request.headers);
       const membership = await requireLicensedCollabMembership(app.pg, trainer);
-      const result = await app.pg.query<CollabSessionRow>(
+      const result = await app.pg.query<CollabSessionRow & { has_session_share: boolean; has_standing_access: boolean }>(
         `
           select
             s.id::text as id,
@@ -761,7 +842,24 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
             s.last_mutation_version::text as last_mutation_version,
             s.ended_at,
             s.created_at,
-            s.updated_at
+            s.updated_at,
+            exists (
+              select 1
+              from collab_map_session_org_access soa
+              where soa.session_id = s.id
+                and soa.organization_id = $1::uuid
+            ) as has_session_share,
+            exists (
+              select 1
+              from collab_org_standing_access osa
+              where osa.source_organization_id = s.organization_id
+                and osa.target_organization_id = $1::uuid
+                and (
+                  s.session_status = 'active'
+                  or s.operational_period_end > now()
+                  or s.created_at >= osa.created_at
+                )
+            ) as has_standing_access
           from collab_map_sessions s
           left join collab_organizations org
             on org.id = s.organization_id
@@ -775,6 +873,17 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
               where soa.session_id = s.id
                 and soa.organization_id = $1::uuid
             )
+            or exists (
+              select 1
+              from collab_org_standing_access osa
+              where osa.source_organization_id = s.organization_id
+                and osa.target_organization_id = $1::uuid
+                and (
+                  s.session_status = 'active'
+                  or s.operational_period_end > now()
+                  or s.created_at >= osa.created_at
+                )
+            )
             or (s.organization_id is null and lower(s.trainer_ref) = lower($2))
           )
           order by s.created_at desc
@@ -784,7 +893,9 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
       return reply.send(result.rows.map((row) => ({
         ...mapSession(row, app.config.icsCollabPublicBaseUrl ?? request.headers.origin),
         isOwner: row.trainer_ref.trim().toLowerCase() === trainer.trainerRef.trim().toLowerCase(),
-        accessType: row.organization_id && row.organization_id === membership.organization_id ? 'owned' : (row.organization_id ? 'shared' : 'legacy')
+        accessType: row.organization_id && row.organization_id === membership.organization_id
+          ? 'owned'
+          : (row.has_session_share ? 'shared' : (row.has_standing_access ? 'standing' : (row.organization_id ? 'shared' : 'legacy')))
       })));
     } catch (error) {
       return sendTrainerError(reply, request, error, 'Failed to list collaborative sessions.');
@@ -807,6 +918,8 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         commander_name: string;
         organization_id: string | null;
         organization_name: string | null;
+        has_session_share: boolean;
+        has_standing_access: boolean;
       }>(
         `
           select
@@ -820,7 +933,19 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
             s.trainer_ref as owner_trainer_ref,
             s.commander_name,
             s.organization_id::text as organization_id,
-            org.organization_name
+            org.organization_name,
+            exists (
+              select 1
+              from collab_map_session_org_access soa
+              where soa.session_id = s.id
+                and soa.organization_id = $1::uuid
+            ) as has_session_share,
+            exists (
+              select 1
+              from collab_org_standing_access osa
+              where osa.source_organization_id = s.organization_id
+                and osa.target_organization_id = $1::uuid
+            ) as has_standing_access
           from collab_map_sessions s
           left join trainers t
             on t.trainer_ref = s.trainer_ref
@@ -830,11 +955,17 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
             and s.operational_period_end > now()
             and (
               s.organization_id = $1::uuid
-            or exists (
-              select 1
-              from collab_map_session_org_access soa
-              where soa.session_id = s.id
-                and soa.organization_id = $1::uuid
+              or exists (
+                select 1
+                from collab_map_session_org_access soa
+                where soa.session_id = s.id
+                  and soa.organization_id = $1::uuid
+              )
+              or exists (
+                select 1
+                from collab_org_standing_access osa
+                where osa.source_organization_id = s.organization_id
+                  and osa.target_organization_id = $1::uuid
               )
               or (s.organization_id is null and lower(s.trainer_ref) = lower($2))
             )
@@ -854,7 +985,9 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         commanderName: row.commander_name,
         organizationId: row.organization_id,
         organizationName: row.organization_name,
-        accessType: row.organization_id && row.organization_id === membership.organization_id ? 'owned' : (row.organization_id ? 'shared' : 'legacy'),
+        accessType: row.organization_id && row.organization_id === membership.organization_id
+          ? 'owned'
+          : (row.has_session_share ? 'shared' : (row.has_standing_access ? 'standing' : (row.organization_id ? 'shared' : 'legacy'))),
         isOwner: row.owner_trainer_ref.trim().toLowerCase() === trainer.trainerRef.trim().toLowerCase()
       })));
     } catch (error) {
@@ -2264,7 +2397,25 @@ async function ensureOrganizationSessionAccess(
     `,
     [session.id, organizationId]
   );
-  if (shared.rowCount === 0) {
+  if (shared.rows.length > 0) {
+    return;
+  }
+  const standing = await pool.query<{ exists: boolean }>(
+    `
+      select true as exists
+      from collab_org_standing_access
+      where source_organization_id = $1::uuid
+        and target_organization_id = $2::uuid
+        and (
+          $3::text = 'active'
+          or $4::timestamptz > now()
+          or $5::timestamptz >= created_at
+        )
+      limit 1
+    `,
+    [session.organization_id, organizationId, session.session_status, session.operational_period_end, session.created_at]
+  );
+  if (standing.rows.length === 0) {
     throw new TrainerForbiddenError('Your department does not have access to this collaborative session.');
   }
 }
@@ -2720,6 +2871,69 @@ async function listSuperAdminSessionAccess(pool: { query: PoolClient['query'] })
   return result.rows;
 }
 
+async function listSuperAdminStandingAccess(pool: { query: PoolClient['query'] }) {
+  const result = await pool.query<SuperAdminStandingAccessRow>(
+    `
+      select
+        source.id::text as source_organization_id,
+        source.organization_name as source_organization_name,
+        source_county.county_name as source_county_name,
+        target.id::text as target_organization_id,
+        target.organization_name as target_organization_name,
+        target_county.county_name as target_county_name,
+        osa.created_by_trainer_ref,
+        osa.created_at,
+        osa.updated_at
+      from collab_org_standing_access osa
+      join collab_organizations source
+        on source.id = osa.source_organization_id
+      left join collab_counties source_county
+        on source_county.id = source.county_id
+      join collab_organizations target
+        on target.id = osa.target_organization_id
+      left join collab_counties target_county
+        on target_county.id = target.county_id
+      order by lower(source.organization_name), lower(target.organization_name), osa.created_at desc
+    `
+  );
+  return result.rows;
+}
+
+async function createStandingOrganizationAccess(
+  pool: { query: PoolClient['query'] },
+  params: { sourceOrganizationId: string; targetOrganizationId: string; createdByTrainerRef: string }
+) {
+  const result = await pool.query<{ source_organization_id: string }>(
+    `
+      insert into collab_org_standing_access (
+        source_organization_id,
+        target_organization_id,
+        created_by_trainer_ref
+      )
+      values ($1::uuid, $2::uuid, $3)
+      on conflict do nothing
+      returning source_organization_id::text as source_organization_id
+    `,
+    [params.sourceOrganizationId, params.targetOrganizationId, params.createdByTrainerRef]
+  );
+  return result.rows[0] ?? null;
+}
+
+async function deleteStandingOrganizationAccess(
+  pool: { query: PoolClient['query'] },
+  sourceOrganizationId: string,
+  targetOrganizationId: string
+) {
+  await pool.query(
+    `
+      delete from collab_org_standing_access
+      where source_organization_id = $1::uuid
+        and target_organization_id = $2::uuid
+    `,
+    [sourceOrganizationId, targetOrganizationId]
+  );
+}
+
 async function upsertTrainer(
   client: PoolClient,
   trainerRef: string,
@@ -2949,6 +3163,20 @@ function mapSuperAdminAccess(row: SuperAdminSessionAccessRow) {
     sharedOrganizationName: row.shared_organization_name,
     sharedCountyName: row.shared_county_name,
     operationalPeriodEnd: row.operational_period_end,
+    updatedAt: row.updated_at
+  };
+}
+
+function mapSuperAdminStandingAccess(row: SuperAdminStandingAccessRow) {
+  return {
+    sourceOrganizationId: row.source_organization_id,
+    sourceOrganizationName: row.source_organization_name,
+    sourceCountyName: row.source_county_name,
+    targetOrganizationId: row.target_organization_id,
+    targetOrganizationName: row.target_organization_name,
+    targetCountyName: row.target_county_name,
+    createdByTrainerRef: row.created_by_trainer_ref,
+    createdAt: row.created_at,
     updatedAt: row.updated_at
   };
 }
