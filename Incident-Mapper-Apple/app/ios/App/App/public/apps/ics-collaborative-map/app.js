@@ -383,7 +383,7 @@
     superAdminUsersOrgFilter: document.getElementById("superAdminUsersOrgFilter"),
     superAdminUsersList: document.getElementById("superAdminUsersList"),
     superAdminStandingSourceSelect: document.getElementById("superAdminStandingSourceSelect"),
-    superAdminStandingTargetSelect: document.getElementById("superAdminStandingTargetSelect"),
+    superAdminStandingTargetList: document.getElementById("superAdminStandingTargetList"),
     superAdminCreateStandingAccessBtn: document.getElementById("superAdminCreateStandingAccessBtn"),
     superAdminStandingAccessList: document.getElementById("superAdminStandingAccessList"),
     superAdminAccessList: document.getElementById("superAdminAccessList"),
@@ -497,7 +497,7 @@
     superAdminTab: "overview",
     superAdminUsersOrgFilter: "",
     superAdminStandingSourceFilter: "",
-    superAdminStandingTargetFilter: "",
+    superAdminStandingTargetFilters: [],
     ics202ObjectiveDragIndex: -1
   };
 
@@ -910,9 +910,8 @@
     });
     elements.superAdminStandingSourceSelect?.addEventListener("change", (event) => {
       state.superAdminStandingSourceFilter = String(event.target.value || "");
-    });
-    elements.superAdminStandingTargetSelect?.addEventListener("change", (event) => {
-      state.superAdminStandingTargetFilter = String(event.target.value || "");
+      state.superAdminStandingTargetFilters = [];
+      renderSuperAdminAccess();
     });
     elements.superAdminCreateStandingAccessBtn?.addEventListener("click", onCreateStandingOrganizationAccess);
     bindIcs202Events();
@@ -1535,30 +1534,41 @@
       return;
     }
     const sourceOrganizationId = String(elements.superAdminStandingSourceSelect?.value || "").trim();
-    const targetOrganizationId = String(elements.superAdminStandingTargetSelect?.value || "").trim();
-    if (!sourceOrganizationId || !targetOrganizationId) {
-      setStatus("Choose both the source and target departments.");
+    const targetOrganizationIds = Array.from(new Set((state.superAdminStandingTargetFilters || []).map((value) => String(value).trim()).filter(Boolean)));
+    if (!sourceOrganizationId || !targetOrganizationIds.length) {
+      setStatus("Choose a source department and at least one target department.");
       return;
     }
-    if (sourceOrganizationId === targetOrganizationId) {
+    if (targetOrganizationIds.includes(sourceOrganizationId)) {
       setStatus("A department cannot grant standing access to itself.");
       return;
     }
-    setStatus("Granting standing department access…");
+    setStatus(`Granting standing access to ${targetOrganizationIds.length} department${targetOrganizationIds.length === 1 ? "" : "s"}…`);
     try {
-      const standingAccess = await apiFetch("/v1/ics-collab/super-admin/standing-access", {
-        method: "POST",
-        actorType: "commander",
-        body: {
-          sourceOrganizationId,
-          targetOrganizationId
-        }
-      });
+      const targetLabels = new Map(
+        (Array.isArray(state.superAdminData.organizations) ? state.superAdminData.organizations : []).map((organization) => [
+          String(organization.id || ""),
+          organization.organizationName || "Department"
+        ])
+      );
+      let standingAccess = state.superAdminData.standingAccess;
+      const grantedNames = [];
+      for (const targetOrganizationId of targetOrganizationIds) {
+        standingAccess = await apiFetch("/v1/ics-collab/super-admin/standing-access", {
+          method: "POST",
+          actorType: "commander",
+          body: {
+            sourceOrganizationId,
+            targetOrganizationId
+          }
+        });
+        grantedNames.push(targetLabels.get(targetOrganizationId) || "Department");
+      }
       state.superAdminData.standingAccess = Array.isArray(standingAccess) ? standingAccess : state.superAdminData.standingAccess;
       state.superAdminStandingSourceFilter = "";
-      state.superAdminStandingTargetFilter = "";
+      state.superAdminStandingTargetFilters = [];
       renderSuperAdminAccess();
-      setStatus("Standing department access granted.");
+      setStatus(`Standing access granted to ${grantedNames.join(", ")}.`);
     } catch (error) {
       setStatus(formatError(error));
     }
@@ -3646,26 +3656,50 @@
   }
 
   function renderSuperAdminAccess() {
-    if (!elements.superAdminAccessList || !elements.superAdminStandingAccessList || !elements.superAdminStandingSourceSelect || !elements.superAdminStandingTargetSelect) return;
+    if (!elements.superAdminAccessList || !elements.superAdminStandingAccessList || !elements.superAdminStandingSourceSelect || !elements.superAdminStandingTargetList) return;
     const organizations = (Array.isArray(state.superAdminData.organizations) ? state.superAdminData.organizations : []).filter((organization) => {
       return organization.licenseStatus === "active";
     });
     const sourceValue = String(state.superAdminStandingSourceFilter || "");
-    const targetValue = String(state.superAdminStandingTargetFilter || "");
+    const targetValues = new Set((state.superAdminStandingTargetFilters || []).map((value) => String(value)));
     elements.superAdminStandingSourceSelect.innerHTML = '<option value="">Select source department</option>';
-    elements.superAdminStandingTargetSelect.innerHTML = '<option value="">Select target department</option>';
     organizations.forEach((organization) => {
       const sourceOption = document.createElement("option");
       sourceOption.value = String(organization.id || "");
       sourceOption.textContent = organization.organizationName || "Department";
       elements.superAdminStandingSourceSelect.appendChild(sourceOption);
-      const targetOption = document.createElement("option");
-      targetOption.value = String(organization.id || "");
-      targetOption.textContent = organization.organizationName || "Department";
-      elements.superAdminStandingTargetSelect.appendChild(targetOption);
     });
     elements.superAdminStandingSourceSelect.value = sourceValue;
-    elements.superAdminStandingTargetSelect.value = targetValue;
+    elements.superAdminStandingTargetList.innerHTML = "";
+    const targetOrganizations = organizations.filter((organization) => String(organization.id || "") !== sourceValue);
+    if (!targetOrganizations.length) {
+      const emptyTargets = document.createElement("div");
+      emptyTargets.className = "muted";
+      emptyTargets.textContent = sourceValue ? "No other active departments are available." : "Choose a source department first.";
+      elements.superAdminStandingTargetList.appendChild(emptyTargets);
+    } else {
+      targetOrganizations.forEach((organization) => {
+        const label = document.createElement("label");
+        label.className = "inline-checkbox";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.value = String(organization.id || "");
+        input.checked = targetValues.has(input.value);
+        input.addEventListener("change", () => {
+          const next = new Set((state.superAdminStandingTargetFilters || []).map((value) => String(value)));
+          if (input.checked) {
+            next.add(input.value);
+          } else {
+            next.delete(input.value);
+          }
+          state.superAdminStandingTargetFilters = Array.from(next);
+        });
+        const text = document.createElement("span");
+        text.textContent = organization.countyName ? `${organization.organizationName} · ${organization.countyName}` : (organization.organizationName || "Department");
+        label.append(input, text);
+        elements.superAdminStandingTargetList.appendChild(label);
+      });
+    }
 
     elements.superAdminStandingAccessList.innerHTML = "";
     const standingRows = Array.isArray(state.superAdminData.standingAccess) ? state.superAdminData.standingAccess : [];
