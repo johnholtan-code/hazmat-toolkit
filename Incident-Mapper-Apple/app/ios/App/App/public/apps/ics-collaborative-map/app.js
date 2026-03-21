@@ -3828,7 +3828,18 @@
           setStatus("Copy failed.");
         }
       });
-      row.append(joinCode, openBtn, copyBtn);
+      const downloadBtn = document.createElement("button");
+      downloadBtn.className = "secondary";
+      downloadBtn.type = "button";
+      downloadBtn.textContent = "Download JSON";
+      downloadBtn.addEventListener("click", async () => {
+        try {
+          await downloadSessionJson(session);
+        } catch (error) {
+          setStatus(formatError(error));
+        }
+      });
+      row.append(joinCode, openBtn, copyBtn, downloadBtn);
       content.append(title, meta);
       top.append(content, row);
       card.append(top);
@@ -5272,6 +5283,30 @@
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "")
       .slice(0, 60) || "incident";
+  }
+
+  function buildSessionExportFilename(session) {
+    const incidentSlug = slugifyFilename(session?.incidentName || "incident");
+    const dateSegment = new Date().toISOString().slice(0, 10);
+    return `${incidentSlug}-${dateSegment}-session.json`;
+  }
+
+  async function downloadSessionJson(session) {
+    const snapshotResponse = await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(session.id)}/snapshot`, {
+      actorType: "commander"
+    });
+    const exportPayload = {
+      exportType: "ics_collab_session_snapshot",
+      exportedAt: new Date().toISOString(),
+      accessType: session.accessType || "owned",
+      session: deepClone(snapshotResponse.session || session),
+      actor: deepClone(snapshotResponse.actor || null),
+      snapshot: deepClone(snapshotResponse.snapshot || snapshotResponse)
+    };
+    const filename = buildSessionExportFilename(exportPayload.session || session);
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: "application/json" });
+    await downloadBlob(blob, filename);
+    setStatus(`Session JSON downloaded: ${filename}`);
   }
 
   function renderSelectedObject() {
