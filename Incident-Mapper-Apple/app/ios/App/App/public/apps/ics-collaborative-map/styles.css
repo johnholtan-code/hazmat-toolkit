@@ -1838,7 +1838,7 @@ button.danger { background: rgba(182,59,59,0.14); color: #f4c9ce; border-color: 
 .ics207-template {
   position: relative;
   width: 792px;
-  height: 612px;
+  height: 530px;
 }
 .ics207-template-connectors {
   position: absolute;
@@ -1865,17 +1865,17 @@ button.danger { background: rgba(182,59,59,0.14); color: #f4c9ce; border-color: 
   text-align: center;
 }
 .ics207-slot-label {
-  font-size: 10px;
+  font-size: 9px;
   line-height: 1.1;
   font-weight: 700;
 }
 .ics207-slot-name {
   min-height: 14px;
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1.15;
 }
 .ics207-footer {
-  margin-top: -34px;
+  margin-top: 8px;
   padding: 0 18px 12px;
   display: flex;
   justify-content: space-between;
@@ -2532,10 +2532,10 @@ body[data-theme="light"] .attachment-preview-img {
     background: #fff;
     padding: 0;
   }
-  body.print-ics207 .shell #appView > *:not(#ics207PrintRoot) {
+  body.print-ics207 .shell #appView > * {
     display: none !important;
   }
-  body.print-ics207 .shell #ics207PrintRoot {
+  body.print-ics207 #ics207PrintRoot {
     position: static;
     left: auto;
     top: auto;

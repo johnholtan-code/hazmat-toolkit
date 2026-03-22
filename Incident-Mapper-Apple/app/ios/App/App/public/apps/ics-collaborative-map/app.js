@@ -218,89 +218,84 @@
     cost_unit: "COST"
   };
   const ICS207_SLOT_META = {
-    IC: { label: "Incident Commander(s)", roleLabel: "Incident Commander(s)", x: 311, y: 40, w: 170, h: 48 },
-    PIO: { label: "Public Information Officer", roleLabel: "Public Information Officer", x: 235, y: 113, w: 154, h: 52 },
-    SAFETY: { label: "Safety Officer", roleLabel: "Safety Officer", x: 235, y: 173, w: 154, h: 52 },
-    LIAISON: { label: "Liaison Officer", roleLabel: "Liaison Officer", x: 467, y: 113, w: 154, h: 52 },
-    OPS: { label: "Operations Section Chief", roleLabel: "Operations Section Chief", x: 22, y: 248, w: 166, h: 56 },
-    STAGING: { label: "Staging Area Manager", roleLabel: "Staging Area Manager", x: 4, y: 348, w: 148, h: 52 },
-    BRANCHES: { label: "Branches", roleLabel: "Branches", x: 95, y: 410, w: 114, h: 52 },
-    AIR_OPS_BRANCH: { label: "Air Ops Branch", roleLabel: "Air Ops Branch", x: 228, y: 410, w: 114, h: 52 },
-    DIVISIONS: { label: "Divisions", roleLabel: "Divisions", x: 96, y: 494, w: 114, h: 46 },
-    GROUPS: { label: "Groups", roleLabel: "Groups", x: 229, y: 494, w: 114, h: 46 },
-    STRIKE_TEAM: { label: "Strike Team", roleLabel: "Strike Team", x: 97, y: 556, w: 236, h: 34 },
-    TASK_FORCE: { label: "Task Force", roleLabel: "Task Force", x: 97, y: 596, w: 236, h: 34 },
-    SINGLE_RESOURCE: { label: "Single Resource", roleLabel: "Single Resource", x: 97, y: 636, w: 236, h: 34 },
-    PLANNING: { label: "Planning Section Chief", roleLabel: "Planning Section Chief", x: 229, y: 248, w: 166, h: 56 },
-    RESOURCES: { label: "Resources Unit Ldr.", roleLabel: "Resources Unit Ldr.", x: 214, y: 348, w: 118, h: 52 },
-    DEMOB: { label: "Demobilization Unit Ldr.", roleLabel: "Demobilization Unit Ldr.", x: 348, y: 348, w: 118, h: 52 },
-    SITUATION: { label: "Situation Unit Ldr.", roleLabel: "Situation Unit Ldr.", x: 214, y: 414, w: 118, h: 52 },
-    DOCUMENTATION: { label: "Documentation Unit Ldr.", roleLabel: "Documentation Unit Ldr.", x: 348, y: 414, w: 118, h: 52 },
-    LOGISTICS: { label: "Logistics Section Chief", roleLabel: "Logistics Section Chief", x: 481, y: 248, w: 166, h: 56 },
-    SUPPORT_BRANCH: { label: "Support Branch Dir.", roleLabel: "Support Branch Dir.", x: 478, y: 348, w: 118, h: 52 },
-    SUPPLY: { label: "Supply Unit Ldr.", roleLabel: "Supply Unit Ldr.", x: 478, y: 414, w: 118, h: 52 },
-    FACILITIES: { label: "Facilities Unit Ldr.", roleLabel: "Facilities Unit Ldr.", x: 478, y: 480, w: 118, h: 52 },
-    GROUND_SUPPORT: { label: "Ground Spt. Unit Ldr.", roleLabel: "Ground Spt. Unit Ldr.", x: 478, y: 546, w: 118, h: 52 },
-    SERVICE_BRANCH: { label: "Service Branch Dir.", roleLabel: "Service Branch Dir.", x: 610, y: 348, w: 118, h: 52 },
-    COMMS: { label: "Comms Unit Ldr.", roleLabel: "Comms Unit Ldr.", x: 610, y: 414, w: 118, h: 52 },
-    MEDICAL: { label: "Medical Unit Ldr.", roleLabel: "Medical Unit Ldr.", x: 610, y: 480, w: 118, h: 52 },
-    FOOD: { label: "Food Unit Ldr.", roleLabel: "Food Unit Ldr.", x: 610, y: 546, w: 118, h: 52 },
-    FINANCE: { label: "Finance / Admin Section Chief", roleLabel: "Finance / Admin Section Chief", x: 649, y: 248, w: 136, h: 56 },
-    TIME: { label: "Time Unit Ldr.", roleLabel: "Time Unit Ldr.", x: 648, y: 348, w: 136, h: 52 },
-    PROCUREMENT: { label: "Procurement Unit Ldr.", roleLabel: "Procurement Unit Ldr.", x: 648, y: 414, w: 136, h: 52 },
-    COMP_CLAIMS: { label: "Comp. / Claims Unit Ldr.", roleLabel: "Comp. / Claims Unit Ldr.", x: 648, y: 480, w: 136, h: 52 },
-    COST: { label: "Cost Unit Ldr.", roleLabel: "Cost Unit Ldr.", x: 648, y: 546, w: 136, h: 52 }
+    IC: { label: "Incident Commander(s)", roleLabel: "Incident Commander(s)", x: 314, y: 28, w: 158, h: 42 },
+    PIO: { label: "Public Information Officer", roleLabel: "Public Information Officer", x: 242, y: 96, w: 146, h: 42 },
+    SAFETY: { label: "Safety Officer", roleLabel: "Safety Officer", x: 242, y: 144, w: 146, h: 42 },
+    LIAISON: { label: "Liaison Officer", roleLabel: "Liaison Officer", x: 460, y: 96, w: 146, h: 42 },
+    OPS: { label: "Operations Section Chief", roleLabel: "Operations Section Chief", x: 12, y: 202, w: 150, h: 44 },
+    STAGING: { label: "Staging Area Manager", roleLabel: "Staging Area Manager", x: 0, y: 286, w: 120, h: 38 },
+    BRANCHES: { label: "Branches", roleLabel: "Branches", x: 62, y: 336, w: 92, h: 36 },
+    AIR_OPS_BRANCH: { label: "Air Ops Branch", roleLabel: "Air Ops Branch", x: 160, y: 336, w: 92, h: 36 },
+    DIVISIONS: { label: "Divisions", roleLabel: "Divisions", x: 62, y: 382, w: 92, h: 36 },
+    GROUPS: { label: "Groups", roleLabel: "Groups", x: 160, y: 382, w: 92, h: 36 },
+    STRIKE_TEAM: { label: "Strike Team", roleLabel: "Strike Team", x: 76, y: 428, w: 152, h: 30 },
+    TASK_FORCE: { label: "Task Force", roleLabel: "Task Force", x: 76, y: 464, w: 152, h: 30 },
+    SINGLE_RESOURCE: { label: "Single Resource", roleLabel: "Single Resource", x: 76, y: 500, w: 152, h: 30 },
+    PLANNING: { label: "Planning Section Chief", roleLabel: "Planning Section Chief", x: 212, y: 202, w: 150, h: 44 },
+    RESOURCES: { label: "Resources Unit Ldr.", roleLabel: "Resources Unit Ldr.", x: 200, y: 286, w: 96, h: 38 },
+    DEMOB: { label: "Demobilization Unit Ldr.", roleLabel: "Demobilization Unit Ldr.", x: 308, y: 286, w: 96, h: 38 },
+    SITUATION: { label: "Situation Unit Ldr.", roleLabel: "Situation Unit Ldr.", x: 200, y: 336, w: 96, h: 38 },
+    DOCUMENTATION: { label: "Documentation Unit Ldr.", roleLabel: "Documentation Unit Ldr.", x: 308, y: 336, w: 96, h: 38 },
+    LOGISTICS: { label: "Logistics Section Chief", roleLabel: "Logistics Section Chief", x: 434, y: 202, w: 150, h: 44 },
+    SUPPORT_BRANCH: { label: "Support Branch Dir.", roleLabel: "Support Branch Dir.", x: 426, y: 286, w: 98, h: 38 },
+    SUPPLY: { label: "Supply Unit Ldr.", roleLabel: "Supply Unit Ldr.", x: 426, y: 336, w: 98, h: 38 },
+    FACILITIES: { label: "Facilities Unit Ldr.", roleLabel: "Facilities Unit Ldr.", x: 426, y: 386, w: 98, h: 38 },
+    GROUND_SUPPORT: { label: "Ground Spt. Unit Ldr.", roleLabel: "Ground Spt. Unit Ldr.", x: 426, y: 436, w: 98, h: 38 },
+    SERVICE_BRANCH: { label: "Service Branch Dir.", roleLabel: "Service Branch Dir.", x: 532, y: 286, w: 98, h: 38 },
+    COMMS: { label: "Comms Unit Ldr.", roleLabel: "Comms Unit Ldr.", x: 532, y: 336, w: 98, h: 38 },
+    MEDICAL: { label: "Medical Unit Ldr.", roleLabel: "Medical Unit Ldr.", x: 532, y: 386, w: 98, h: 38 },
+    FOOD: { label: "Food Unit Ldr.", roleLabel: "Food Unit Ldr.", x: 532, y: 436, w: 98, h: 38 },
+    FINANCE: { label: "Finance / Admin Section Chief", roleLabel: "Finance / Admin Section Chief", x: 640, y: 202, w: 136, h: 44 },
+    TIME: { label: "Time Unit Ldr.", roleLabel: "Time Unit Ldr.", x: 646, y: 286, w: 130, h: 38 },
+    PROCUREMENT: { label: "Procurement Unit Ldr.", roleLabel: "Procurement Unit Ldr.", x: 646, y: 336, w: 130, h: 38 },
+    COMP_CLAIMS: { label: "Comp. / Claims Unit Ldr.", roleLabel: "Comp. / Claims Unit Ldr.", x: 646, y: 386, w: 130, h: 38 },
+    COST: { label: "Cost Unit Ldr.", roleLabel: "Cost Unit Ldr.", x: 646, y: 436, w: 130, h: 38 }
   };
   const ICS207_CONNECTOR_PATHS = [
-    "M 396 88 V 238",
-    "M 312 139 H 396",
-    "M 312 199 H 396",
-    "M 396 139 H 467",
-    "M 105 238 H 717",
-    "M 105 238 V 248",
-    "M 312 238 V 248",
-    "M 564 238 V 248",
-    "M 717 238 V 248",
-    "M 105 304 V 374",
-    "M 105 374 H 152",
-    "M 105 374 H 152 V 410",
-    "M 152 436 H 285",
-    "M 152 462 V 494",
-    "M 153 494 H 286",
-    "M 153 540 V 653",
-    "M 153 573 H 97",
-    "M 153 613 H 97",
-    "M 153 653 H 97",
-    "M 312 304 V 330",
-    "M 312 330 H 273",
-    "M 312 330 H 407",
-    "M 273 330 V 348",
-    "M 407 330 V 348",
-    "M 312 330 V 396",
-    "M 312 396 H 273",
-    "M 312 396 H 407",
-    "M 273 396 V 414",
-    "M 407 396 V 414",
-    "M 564 304 V 330",
-    "M 564 330 H 537",
-    "M 564 330 H 669",
-    "M 537 330 V 348",
-    "M 669 330 V 348",
-    "M 537 400 V 572",
-    "M 537 440 H 478",
-    "M 537 506 H 478",
-    "M 537 572 H 478",
-    "M 669 400 V 572",
-    "M 669 440 H 610",
-    "M 669 506 H 610",
-    "M 669 572 H 610",
-    "M 717 304 V 330",
-    "M 717 330 V 572",
-    "M 717 330 H 716",
-    "M 717 374 H 648",
-    "M 717 440 H 648",
-    "M 717 506 H 648",
-    "M 717 572 H 648"
+    "M 393 70 V 194",
+    "M 388 117 H 393",
+    "M 388 165 H 393",
+    "M 393 117 H 460",
+    "M 87 194 H 708",
+    "M 87 194 V 202",
+    "M 287 194 V 202",
+    "M 509 194 V 202",
+    "M 708 194 V 202",
+    "M 87 246 V 305",
+    "M 87 305 H 120",
+    "M 108 246 V 336",
+    "M 108 336 H 206",
+    "M 108 336 V 382",
+    "M 108 382 H 206",
+    "M 108 418 V 515",
+    "M 108 443 H 76",
+    "M 108 479 H 76",
+    "M 108 515 H 76",
+    "M 287 246 V 305",
+    "M 248 305 H 356",
+    "M 248 305 V 286",
+    "M 356 305 V 286",
+    "M 287 305 V 355",
+    "M 248 355 H 356",
+    "M 248 355 V 336",
+    "M 356 355 V 336",
+    "M 509 246 V 305",
+    "M 475 305 H 581",
+    "M 475 305 V 286",
+    "M 581 305 V 286",
+    "M 475 324 V 474",
+    "M 475 355 H 426",
+    "M 475 405 H 426",
+    "M 475 455 H 426",
+    "M 581 324 V 474",
+    "M 581 355 H 532",
+    "M 581 405 H 532",
+    "M 581 455 H 532",
+    "M 708 246 V 474",
+    "M 708 305 H 711",
+    "M 708 355 H 646",
+    "M 708 405 H 646",
+    "M 708 455 H 646"
   ];
   const ICS207_SAMPLE_COMMAND_STRUCTURE = {
     incidentId: "sample-incident",
@@ -309,7 +304,7 @@
       { roleId: "safety_officer", label: "Safety Officer", parent: "incident_commander", assignedUser: { userId: "u2", name: "Taylor Rollins" }, status: "assigned" }
     ]
   };
-  const ICS207_PDF_SIZE = { width: 792, height: 732 };
+  const ICS207_PDF_SIZE = { width: 792, height: 612 };
 
   const ICON_MARKER_TEMPLATE = {
     objectType: ICON_MARKER_OBJECT_TYPE,
@@ -5722,7 +5717,7 @@
   }
 
   function buildIcs207ConnectorMarkup() {
-    return `<svg class="ics207-template-connectors" viewBox="0 0 792 612" aria-hidden="true" focusable="false">${ICS207_CONNECTOR_PATHS.map((path) => `<path d="${path}" />`).join("")}</svg>`;
+    return `<svg class="ics207-template-connectors" viewBox="0 0 792 530" aria-hidden="true" focusable="false">${ICS207_CONNECTOR_PATHS.map((path) => `<path d="${path}" />`).join("")}</svg>`;
   }
 
   function buildIcs207PrintMarkup(snapshot) {
@@ -5781,13 +5776,13 @@
             .ics207-sheet-header { padding: 12px 18px 2px; }
             .ics207-sheet-title { margin-bottom: 8px; font-size: 18px; font-weight: 700; text-align: center; }
             .ics207-meta-row { display: flex; gap: 16px; align-items: baseline; font-size: 11px; margin-bottom: 4px; }
-            .ics207-template { position: relative; width: 792px; height: 612px; }
+            .ics207-template { position: relative; width: 792px; height: 530px; }
             .ics207-template-connectors { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
             .ics207-template-connectors path { fill: none; stroke: #111827; stroke-width: 2; stroke-linecap: square; stroke-linejoin: miter; }
             .ics207-slot { position: absolute; border: 1px solid #111827; background: #fff; padding: 6px 8px 4px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; box-sizing: border-box; }
-            .ics207-slot-label { font-size: 10px; line-height: 1.1; font-weight: 700; }
-            .ics207-slot-name { min-height: 14px; font-size: 11px; line-height: 1.15; }
-            .ics207-footer { margin-top: -34px; padding: 0 18px 12px; display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
+            .ics207-slot-label { font-size: 9px; line-height: 1.1; font-weight: 700; }
+            .ics207-slot-name { min-height: 14px; font-size: 10px; line-height: 1.15; }
+            .ics207-footer { margin-top: 8px; padding: 0 18px 12px; display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
             .ics207-prepared-by { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
             @page { size: letter landscape; margin: 0; }
           </style>
@@ -5920,8 +5915,8 @@
     });
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(11);
-    pdf.text("ICS 207 IAP Page ___", 18, 706);
-    pdf.text(`4. Prepared by:  Name: ${String(snapshot?.preparedBy?.name || "")}   Position/Title: ${String(snapshot?.preparedBy?.position || "")}   Date/Time: ${String(formatDateTime(snapshot?.preparedBy?.datetime) || "")}`, 220, 706);
+    pdf.text("ICS 207 IAP Page ___", 18, 594);
+    pdf.text(`4. Prepared by:  Name: ${String(snapshot?.preparedBy?.name || "")}   Position/Title: ${String(snapshot?.preparedBy?.position || "")}   Date/Time: ${String(formatDateTime(snapshot?.preparedBy?.datetime) || "")}`, 220, 594);
   }
 
   function syncIcs207PreviewDraftFromInputs() {
