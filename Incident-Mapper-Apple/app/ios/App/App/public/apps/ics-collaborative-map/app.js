@@ -5092,20 +5092,109 @@
   }
 
   function buildCommandStructureConnectorMarkup() {
-    const paths = COMMAND_STRUCTURE_ROLE_DEFS
-      .filter((role) => role.parent)
-      .map((role) => {
-        const parent = COMMAND_STRUCTURE_ROLE_BY_ID[role.parent];
-        if (!parent) return "";
-        const parentX = parent.x + parent.width / 2;
-        const parentY = parent.y + parent.height;
-        const childX = role.x + role.width / 2;
-        const childY = role.y;
-        const midY = Math.round(parentY + (childY - parentY) / 2);
-        return `<path d="M ${parentX} ${parentY} V ${midY} H ${childX} V ${childY}" />`;
-      })
-      .filter(Boolean)
-      .join("");
+    const role = (roleId) => COMMAND_STRUCTURE_ROLE_BY_ID[roleId];
+    const topCenter = (roleId) => {
+      const item = role(roleId);
+      return { x: item.x + item.width / 2, y: item.y };
+    };
+    const bottomCenter = (roleId) => {
+      const item = role(roleId);
+      return { x: item.x + item.width / 2, y: item.y + item.height };
+    };
+    const leftMid = (roleId) => {
+      const item = role(roleId);
+      return { x: item.x, y: item.y + item.height / 2 };
+    };
+    const rightMid = (roleId) => {
+      const item = role(roleId);
+      return { x: item.x + item.width, y: item.y + item.height / 2 };
+    };
+
+    const icBottom = bottomCenter("incident_commander");
+    const pioRight = rightMid("public_information_officer");
+    const safetyRight = rightMid("safety_officer");
+    const liaisonLeft = leftMid("liaison_officer");
+    const opsTop = topCenter("operations_section");
+    const planningTop = topCenter("planning_section");
+    const logisticsTop = topCenter("logistics_section");
+    const financeTop = topCenter("finance_admin_section");
+    const stagingRight = rightMid("staging_area");
+    const branchesTop = topCenter("branches");
+    const branchesBottom = bottomCenter("branches");
+    const airOpsTop = topCenter("air_operations_branch");
+    const divisionsTop = topCenter("divisions");
+    const divisionsBottom = bottomCenter("divisions");
+    const groupsTop = topCenter("groups");
+    const strikeLeft = leftMid("strike_team");
+    const taskLeft = leftMid("task_force");
+    const singleLeft = leftMid("single_resource");
+    const planningBottom = bottomCenter("planning_section");
+    const resourcesTop = topCenter("resources_unit");
+    const demobTop = topCenter("demobilization_unit");
+    const situationTop = topCenter("situation_unit");
+    const documentationTop = topCenter("documentation_unit");
+    const logisticsBottom = bottomCenter("logistics_section");
+    const serviceTop = topCenter("service_branch");
+    const serviceBottom = bottomCenter("service_branch");
+    const supportTop = topCenter("support_branch");
+    const supportBottom = bottomCenter("support_branch");
+    const commTop = topCenter("communications_unit");
+    const medicalTop = topCenter("medical_unit");
+    const foodTop = topCenter("food_unit");
+    const supplyTop = topCenter("supply_unit");
+    const facilitiesTop = topCenter("facilities_unit");
+    const groundTop = topCenter("ground_support_unit");
+    const financeBottom = bottomCenter("finance_admin_section");
+    const timeTop = topCenter("time_unit");
+    const compTop = topCenter("compensation_claims_unit");
+    const procurementTop = topCenter("procurement_unit");
+    const costTop = topCenter("cost_unit");
+
+    const paths = [
+      `M ${icBottom.x} ${icBottom.y} V 430`,
+      `M ${icBottom.x} ${pioRight.y} H ${pioRight.x}`,
+      `M ${icBottom.x} ${safetyRight.y} H ${safetyRight.x}`,
+      `M ${icBottom.x} ${liaisonLeft.y} H ${liaisonLeft.x}`,
+      `M ${opsTop.x} 430 H ${financeTop.x}`,
+      `M ${opsTop.x} 430 V ${opsTop.y}`,
+      `M ${planningTop.x} 430 V ${planningTop.y}`,
+      `M ${logisticsTop.x} 430 V ${logisticsTop.y}`,
+      `M ${financeTop.x} 430 V ${financeTop.y}`,
+
+      `M ${opsTop.x} ${bottomCenter("operations_section").y} H ${branchesTop.x} V ${branchesTop.y}`,
+      `M ${branchesTop.x} ${stagingRight.y} H ${stagingRight.x}`,
+      `M ${branchesTop.x} ${branchesTop.y} H ${airOpsTop.x}`,
+      `M ${branchesBottom.x} ${branchesBottom.y} V ${divisionsTop.y}`,
+      `M ${divisionsTop.x} ${divisionsTop.y} H ${groupsTop.x}`,
+      `M ${divisionsBottom.x} ${divisionsBottom.y} H 145 V ${singleLeft.y}`,
+      `M 145 ${strikeLeft.y} H ${strikeLeft.x}`,
+      `M 145 ${taskLeft.y} H ${taskLeft.x}`,
+      `M 145 ${singleLeft.y} H ${singleLeft.x}`,
+
+      `M ${planningBottom.x} ${planningBottom.y} V ${situationTop.y}`,
+      `M ${planningBottom.x} ${resourcesTop.y} H ${resourcesTop.x}`,
+      `M ${planningBottom.x} ${resourcesTop.y} H ${demobTop.x}`,
+      `M ${planningBottom.x} ${situationTop.y} H ${situationTop.x}`,
+      `M ${planningBottom.x} ${situationTop.y} H ${documentationTop.x}`,
+
+      `M ${logisticsBottom.x} ${logisticsBottom.y} V ${serviceTop.y}`,
+      `M ${logisticsBottom.x} ${serviceTop.y} H ${serviceTop.x}`,
+      `M ${logisticsBottom.x} ${serviceTop.y} H ${supportTop.x}`,
+      `M ${serviceBottom.x} ${serviceBottom.y} V ${foodTop.y}`,
+      `M ${serviceBottom.x} ${commTop.y} H ${commTop.x}`,
+      `M ${serviceBottom.x} ${medicalTop.y} H ${medicalTop.x}`,
+      `M ${serviceBottom.x} ${foodTop.y} H ${foodTop.x}`,
+      `M ${supportBottom.x} ${supportBottom.y} V ${groundTop.y}`,
+      `M ${supportBottom.x} ${supplyTop.y} H ${supplyTop.x}`,
+      `M ${supportBottom.x} ${facilitiesTop.y} H ${facilitiesTop.x}`,
+      `M ${supportBottom.x} ${groundTop.y} H ${groundTop.x}`,
+
+      `M ${financeBottom.x} ${financeBottom.y} V ${procurementTop.y}`,
+      `M ${financeBottom.x} ${timeTop.y} H ${timeTop.x}`,
+      `M ${financeBottom.x} ${timeTop.y} H ${compTop.x}`,
+      `M ${financeBottom.x} ${procurementTop.y} H ${procurementTop.x}`,
+      `M ${financeBottom.x} ${procurementTop.y} H ${costTop.x}`
+    ].map((path) => `<path d="${path}" />`).join("");
     return `
       <svg class="command-structure-connectors" viewBox="0 0 ${COMMAND_STRUCTURE_CHART_SIZE.width} ${COMMAND_STRUCTURE_CHART_SIZE.height}" aria-hidden="true" focusable="false">
         ${paths}
