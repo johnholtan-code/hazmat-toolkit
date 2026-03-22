@@ -17,6 +17,7 @@
   const ATTACHMENT_MAX_DIMENSION_PX = 1600;
   const ATTACHMENT_TARGET_BYTES = 450 * 1024;
   const ATTACHMENT_MIN_QUALITY = 0.45;
+  const FREEHAND_MIN_POINT_DISTANCE_PX = 6;
   const WEATHER_REFRESH_MS = 5 * 60 * 1000;
   const WEATHER_API_BASE_URL = (config.weatherApiBaseUrl || "https://api.open-meteo.com/v1/forecast").replace(/\/$/, "");
   const ICON_MANIFEST_URL = "./icon-manifest.json";
@@ -483,6 +484,12 @@
     currentLocationMarker: null,
     currentLocation: null,
     previewLayer: null,
+    freehandDraw: {
+      active: false,
+      pointerId: null,
+      draggingDisabledForSketch: false,
+      suppressNextClick: false
+    },
     sessionRefreshNonce: 0,
     dragTemplateType: null,
     collapsedPaletteCategories: new Set(),
@@ -1152,6 +1159,10 @@
     mapContainer.addEventListener("dragover", onMapDragOver);
     mapContainer.addEventListener("dragleave", onMapDragLeave);
     mapContainer.addEventListener("drop", onMapDrop);
+    mapContainer.addEventListener("pointerdown", onFreehandPointerDown);
+    document.addEventListener("pointermove", onFreehandPointerMove);
+    document.addEventListener("pointerup", onFreehandPointerEnd);
+    document.addEventListener("pointercancel", onFreehandPointerEnd);
     scheduleMapResizeRefresh();
     requestCurrentLocation({ recenter: true, force: false });
   }
@@ -5695,11 +5706,19 @@
     } else {
       state.drawState = { mode: "create", template, points: initialPoint ? [initialPoint] : [] };
       setStatus(initialPoint
-        ? `Dropped ${template.label}. Add more points, then finish.`
-        : `Selected ${template.label}. Draw directly on the map to add ${template.geometryType} points, then finish.`);
+        ? `Dropped ${template.label}. Drag on the map to sketch the ${template.geometryType}, then release to save.`
+        : `Selected ${template.label}. Drag on the map to sketch the ${template.geometryType}, then release to save.`);
     }
     redrawPreviewLayer();
     updateDrawControls();
+  }
+
+  function usesFreehandSketchMode() {
+    return Boolean(
+      state.drawState
+      && state.drawState.mode === "create"
+      && (state.drawState.template?.geometryType === "line" || state.drawState.template?.geometryType === "polygon")
+    );
   }
 
   function beginIconPlacement(iconDefinition, initialPoint = null) {
@@ -5811,7 +5830,76 @@
     state.dragTemplateType = null;
   }
 
+  function onFreehandPointerDown(event) {
+    if (!usesFreehandSketchMode() || !state.map || !canCreateObjects()) return;
+    if (event.button !== 0) return;
+    if (event.target.closest(".leaflet-control")) return;
+    event.preventDefault();
+    const mapContainer = state.map.getContainer();
+    state.freehandDraw.active = true;
+    state.freehandDraw.pointerId = event.pointerId;
+    state.freehandDraw.suppressNextClick = false;
+    if (typeof mapContainer.setPointerCapture === "function") {
+      try {
+        mapContainer.setPointerCapture(event.pointerId);
+      } catch (_error) {
+        // Ignore browsers that reject capture here.
+      }
+    }
+    const latlng = state.map.mouseEventToLatLng(event);
+    state.drawState.points = [{
+      lat: roundCoord(latlng.lat),
+      lng: roundCoord(latlng.lng)
+    }];
+    redrawPreviewLayer();
+    updateDrawControls();
+  }
+
+  function onFreehandPointerMove(event) {
+    if (!state.freehandDraw.active || event.pointerId !== state.freehandDraw.pointerId || !usesFreehandSketchMode() || !state.map) return;
+    event.preventDefault();
+    const latlng = state.map.mouseEventToLatLng(event);
+    const nextPoint = {
+      lat: roundCoord(latlng.lat),
+      lng: roundCoord(latlng.lng)
+    };
+    const points = state.drawState?.points || [];
+    const last = points[points.length - 1];
+    if (last) {
+      const lastPoint = state.map.latLngToContainerPoint([last.lat, last.lng]);
+      const currentPoint = state.map.latLngToContainerPoint([nextPoint.lat, nextPoint.lng]);
+      const dx = currentPoint.x - lastPoint.x;
+      const dy = currentPoint.y - lastPoint.y;
+      if ((dx * dx + dy * dy) < (FREEHAND_MIN_POINT_DISTANCE_PX * FREEHAND_MIN_POINT_DISTANCE_PX)) return;
+    }
+    points.push(nextPoint);
+    redrawPreviewLayer();
+    updateDrawControls();
+  }
+
+  async function onFreehandPointerEnd(event) {
+    if (!state.freehandDraw.active || event.pointerId !== state.freehandDraw.pointerId) return;
+    state.freehandDraw.active = false;
+    state.freehandDraw.pointerId = null;
+    state.freehandDraw.suppressNextClick = true;
+    const template = state.drawState?.template;
+    const pointCount = state.drawState?.points?.length || 0;
+    const minimumPoints = template?.geometryType === "polygon" ? 3 : 2;
+    if (!template || pointCount < minimumPoints) {
+      if (state.drawState) state.drawState.points = [];
+      redrawPreviewLayer();
+      updateDrawControls();
+      setStatus(`Sketch ${template?.label || "shape"} by dragging on the map.`);
+      return;
+    }
+    await finishGeometryDraw();
+  }
+
   async function onMapClick(event) {
+    if (state.freehandDraw.suppressNextClick) {
+      state.freehandDraw.suppressNextClick = false;
+      return;
+    }
     if (state.pendingAttachmentPayload) {
       if (!canCreateObjects()) {
         state.pendingAttachmentPayload = null;
@@ -5831,6 +5919,7 @@
       await handlePendingIsolationPlacement(event.latlng);
       return;
     }
+    if (usesFreehandSketchMode()) return;
     if (!state.drawState) return;
     if (!canCreateObjects() && state.drawState.mode === "create") {
       setStatus("This session is read-only or you do not have edit access.");
@@ -5892,19 +5981,46 @@
     const active = Boolean(state.drawState);
     if (isIncidentFocusPlacementActive()) {
       elements.drawControls.classList.add("hidden");
+      syncFreehandSketchInteraction();
       return;
     }
     elements.drawControls.classList.toggle("hidden", !active);
-    if (!active) return;
+    if (!active) {
+      syncFreehandSketchInteraction();
+      return;
+    }
     const { template, mode, points = [] } = state.drawState;
+    const freehand = usesFreehandSketchMode();
     const minPoints = template.geometryType === "line" ? 2 : (template.geometryType === "polygon" ? 3 : 1);
     elements.finishGeometryBtn.textContent = mode === "edit" ? "Save Shape" : "Finish";
-    elements.drawHintText.textContent = mode === "edit"
+    elements.drawHintText.textContent = freehand
+      ? `${template.label}: drag on the map to sketch, then release to save.`
+      : mode === "edit"
       ? template.geometryType === "point"
         ? `Move ${template.label} by selecting a new point on the map.`
         : `Drag the corner handles to reshape ${template.label}, then finish to save.`
       : `${template.label}: add ${template.geometryType === "line" ? "line" : template.geometryType === "polygon" ? "polygon" : "point"} geometry.`;
-    elements.finishGeometryBtn.disabled = points.length < minPoints;
+    elements.finishGeometryBtn.disabled = freehand || points.length < minPoints;
+    elements.finishGeometryBtn.classList.toggle("hidden", freehand);
+    syncFreehandSketchInteraction();
+  }
+
+  function syncFreehandSketchInteraction() {
+    if (!state.map) return;
+    const freehand = usesFreehandSketchMode();
+    const mapContainer = state.map.getContainer();
+    mapContainer.style.touchAction = freehand ? "none" : "";
+    if (freehand) {
+      if (!state.freehandDraw.draggingDisabledForSketch && state.map.dragging.enabled()) {
+        state.map.dragging.disable();
+        state.freehandDraw.draggingDisabledForSketch = true;
+      }
+      return;
+    }
+    if (state.freehandDraw.draggingDisabledForSketch) {
+      state.map.dragging.enable();
+      state.freehandDraw.draggingDisabledForSketch = false;
+    }
   }
 
   function redrawPreviewLayer() {
@@ -5951,6 +6067,8 @@
 
   function cancelGeometryDraw() {
     const lockObjectId = state.drawState?.mode === "edit" ? state.drawState.objectId : null;
+    state.freehandDraw.active = false;
+    state.freehandDraw.pointerId = null;
     state.drawState = null;
     if (state.previewLayer) {
       state.map.removeLayer(state.previewLayer);
