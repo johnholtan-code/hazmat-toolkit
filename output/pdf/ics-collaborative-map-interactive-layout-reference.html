@@ -103,6 +103,27 @@
       display: grid;
       grid-template-columns: 1.35fr 1fr;
       gap: 18px;
+      min-height: 0;
+    }
+
+    .landing-shell > .panel {
+      max-height: calc(100vh - 220px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      align-content: start;
+      padding-right: 10px;
+      padding-bottom: 14px;
+    }
+
+    .super-admin-shell {
+      display: grid;
+      gap: 18px;
+    }
+
+    .super-admin-panel-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
     }
 
     .layout-shell {
@@ -404,10 +425,66 @@
       font-size: 20px;
     }
 
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stack-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .list-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #1a2635;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .tab-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .checklist {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #1a2635;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      min-height: 150px;
+    }
+
+    .checklist-item {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
     @media (max-width: 1200px) {
       .landing-shell,
+      .super-admin-panel-grid,
       .layout-shell {
         grid-template-columns: 1fr;
+      }
+      .landing-shell > .panel {
+        max-height: none;
+        overflow: visible;
+        padding-right: 14px;
+        padding-bottom: 14px;
+      }
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .map-canvas {
         min-height: 480px;
@@ -426,6 +503,7 @@
       <div class="mode-switch">
         <button class="pill" data-surface="landing">Landing / Sign-In View</button>
         <button class="pill" data-surface="workspace">Live Workspace View</button>
+        <button class="pill" data-surface="superAdmin">Super Admin View</button>
       </div>
     </div>
 
@@ -443,6 +521,10 @@
             <div>
               <div class="container-name">.panel.landing-panel.landing-panel-commander</div>
               <h2>Session Owner Column</h2>
+            </div>
+            <div class="panel-header-actions">
+              <div class="badge">#signInTabBtn</div>
+              <div class="badge">#signUpTabBtn</div>
             </div>
           </div>
 
@@ -477,7 +559,51 @@
                   </div>
                   <div class="value">Email</div>
                 </div>
+                <div class="field">
+                  <div class="field-top">
+                    <label>#commanderPasswordInput</label>
+                  </div>
+                  <div class="value">Password</div>
+                </div>
               </div>
+              <div class="container-name">#commanderSignedInSummary</div>
+              <div class="container-name">#commanderSummaryName</div>
+              <div class="container-name">#commanderSummaryEmail</div>
+              <div class="container-name">#forgotPasswordRow</div>
+              <div class="inline-row">
+                <div class="badge">#forgotPasswordBtn</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <button class="card-toggle" type="button" data-toggle="departmentAdminCard">
+              <span>Department Admin</span>
+              <span>+</span>
+            </button>
+            <div id="departmentAdminCard" class="card-body hidden">
+              <div class="container-head">
+                <div class="container-name">#departmentAdminPanel</div>
+                <div class="dim-badge" data-dim-for="departmentAdminCard">--</div>
+              </div>
+              <div class="container-name">#departmentAdminPanelBody</div>
+              <div class="container-name">#departmentAdminSummary</div>
+              <div class="field-grid">
+                <div class="field">
+                  <label>#departmentAdminNameInput</label>
+                  <div class="value">User Name</div>
+                </div>
+                <div class="field">
+                  <label>#departmentAdminEmailInput</label>
+                  <div class="value">User Email</div>
+                </div>
+              </div>
+              <div class="inline-row">
+                <div class="badge">#departmentAdminIsAdminInput</div>
+                <div class="badge">#departmentAdminIsActiveInput</div>
+                <div class="badge">#departmentAdminAddBtn</div>
+              </div>
+              <div class="container-name">#departmentAdminMemberList</div>
             </div>
           </div>
 
@@ -512,14 +638,14 @@
                     <div class="container-name">#createSessionLockedNote.inline-note</div>
                     <div class="dim-badge" data-dim-for="createSessionLockedNoteRef">--</div>
                   </div>
-                  <div class="muted">Locked-state helper message.</div>
+                  <div class="muted">Locked-state helper message shown until authenticated department access is valid.</div>
                 </div>
                 <div class="legend-item">
                   <div class="container-head">
                     <div class="container-name">.stack.create-session-grid</div>
                     <div class="dim-badge" data-dim-for="createSessionGridRef">--</div>
                   </div>
-                  <div class="muted">Two-column field layout for the form body.</div>
+                  <div class="muted">Live app now uses a stacked create-session grid inside the card body.</div>
                 </div>
               </div>
               <div class="field-grid">
@@ -604,6 +730,7 @@
                 <div class="dim-badge" data-dim-for="reviewSessionsCard">--</div>
               </div>
               <div class="container-name">#sessionListPanelBody</div>
+              <div class="muted">Rows now include visible join code plus `Open` and `Copy Join Link`, with access labels like owned, shared, or standing. On desktop, this card sits inside a vertically scrollable owner column so lower cards stay reachable.</div>
               <div class="container-head">
                 <div class="container-name">#commanderSessionList.landing-session-list</div>
                 <div class="dim-badge" data-dim-for="commanderSessionListRef">--</div>
@@ -621,6 +748,7 @@
                 <div class="container-name">#scenarioReviewPanel</div>
                 <div class="dim-badge" data-dim-for="scenarioReviewCard">--</div>
               </div>
+              <div class="muted">If the session gallery gets long, scroll the parent session-owner column to bring this card back into view.</div>
               <div class="container-name">#scenarioReviewPanelBody</div>
               <div class="inline-row">
                 <div class="badge" data-dim-target="loadScenarioBtnRef">#loadScenarioBtn.primary</div>
@@ -648,6 +776,7 @@
                 <div class="container-name">#joinSessionPanelBody</div>
                 <div class="dim-badge" data-dim-for="joinCard">--</div>
               </div>
+              <div class="container-name">#joinLockedNote</div>
               <div class="field-grid">
                 <div class="field">
                   <div class="field-top"><label>#joinCodeInput</label><div class="dim-badge" data-dim-for="joinCodeField">--</div></div>
@@ -701,6 +830,7 @@
                 <div class="dim-badge" data-dim-for="runningSessionsCard">--</div>
               </div>
               <div class="container-name">#activeSessionGalleryPanelBody</div>
+              <div class="muted">Visible incidents can be owned by your department or available through shared / standing access.</div>
               <div class="container-name">#activeSessionGallery</div>
             </div>
           </div>
@@ -871,11 +1001,137 @@
         </div>
       </div>
     </section>
+
+    <section id="superAdminSurface" class="surface hidden">
+      <div class="container-name">.layout > #superAdminWorkspace.super-admin-workspace</div>
+      <h2 class="section-title">Super Admin Workspace Layout</h2>
+      <div class="super-admin-shell">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="container-name">#superAdminWorkspaceHeader</div>
+              <h2>Dedicated Super Admin Page</h2>
+            </div>
+            <div class="panel-header-actions">
+              <div class="badge">#superAdminBackBtn</div>
+              <div class="badge">#superAdminRefreshBtn</div>
+            </div>
+          </div>
+          <div class="tab-row">
+            <div class="badge">#superAdminOverviewTab</div>
+            <div class="badge">#superAdminOrganizationsTab</div>
+            <div class="badge">#superAdminUsersTab</div>
+            <div class="badge">#superAdminAccessTab</div>
+          </div>
+        </div>
+
+        <div class="super-admin-panel-grid">
+          <div class="panel">
+            <div class="container-head">
+              <div class="container-name">#superAdminOverviewPanel</div>
+              <div class="dim-badge" data-dim-for="superAdminOverviewRef">--</div>
+            </div>
+            <div class="container-name">#superAdminOverviewStats</div>
+            <div class="stats-grid" id="superAdminOverviewRef">
+              <div class="field"><label>Licensed Departments</label><div class="value">12</div></div>
+              <div class="field"><label>Active Licenses</label><div class="value">11</div></div>
+              <div class="field"><label>Rostered Users</label><div class="value">147</div></div>
+              <div class="field"><label>Shared Sessions</label><div class="value">9</div></div>
+            </div>
+            <div class="list-card">
+              <div class="container-name">#superAdminRecentOrganizations</div>
+              <div class="muted">Recent Departments list</div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="container-head">
+              <div class="container-name">#superAdminOrganizationsPanel</div>
+              <div class="dim-badge" data-dim-for="superAdminOrganizationsRef">--</div>
+            </div>
+            <div id="superAdminOrganizationsRef" class="stack-list">
+              <div class="list-card">
+                <div class="container-name">Provision Department</div>
+                <div class="field-grid">
+                  <div class="field"><label>#superAdminOrgNameInput</label><div class="value">Department / Station</div></div>
+                  <div class="field"><label>#superAdminCountyNameInput</label><div class="value">County</div></div>
+                  <div class="field"><label>#superAdminSeatLimitInput</label><div class="value">Seat Limit</div></div>
+                  <div class="field"><label>#superAdminLicenseStatusSelect</label><div class="value">License Status</div></div>
+                  <div class="field"><label>#superAdminFirstAdminNameInput</label><div class="value">First Admin Name</div></div>
+                  <div class="field"><label>#superAdminFirstAdminEmailInput</label><div class="value">First Admin Email</div></div>
+                </div>
+                <div class="badge">#superAdminCreateOrgBtn</div>
+              </div>
+              <div class="list-card">
+                <div class="container-name">#superAdminOrganizationsList</div>
+                <div class="muted">Department cards with license controls and inline Add User actions</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="container-head">
+              <div class="container-name">#superAdminUsersPanel</div>
+              <div class="dim-badge" data-dim-for="superAdminUsersRef">--</div>
+            </div>
+            <div id="superAdminUsersRef" class="stack-list">
+              <div class="field">
+                <label>#superAdminUsersOrgFilter</label>
+                <div class="value">Filter by Department</div>
+              </div>
+              <div class="list-card">
+                <div class="container-name">#superAdminUsersList</div>
+                <div class="muted">Global licensed-user roster filtered by department</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="container-head">
+              <div class="container-name">#superAdminAccessPanel</div>
+              <div class="dim-badge" data-dim-for="superAdminAccessRef">--</div>
+            </div>
+            <div id="superAdminAccessRef" class="stack-list">
+              <div class="list-card">
+                <div class="container-name">Standing Department Access</div>
+                <div class="field">
+                  <label>#superAdminStandingSourceSelect</label>
+                  <div class="value">Source Department selector</div>
+                </div>
+                <div class="container-name">#superAdminStandingTargetList</div>
+                <div class="checklist">
+                  <div class="checklist-item">
+                    <span>Target Department A</span>
+                    <span class="badge">checkbox</span>
+                  </div>
+                  <div class="checklist-item">
+                    <span>Target Department B</span>
+                    <span class="badge">checkbox</span>
+                  </div>
+                  <div class="checklist-item">
+                    <span>Target Department C</span>
+                    <span class="badge">checkbox</span>
+                  </div>
+                </div>
+                <div class="badge">#superAdminCreateStandingAccessBtn</div>
+                <div class="container-name">#superAdminStandingAccessList</div>
+              </div>
+              <div class="list-card">
+                <div class="container-name">Mutual-Aid Session Access</div>
+                <div class="container-name">#superAdminAccessList</div>
+                <div class="muted">One-off session shares remain visible separately from standing access</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 
   <script>
     const landingSurface = document.getElementById('landingSurface');
     const workspaceSurface = document.getElementById('workspaceSurface');
+    const superAdminSurface = document.getElementById('superAdminSurface');
     const interactiveGuidedSetupToggle = document.getElementById('interactiveGuidedSetupToggle');
     const interactiveFocusSetupRef = document.getElementById('interactiveFocusSetupRef');
     const mapStage = document.querySelector('.map-stage');
@@ -887,6 +1143,7 @@
         const target = button.getAttribute('data-surface');
         landingSurface.classList.toggle('hidden', target !== 'landing');
         workspaceSurface.classList.toggle('hidden', target !== 'workspace');
+        superAdminSurface.classList.toggle('hidden', target !== 'superAdmin');
         requestAnimationFrame(updateDimensions);
       });
     });
@@ -928,6 +1185,7 @@
         'joinCard',
         'whatHappensCard',
         'runningSessionsCard',
+        'departmentAdminCard',
         'incidentOverviewPanelRef',
         'sessionPanelRef',
         'sessionPeriodRef',
@@ -938,6 +1196,10 @@
         'afterActionRef',
         'costSummaryRef',
         'selectedItemRef',
+        'superAdminOverviewRef',
+        'superAdminOrganizationsRef',
+        'superAdminUsersRef',
+        'superAdminAccessRef',
       ].forEach((id) => setDim(id, document.getElementById(id)));
 
       const fieldMap = {

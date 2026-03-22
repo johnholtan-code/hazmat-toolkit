@@ -62,6 +62,16 @@
     "Safety Officer",
     "HazMat Group Supervisor"
   ]);
+  const ATTACHMENT_CATEGORY = "Attachments";
+  const ATTACHMENT_PIN_SRC = `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+      <path d="M32 4c-10.5 0-19 8.5-19 19 0 13.6 16.5 33.2 18.4 35.4a1.6 1.6 0 0 0 2.4 0C35.5 56.2 52 36.6 52 23 52 12.5 43.5 4 33 4h-1z" fill="#d97706"/>
+      <circle cx="32" cy="23" r="11.5" fill="#fff3db"/>
+      <rect x="23.5" y="18.5" width="17" height="11" rx="2.2" fill="#1f2937"/>
+      <circle cx="28.5" cy="24" r="2.1" fill="#fde68a"/>
+      <path d="M25.5 27l3.2-3 3.2 2.8 3.3-4 3.3 4.2v1.5h-12z" fill="#94a3b8"/>
+    </svg>`
+  )}`;
   const ISOLATION_ZONE_OBJECT_TYPE = "InitialIsolationZone";
   const PROTECTIVE_ACTION_ZONE_OBJECT_TYPE = "ProtectiveActionZone";
   const MAP_NOTE_FIELD_DEFS = [
@@ -222,6 +232,7 @@
     paletteSearchInput: document.getElementById("paletteSearchInput"),
     clearPaletteSearchBtn: document.getElementById("clearPaletteSearchBtn"),
     paletteContainer: document.getElementById("paletteContainer"),
+    attachImageBtn: document.getElementById("attachImageBtn"),
     printExportBtn: document.getElementById("printExportBtn"),
     isolationToolBtn: document.getElementById("isolationToolBtn"),
     participantList: document.getElementById("participantList"),
@@ -314,6 +325,18 @@
     viewerQrImage: document.getElementById("viewerQrImage"),
     viewerQrLink: document.getElementById("viewerQrLink"),
     copyViewerLinkBtn: document.getElementById("copyViewerLinkBtn"),
+    attachmentImageInput: document.getElementById("attachmentImageInput"),
+    attachmentImageAppendInput: document.getElementById("attachmentImageAppendInput"),
+    attachmentPreviewModal: document.getElementById("attachmentPreviewModal"),
+    attachmentPreviewTitle: document.getElementById("attachmentPreviewTitle"),
+    attachmentPreviewImage: document.getElementById("attachmentPreviewImage"),
+    attachmentPreviewMeta: document.getElementById("attachmentPreviewMeta"),
+    attachmentPrevBtn: document.getElementById("attachmentPrevBtn"),
+    attachmentNextBtn: document.getElementById("attachmentNextBtn"),
+    attachmentAddBtn: document.getElementById("attachmentAddBtn"),
+    attachmentRenameBtn: document.getElementById("attachmentRenameBtn"),
+    attachmentDeleteBtn: document.getElementById("attachmentDeleteBtn"),
+    closeAttachmentPreviewBtn: document.getElementById("closeAttachmentPreviewBtn"),
     ics202Workspace: document.getElementById("ics202Workspace"),
     ics202BackBtn: document.getElementById("ics202BackBtn"),
     ics202SaveBtn: document.getElementById("ics202SaveBtn"),
@@ -479,6 +502,11 @@
     weatherTargetSignature: "",
     weatherFetchNonce: 0,
     weatherTimer: null,
+    pendingAttachmentPayload: null,
+    attachmentPreview: {
+      objectId: null,
+      index: 0
+    },
     ergCatalog: { materials: [], lookup: new Map() },
     pendingIsolationConfig: null,
     isolationEditContext: null,
@@ -634,6 +662,101 @@
       return;
     }
     loadScenarioFromFile(file);
+  }
+
+  function isAttachmentObject(object) {
+    return Boolean(getAttachmentImages(object).length);
+  }
+
+  function getAttachmentImages(object) {
+    const fields = object?.fields || {};
+    if (Array.isArray(fields.attachmentImages)) {
+      return fields.attachmentImages.filter((entry) => (
+        entry
+        && typeof entry.dataUrl === "string"
+        && /^data:image\//i.test(entry.dataUrl)
+      ));
+    }
+    if (typeof fields.attachmentImage === "string" && /^data:image\//i.test(fields.attachmentImage)) {
+      return [{
+        id: createLocalID(),
+        name: fields.attachmentName || "Attached Image",
+        dataUrl: fields.attachmentImage
+      }];
+    }
+    return [];
+  }
+
+  function normalizeAttachmentFields(fields) {
+    const working = { ...(fields || {}) };
+    const images = getAttachmentImages({ fields: working });
+    working.attachmentImages = images;
+    if (!working.attachmentName && images[0]?.name) working.attachmentName = images[0].name;
+    if (!working.attachmentImage && images[0]?.dataUrl) working.attachmentImage = images[0].dataUrl;
+    working.iconCategory = ATTACHMENT_CATEGORY;
+    working.iconAssetPath = ATTACHMENT_PIN_SRC;
+    working.iconMarkerSize = 42;
+    return working;
+  }
+
+  function getAttachmentPreviewContext() {
+    const object = state.attachmentPreview.objectId ? state.objects.get(state.attachmentPreview.objectId) : null;
+    if (!object) return { object: null, images: [], index: 0 };
+    const images = getAttachmentImages(object);
+    const index = Math.max(0, Math.min(state.attachmentPreview.index || 0, Math.max(0, images.length - 1)));
+    return { object, images, index };
+  }
+
+  function attachmentObjectIsEditable(object) {
+    if (!object || !canEditObject(object)) return false;
+    return isScenarioReviewMode() ? Boolean(state.scenarioReview?.editable) : sessionIsActive();
+  }
+
+  function beginAttachmentFlow() {
+    const selected = state.selectedObjectId ? state.objects.get(state.selectedObjectId) : null;
+    if (selected && isAttachmentObject(selected) && attachmentObjectIsEditable(selected) && elements.attachmentImageAppendInput) {
+      elements.attachmentImageAppendInput.value = "";
+      elements.attachmentImageAppendInput.dataset.objectId = selected.id;
+      openNativeFilePicker(elements.attachmentImageAppendInput, "Unable to open image picker.");
+      return;
+    }
+    if (!canCreateObjects()) {
+      setStatus("This session is read-only or you do not have edit access.");
+      return;
+    }
+    elements.attachmentImageInput.value = "";
+    openNativeFilePicker(elements.attachmentImageInput, "Unable to open image picker.");
+  }
+
+  function queueAttachmentPlacement(file) {
+    if (!file) {
+      setStatus("Image selection canceled.");
+      return;
+    }
+    if (!file.type || !file.type.startsWith("image/")) {
+      setStatus("Select a valid image file.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || "");
+      if (!/^data:image\//i.test(dataUrl)) {
+        setStatus("Image import failed.");
+        return;
+      }
+      state.pendingAttachmentPayload = {
+        fileName: file.name || "Attached Image",
+        dataUrl
+      };
+      state.drawState = null;
+      redrawPreviewLayer();
+      updateDrawControls();
+      setStatus("Attachment armed: click map to place image pin.");
+    };
+    reader.onerror = () => {
+      setStatus("Image import failed.");
+    };
+    reader.readAsDataURL(file);
   }
 
   function loadScenarioFromFile(file) {
@@ -793,6 +916,7 @@
     elements.scenarioFileInput.addEventListener("change", onScenarioFileSelected);
     elements.paletteSearchInput.addEventListener("input", onPaletteSearchInput);
     elements.clearPaletteSearchBtn.addEventListener("click", clearPaletteSearch);
+    elements.attachImageBtn?.addEventListener("click", beginAttachmentFlow);
     elements.createSessionBtn.addEventListener("click", onCreateSession);
     elements.guidedSetupDefaultInput.addEventListener("change", renderCreateSessionFocusVisibility);
     elements.joinSessionBtn.addEventListener("click", onJoinSession);
@@ -869,6 +993,32 @@
       }
     });
     elements.copyViewerLinkBtn.addEventListener("click", copyViewerLink);
+    elements.attachmentImageInput?.addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      queueAttachmentPlacement(file);
+    });
+    elements.attachmentImageAppendInput?.addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      const targetId = elements.attachmentImageAppendInput.dataset.objectId || state.selectedObjectId || "";
+      appendAttachmentToObject(targetId, file);
+    });
+    elements.attachmentPrevBtn?.addEventListener("click", () => showAttachmentAtOffset(-1));
+    elements.attachmentNextBtn?.addEventListener("click", () => showAttachmentAtOffset(1));
+    elements.attachmentAddBtn?.addEventListener("click", () => {
+      const object = state.attachmentPreview.objectId ? state.objects.get(state.attachmentPreview.objectId) : null;
+      if (!object || !elements.attachmentImageAppendInput) return;
+      elements.attachmentImageAppendInput.value = "";
+      elements.attachmentImageAppendInput.dataset.objectId = object.id;
+      openNativeFilePicker(elements.attachmentImageAppendInput, "Unable to open image picker.");
+    });
+    elements.attachmentRenameBtn?.addEventListener("click", renameCurrentAttachment);
+    elements.attachmentDeleteBtn?.addEventListener("click", deleteCurrentAttachment);
+    elements.closeAttachmentPreviewBtn?.addEventListener("click", closeAttachmentPreviewModal);
+    elements.attachmentPreviewModal?.addEventListener("click", (event) => {
+      if (event.target === elements.attachmentPreviewModal) {
+        closeAttachmentPreviewModal();
+      }
+    });
     elements.endSessionBtn.addEventListener("click", endSession);
     elements.updateOperationalPeriodBtn.addEventListener("click", updateOperationalPeriod);
     elements.updateIncidentCommandBtn.addEventListener("click", updateIncidentCommand);
@@ -2327,6 +2477,7 @@
     elements.closeScenarioReviewBtn.classList.toggle("hidden", !isScenarioReviewMode());
     elements.leaveSessionBtn.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode());
     elements.ics202WorkspaceBtn.classList.toggle("hidden", (!(state.activeSession || isScenarioReviewMode()) || state.viewerMode));
+    elements.attachImageBtn.classList.toggle("hidden", !(Boolean(state.activeSession) || isScenarioReviewMode()) || state.viewerMode);
     elements.isolationToolBtn.classList.toggle("hidden", !(Boolean(state.activeSession) || isScenarioReviewMode()) || state.viewerMode);
     elements.setIncidentFocusBtn.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode() || !isCommander() || Boolean(getIncidentFocusPoint()));
     elements.centerIncidentBtn.classList.toggle("hidden", !(state.activeSession || isScenarioReviewMode()));
@@ -5349,6 +5500,9 @@
       appendMetaRow(elements.selectedObjectMeta, "Last Wind Update", object.fields?.lastWindUpdatedAt ? formatDateTime(object.fields.lastWindUpdatedAt) : "Not yet updated");
     } else if (object.objectType === ICON_MARKER_OBJECT_TYPE) {
       appendMetaRow(elements.selectedObjectMeta, "Category", object.fields?.iconCategory || "Legacy Icons");
+      if (isAttachmentObject(object)) {
+        appendMetaRow(elements.selectedObjectMeta, "Images", String(getAttachmentImages(object).length));
+      }
     }
     appendMetaRow(elements.selectedObjectMeta, "Author", author ? `${author.displayName} · ${author.icsRole}` : object.createdByParticipantId);
     appendMetaRow(elements.selectedObjectMeta, "Created", formatDateTime(object.createdAt));
@@ -5401,8 +5555,10 @@
     }
 
     const editable = canEditObject(object);
+    const attachmentObject = isAttachmentObject(object);
     elements.saveFieldsBtn.textContent = "Save Details";
-    elements.saveFieldsBtn.disabled = !editable;
+    elements.saveFieldsBtn.disabled = !editable || attachmentObject;
+    elements.saveFieldsBtn.classList.toggle("hidden", attachmentObject);
     const canUseGeometryButton = editable && object.geometryType !== "point" && !isIsolationZoneObject(object);
     elements.editGeometryBtn.disabled = !canUseGeometryButton;
     elements.editGeometryBtn.classList.toggle("hidden", object.geometryType === "point" || isIsolationZoneObject(object));
@@ -5558,6 +5714,21 @@
   }
 
   async function onMapClick(event) {
+    if (state.pendingAttachmentPayload) {
+      if (!canCreateObjects()) {
+        state.pendingAttachmentPayload = null;
+        setStatus("This session is read-only or you do not have edit access.");
+        return;
+      }
+      const attachment = state.pendingAttachmentPayload;
+      state.pendingAttachmentPayload = null;
+      try {
+        await placeAttachmentPinAt(event.latlng, attachment);
+      } catch (error) {
+        setStatus(formatError(error));
+      }
+      return;
+    }
     if (state.pendingIsolationConfig) {
       await handlePendingIsolationPlacement(event.latlng);
       return;
@@ -5738,6 +5909,246 @@
     });
     applyMutationResponse(result);
     setStatus(`${template.label} placed.`);
+  }
+
+  async function placeAttachmentPinAt(latlng, payload) {
+    const label = String(payload?.fileName || "Attached Image").replace(/\.[^.]+$/, "") || "Attached Image";
+    const attachmentFields = normalizeAttachmentFields({
+      notes: "",
+      iconId: "attachment_image",
+      iconCategory: ATTACHMENT_CATEGORY,
+      iconLabel: label,
+      iconAssetPath: ATTACHMENT_PIN_SRC,
+      iconMarkerSize: 42,
+      attachmentImage: payload?.dataUrl || "",
+      attachmentName: payload?.fileName || "Attached Image",
+      attachmentImages: [{
+        id: createLocalID(),
+        name: payload?.fileName || "Attached Image",
+        dataUrl: payload?.dataUrl || ""
+      }]
+    });
+    const template = {
+      ...ICON_MARKER_TEMPLATE,
+      label,
+      defaults: attachmentFields
+    };
+    await createObject(template, {
+      lat: roundCoord(latlng.lat),
+      lng: roundCoord(latlng.lng)
+    });
+  }
+
+  async function appendAttachmentToObject(objectId, file) {
+    const object = objectId ? state.objects.get(objectId) : null;
+    if (!object || !file) return;
+    if (!attachmentObjectIsEditable(object)) {
+      setStatus("You cannot edit this attachment.");
+      return;
+    }
+    if (!file.type || !file.type.startsWith("image/")) {
+      setStatus("Select a valid image file.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = String(reader.result || "");
+      if (!/^data:image\//i.test(dataUrl)) {
+        setStatus("Image import failed.");
+        return;
+      }
+      const nextFields = normalizeAttachmentFields({
+        ...(object.fields || {}),
+        attachmentImages: [
+          ...getAttachmentImages(object),
+          {
+            id: createLocalID(),
+            name: file.name || `Attachment ${getAttachmentImages(object).length + 1}`,
+            dataUrl
+          }
+        ]
+      });
+      try {
+        if (isScenarioReviewMode()) {
+          state.objects.set(object.id, {
+            ...object,
+            fields: nextFields,
+            updatedAt: new Date().toISOString()
+          });
+          syncMapObjects();
+          renderSelectedObject();
+          renderAll();
+        } else {
+          await queueUpdateMutation({
+            objectId: object.id,
+            mutationType: "update",
+            geometryType: object.geometryType,
+            geometry: object.geometry,
+            fields: nextFields,
+            baseVersion: object.version
+          }, true);
+        }
+        state.attachmentPreview.objectId = object.id;
+        state.attachmentPreview.index = Math.max(0, nextFields.attachmentImages.length - 1);
+        setStatus("Image added to pin.");
+        openAttachmentPreview(state.objects.get(object.id) || { ...object, fields: nextFields });
+      } catch (error) {
+        setStatus(formatError(error));
+      }
+    };
+    reader.onerror = () => setStatus("Image import failed.");
+    reader.readAsDataURL(file);
+  }
+
+  function openAttachmentPreview(object) {
+    if (!elements.attachmentPreviewModal || !elements.attachmentPreviewImage) return;
+    const resolvedObject = object?.id ? (state.objects.get(object.id) || object) : object;
+    const images = getAttachmentImages(resolvedObject);
+    const index = Math.max(0, Math.min(state.attachmentPreview.index || 0, Math.max(0, images.length - 1)));
+    const active = images[index] || null;
+    state.attachmentPreview.objectId = resolvedObject?.id || null;
+    state.attachmentPreview.index = index;
+    elements.attachmentPreviewTitle.textContent = resolvedObject?.fields?.attachmentName || resolvedObject?.fields?.iconLabel || "Attached Image";
+    elements.attachmentPreviewImage.src = active?.dataUrl || "";
+    elements.attachmentPreviewMeta.textContent = active
+      ? `${active.name || "Attached Image"} (${index + 1}/${images.length})`
+      : "No images attached";
+    const canEdit = attachmentObjectIsEditable(resolvedObject);
+    elements.attachmentPrevBtn.disabled = !active || images.length <= 1;
+    elements.attachmentNextBtn.disabled = !active || images.length <= 1;
+    elements.attachmentAddBtn.disabled = !canEdit;
+    elements.attachmentRenameBtn.disabled = !active || !canEdit;
+    elements.attachmentDeleteBtn.disabled = !active || !canEdit;
+    elements.attachmentPreviewModal.classList.remove("hidden");
+  }
+
+  function closeAttachmentPreviewModal() {
+    if (!elements.attachmentPreviewModal) return;
+    elements.attachmentPreviewModal.classList.add("hidden");
+    if (elements.attachmentPreviewImage) {
+      elements.attachmentPreviewImage.src = "";
+    }
+    state.attachmentPreview.objectId = null;
+    state.attachmentPreview.index = 0;
+  }
+
+  function showAttachmentAtOffset(offset) {
+    const { object, images, index } = getAttachmentPreviewContext();
+    if (!object || !images.length) return;
+    state.attachmentPreview.index = (index + offset + images.length) % images.length;
+    openAttachmentPreview(object);
+  }
+
+  async function renameCurrentAttachment() {
+    const { object, images, index } = getAttachmentPreviewContext();
+    const active = images[index];
+    if (!object || !active || !attachmentObjectIsEditable(object)) return;
+    const previousName = active.name || "Attached Image";
+    const nextName = (window.prompt("Rename image", previousName) || "").trim();
+    if (!nextName) return;
+    const nextImages = images.map((entry, entryIndex) => (
+      entryIndex === index ? { ...entry, name: nextName } : entry
+    ));
+    const nextFields = normalizeAttachmentFields({
+      ...(object.fields || {}),
+      attachmentImages: nextImages,
+      attachmentName: nextImages[0]?.name || nextName
+    });
+    try {
+      if (isScenarioReviewMode()) {
+        state.objects.set(object.id, {
+          ...object,
+          fields: nextFields,
+          updatedAt: new Date().toISOString()
+        });
+        syncMapObjects();
+        renderSelectedObject();
+        renderAll();
+      } else {
+        await queueUpdateMutation({
+          objectId: object.id,
+          mutationType: "update",
+          geometryType: object.geometryType,
+          geometry: object.geometry,
+          fields: nextFields,
+          baseVersion: object.version
+        }, true);
+      }
+      setStatus("Attachment renamed.");
+      openAttachmentPreview(state.objects.get(object.id) || { ...object, fields: nextFields });
+    } catch (error) {
+      setStatus(formatError(error));
+    }
+  }
+
+  async function deleteCurrentAttachment() {
+    const { object, images, index } = getAttachmentPreviewContext();
+    const active = images[index];
+    if (!object || !active || !attachmentObjectIsEditable(object)) return;
+    if (!window.confirm("Delete this attached image?")) return;
+    const nextImages = images.filter((_, entryIndex) => entryIndex !== index);
+    try {
+      if (!nextImages.length) {
+        if (state.selectedObjectId === object.id) {
+          state.selectedObjectId = null;
+        }
+        if (isScenarioReviewMode()) {
+          state.objects.delete(object.id);
+          closeAttachmentPreviewModal();
+          syncMapObjects();
+          renderSelectedObject();
+          renderAll();
+        } else {
+          const result = await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(state.activeSession.id)}/mutations`, {
+            method: "POST",
+            actorType: currentActorType(),
+            body: {
+              mutations: [{
+                clientMutationId: createLocalID(),
+                objectId: object.id,
+                mutationType: "delete",
+                baseVersion: object.version
+              }]
+            }
+          });
+          applyMutationResponse(result);
+          closeAttachmentPreviewModal();
+          renderSelectedObject();
+        }
+        setStatus("Attachment pin removed.");
+        return;
+      }
+
+      const nextFields = normalizeAttachmentFields({
+        ...(object.fields || {}),
+        attachmentImages: nextImages,
+        attachmentName: nextImages[0]?.name || "Attached Image"
+      });
+      if (isScenarioReviewMode()) {
+        state.objects.set(object.id, {
+          ...object,
+          fields: nextFields,
+          updatedAt: new Date().toISOString()
+        });
+        syncMapObjects();
+        renderSelectedObject();
+        renderAll();
+      } else {
+        await queueUpdateMutation({
+          objectId: object.id,
+          mutationType: "update",
+          geometryType: object.geometryType,
+          geometry: object.geometry,
+          fields: nextFields,
+          baseVersion: object.version
+        }, true);
+      }
+      state.attachmentPreview.index = Math.max(0, Math.min(index, nextImages.length - 1));
+      setStatus("Attached image deleted.");
+      openAttachmentPreview(state.objects.get(object.id) || { ...object, fields: nextFields });
+    } catch (error) {
+      setStatus(formatError(error));
+    }
   }
 
   async function placeIsolationZonesAt(spillLatLng, config, editContext = null) {
@@ -6030,6 +6441,9 @@
       }
       state.selectedObjectId = object.id;
       renderSelectedObject();
+      if (isAttachmentObject(object)) {
+        openAttachmentPreview(object);
+      }
     });
     const tooltip = buildObjectTooltip(object);
     if (tooltip) layer.bindTooltip(tooltip);
@@ -6560,6 +6974,9 @@
     if (isIsolationZoneObject(object)) {
       return [];
     }
+    if (isAttachmentObject(object)) {
+      return [];
+    }
     const template = resolveTemplateForObject(object);
     if (template?.fieldDefs?.length) {
       return template.fieldDefs.map((fieldDef) => ({
@@ -6643,6 +7060,10 @@
       parts.push(`${Math.round(convertMetersToDistance(distanceMeters, unit))} ${unit} · wind ${Math.round(Number(object.fields?.windFrom || 0))}°`);
     } else if (object.objectType === ICON_MARKER_OBJECT_TYPE && object.fields?.iconCategory) {
       parts.push(object.fields.iconCategory);
+      if (isAttachmentObject(object)) {
+        const attachmentCount = getAttachmentImages(object).length;
+        parts.push(`Tap to view ${attachmentCount} attached image${attachmentCount === 1 ? "" : "s"}`);
+      }
     }
     if (author) parts.push(`${author.displayName} · ${author.icsRole}`);
     return parts.join(" | ");
@@ -6765,9 +7186,12 @@
     }
     const iconSize = Number(object.fields?.iconMarkerSize || 40);
     const safeSize = Number.isFinite(iconSize) && iconSize > 0 ? iconSize : 40;
+    const altLabel = isAttachmentObject(object)
+      ? (object.fields?.attachmentName || object.fields?.iconLabel || template?.label || "Attached Image")
+      : (object.fields?.iconLabel || template?.label || "Map icon");
     return L.divIcon({
       className: "",
-      html: `<img class="point-marker-icon" style="width:${escapeAttribute(String(safeSize))}px;height:${escapeAttribute(String(safeSize))}px" src="${escapeAttribute(resolveAssetPath(object.fields.iconAssetPath))}" alt="${escapeAttribute(object.fields.iconLabel || template?.label || "Map icon")}" />`,
+      html: `<img class="point-marker-icon${isAttachmentObject(object) ? " attachment-pin-icon" : ""}" style="width:${escapeAttribute(String(safeSize))}px;height:${escapeAttribute(String(safeSize))}px" src="${escapeAttribute(resolveAssetPath(object.fields.iconAssetPath))}" alt="${escapeAttribute(altLabel)}" />`,
       iconSize: [safeSize, safeSize],
       iconAnchor: [safeSize / 2, safeSize / 2]
     });
@@ -6830,7 +7254,7 @@
       }
       return {
         ...ICON_MARKER_TEMPLATE,
-        label: object.fields?.iconLabel || ICON_MARKER_TEMPLATE.label,
+        label: object.fields?.attachmentName || object.fields?.iconLabel || ICON_MARKER_TEMPLATE.label,
         category: object.fields?.iconCategory || ICON_MARKER_TEMPLATE.category,
         assetPath: object.fields?.iconAssetPath || ""
       };
