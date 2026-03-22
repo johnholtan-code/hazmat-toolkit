@@ -5611,7 +5611,9 @@
     const core = agencyMatch ? trimmed.slice(0, agencyMatch.index).trim() : trimmed;
     const parts = core.split(/\s+/).filter(Boolean);
     if (!parts.length) return trimmed;
-    if (parts.length === 1) return `${parts[0].charAt(0).toUpperCase()}.`;
+    if (parts.length === 1) {
+      return agencyMatch ? `${parts[0]} (${agencyMatch[1]})` : parts[0];
+    }
     const formatted = `${parts[0].charAt(0).toUpperCase()}. ${parts[parts.length - 1]}`;
     return agencyMatch ? `${formatted} (${agencyMatch[1]})` : formatted;
   }
