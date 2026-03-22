@@ -251,6 +251,57 @@
     COMP_CLAIMS: { label: "Comp. / Claims Unit Ldr.", roleLabel: "Comp. / Claims Unit Ldr.", x: 648, y: 480, w: 136, h: 52 },
     COST: { label: "Cost Unit Ldr.", roleLabel: "Cost Unit Ldr.", x: 648, y: 546, w: 136, h: 52 }
   };
+  const ICS207_CONNECTOR_PATHS = [
+    "M 396 88 V 238",
+    "M 312 139 H 396",
+    "M 312 199 H 396",
+    "M 396 139 H 467",
+    "M 105 238 H 717",
+    "M 105 238 V 248",
+    "M 312 238 V 248",
+    "M 564 238 V 248",
+    "M 717 238 V 248",
+    "M 105 304 V 374",
+    "M 105 374 H 152",
+    "M 105 374 H 152 V 410",
+    "M 152 436 H 285",
+    "M 152 462 V 494",
+    "M 153 494 H 286",
+    "M 153 540 V 653",
+    "M 153 573 H 97",
+    "M 153 613 H 97",
+    "M 153 653 H 97",
+    "M 312 304 V 330",
+    "M 312 330 H 273",
+    "M 312 330 H 407",
+    "M 273 330 V 348",
+    "M 407 330 V 348",
+    "M 312 330 V 396",
+    "M 312 396 H 273",
+    "M 312 396 H 407",
+    "M 273 396 V 414",
+    "M 407 396 V 414",
+    "M 564 304 V 330",
+    "M 564 330 H 537",
+    "M 564 330 H 669",
+    "M 537 330 V 348",
+    "M 669 330 V 348",
+    "M 537 400 V 572",
+    "M 537 440 H 478",
+    "M 537 506 H 478",
+    "M 537 572 H 478",
+    "M 669 400 V 572",
+    "M 669 440 H 610",
+    "M 669 506 H 610",
+    "M 669 572 H 610",
+    "M 717 304 V 330",
+    "M 717 330 V 572",
+    "M 717 330 H 716",
+    "M 717 374 H 648",
+    "M 717 440 H 648",
+    "M 717 506 H 648",
+    "M 717 572 H 648"
+  ];
   const ICS207_SAMPLE_COMMAND_STRUCTURE = {
     incidentId: "sample-incident",
     roles: [
@@ -258,6 +309,7 @@
       { roleId: "safety_officer", label: "Safety Officer", parent: "incident_commander", assignedUser: { userId: "u2", name: "Taylor Rollins" }, status: "assigned" }
     ]
   };
+  const ICS207_PDF_SIZE = { width: 792, height: 732 };
 
   const ICON_MARKER_TEMPLATE = {
     objectType: ICON_MARKER_OBJECT_TYPE,
@@ -5670,58 +5722,7 @@
   }
 
   function buildIcs207ConnectorMarkup() {
-    const paths = [
-      "M 396 88 V 238",
-      "M 312 139 H 396",
-      "M 312 199 H 396",
-      "M 396 139 H 467",
-      "M 105 238 H 717",
-      "M 105 238 V 248",
-      "M 312 238 V 248",
-      "M 564 238 V 248",
-      "M 717 238 V 248",
-      "M 105 304 V 374",
-      "M 105 374 H 152",
-      "M 105 374 H 152 V 410",
-      "M 152 436 H 285",
-      "M 152 462 V 494",
-      "M 153 494 H 286",
-      "M 153 540 V 653",
-      "M 153 573 H 97",
-      "M 153 613 H 97",
-      "M 153 653 H 97",
-      "M 312 304 V 330",
-      "M 312 330 H 273",
-      "M 312 330 H 407",
-      "M 273 330 V 348",
-      "M 407 330 V 348",
-      "M 312 330 V 396",
-      "M 312 396 H 273",
-      "M 312 396 H 407",
-      "M 273 396 V 414",
-      "M 407 396 V 414",
-      "M 564 304 V 330",
-      "M 564 330 H 537",
-      "M 564 330 H 669",
-      "M 537 330 V 348",
-      "M 669 330 V 348",
-      "M 537 400 V 572",
-      "M 537 440 H 478",
-      "M 537 506 H 478",
-      "M 537 572 H 478",
-      "M 669 400 V 572",
-      "M 669 440 H 610",
-      "M 669 506 H 610",
-      "M 669 572 H 610",
-      "M 717 304 V 330",
-      "M 717 330 V 572",
-      "M 717 330 H 716",
-      "M 717 374 H 648",
-      "M 717 440 H 648",
-      "M 717 506 H 648",
-      "M 717 572 H 648"
-    ];
-    return `<svg class="ics207-template-connectors" viewBox="0 0 792 612" aria-hidden="true" focusable="false">${paths.map((path) => `<path d="${path}" />`).join("")}</svg>`;
+    return `<svg class="ics207-template-connectors" viewBox="0 0 792 612" aria-hidden="true" focusable="false">${ICS207_CONNECTOR_PATHS.map((path) => `<path d="${path}" />`).join("")}</svg>`;
   }
 
   function buildIcs207PrintMarkup(snapshot) {
@@ -5764,6 +5765,121 @@
         </div>
       </div>
     `;
+  }
+
+  function buildIcs207PrintDocument(snapshot) {
+    return `
+      <!doctype html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8" />
+          <title>ICS 207</title>
+          <style>
+            html, body { margin: 0; padding: 0; background: #fff; }
+            body { font-family: Helvetica, Arial, sans-serif; color: #111827; }
+            .ics207-sheet { width: 792px; min-height: 612px; margin: 0 auto; background: #fff; color: #111827; font-family: Helvetica, Arial, sans-serif; }
+            .ics207-sheet-header { padding: 12px 18px 2px; }
+            .ics207-sheet-title { margin-bottom: 8px; font-size: 18px; font-weight: 700; text-align: center; }
+            .ics207-meta-row { display: flex; gap: 16px; align-items: baseline; font-size: 11px; margin-bottom: 4px; }
+            .ics207-template { position: relative; width: 792px; height: 612px; }
+            .ics207-template-connectors { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+            .ics207-template-connectors path { fill: none; stroke: #111827; stroke-width: 2; stroke-linecap: square; stroke-linejoin: miter; }
+            .ics207-slot { position: absolute; border: 1px solid #111827; background: #fff; padding: 6px 8px 4px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; box-sizing: border-box; }
+            .ics207-slot-label { font-size: 10px; line-height: 1.1; font-weight: 700; }
+            .ics207-slot-name { min-height: 14px; font-size: 11px; line-height: 1.15; }
+            .ics207-footer { margin-top: -34px; padding: 0 18px 12px; display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
+            .ics207-prepared-by { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+            @page { size: letter landscape; margin: 0; }
+          </style>
+        </head>
+        <body>${buildIcs207PrintMarkup(snapshot)}</body>
+      </html>
+    `;
+  }
+
+  function tokenizeIcs207Path(path) {
+    return String(path || "").trim().split(/\s+/).filter(Boolean);
+  }
+
+  function drawIcs207ConnectorsPdf(pdf) {
+    pdf.setDrawColor(17, 24, 39);
+    pdf.setLineWidth(1.5);
+    ICS207_CONNECTOR_PATHS.forEach((path) => {
+      const tokens = tokenizeIcs207Path(path);
+      let index = 0;
+      let x = 0;
+      let y = 0;
+      while (index < tokens.length) {
+        const command = tokens[index++];
+        if (command === "M") {
+          x = Number(tokens[index++]);
+          y = Number(tokens[index++]);
+        } else if (command === "H") {
+          const nextX = Number(tokens[index++]);
+          pdf.line(x, y, nextX, y);
+          x = nextX;
+        } else if (command === "V") {
+          const nextY = Number(tokens[index++]);
+          pdf.line(x, y, x, nextY);
+          y = nextY;
+        }
+      }
+    });
+  }
+
+  function drawCenteredPdfText(pdf, lines, x, y, width, fontSize, lineHeight) {
+    const entries = Array.isArray(lines) ? lines : [lines];
+    entries.forEach((line, index) => {
+      pdf.text(String(line || ""), x + width / 2, y + (index * lineHeight), { align: "center", baseline: "middle" });
+    });
+  }
+
+  function splitIcs207Label(label) {
+    return String(label || "")
+      .split(/\s+/)
+      .reduce((lines, word) => {
+        if (!lines.length) return [word];
+        const next = `${lines[lines.length - 1]} ${word}`;
+        if (next.length <= 18) {
+          lines[lines.length - 1] = next;
+          return lines;
+        }
+        lines.push(word);
+        return lines;
+      }, []);
+  }
+
+  function renderIcs207ToPdf(pdf, snapshot) {
+    const period = formatIcs207OperationalPeriod(snapshot);
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(0, 0, 792, 612, "F");
+    pdf.setTextColor(17, 24, 39);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(18);
+    pdf.text("INCIDENT ORGANIZATION CHART (ICS 207)", 396, 24, { align: "center" });
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(11);
+    pdf.text("1. Incident Name:", 18, 42);
+    pdf.setFont("helvetica", "bold");
+    pdf.text(String(snapshot?.incidentName || ""), 110, 42);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(`2. Operational Period:  Date From: ${period.startDate}   Date To: ${period.endDate}   Time From: ${period.startTime}   Time To: ${period.endTime}`, 18, 58);
+    drawIcs207ConnectorsPdf(pdf);
+    Object.entries(ICS207_SLOT_META).forEach(([slotKey, meta]) => {
+      const assignment = snapshot?.slotAssignments?.[slotKey];
+      pdf.rect(meta.x, meta.y, meta.w, meta.h);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9.5);
+      drawCenteredPdfText(pdf, splitIcs207Label(meta.label), meta.x, meta.y + 14, meta.w, 9.5, 10.5);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10.5);
+      const nameLines = pdf.splitTextToSize(String(assignment?.name || ""), Math.max(10, meta.w - 14)).slice(0, 2);
+      drawCenteredPdfText(pdf, nameLines, meta.x, meta.y + meta.h - 14 - ((Math.max(nameLines.length, 1) - 1) * 5), meta.w, 10.5, 11);
+    });
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(11);
+    pdf.text("ICS 207 IAP Page ___", 18, 706);
+    pdf.text(`4. Prepared by:  Name: ${String(snapshot?.preparedBy?.name || "")}   Position/Title: ${String(snapshot?.preparedBy?.position || "")}   Date/Time: ${String(formatDateTime(snapshot?.preparedBy?.datetime) || "")}`, 220, 706);
   }
 
   function syncIcs207PreviewDraftFromInputs() {
@@ -5843,7 +5959,7 @@
     });
   }
 
-  function printIcs207Workspace() {
+  async function printIcs207Workspace() {
     const previewDraft = syncIcs207PreviewDraftFromInputs();
     if (!previewDraft) return;
     const rendered = renderIcs207Preview();
@@ -5854,37 +5970,19 @@
     void saveIcs207Snapshot(rendered.snapshot).catch((error) => {
       console.warn("Unable to save ICS 207 snapshot before print.", error);
     });
-    document.body.classList.add("print-ics207");
-    window.print();
-    window.setTimeout(() => document.body.classList.remove("print-ics207"), 250);
+    const printWindow = window.open("", "_blank", "noopener,noreferrer,width=1100,height=850");
+    if (!printWindow) {
+      setStatus("Allow pop-ups to print ICS 207.");
+      return;
+    }
+    printWindow.document.open();
+    printWindow.document.write(buildIcs207PrintDocument(rendered.snapshot));
+    printWindow.document.close();
+    printWindow.focus();
+    window.setTimeout(() => {
+      printWindow.print();
+    }, 250);
     setStatus("Printing ICS 207.");
-  }
-
-  async function captureIcs207PrintCanvas() {
-    if (!elements.ics207PrintRoot || typeof window.html2canvas !== "function") {
-      throw new Error("ICS 207 print surface unavailable.");
-    }
-    const previousStyle = elements.ics207PrintRoot.getAttribute("style") || "";
-    elements.ics207PrintRoot.style.position = "fixed";
-    elements.ics207PrintRoot.style.left = "0";
-    elements.ics207PrintRoot.style.top = "0";
-    elements.ics207PrintRoot.style.opacity = "0";
-    elements.ics207PrintRoot.style.pointerEvents = "none";
-    elements.ics207PrintRoot.style.zIndex = "-1";
-    try {
-      await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
-      return await window.html2canvas(elements.ics207PrintRoot, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        useCORS: true
-      });
-    } finally {
-      if (previousStyle) {
-        elements.ics207PrintRoot.setAttribute("style", previousStyle);
-      } else {
-        elements.ics207PrintRoot.removeAttribute("style");
-      }
-    }
   }
 
   async function exportIcs207Pdf() {
@@ -5902,10 +6000,9 @@
     }
     try {
       await saveIcs207Snapshot(rendered.snapshot);
-      const canvas = await captureIcs207PrintCanvas();
       const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ unit: "pt", format: "letter", orientation: "landscape" });
-      pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+      const pdf = new jsPDF({ unit: "pt", format: [ICS207_PDF_SIZE.height, ICS207_PDF_SIZE.width], orientation: "landscape" });
+      renderIcs207ToPdf(pdf, rendered.snapshot);
       const filename = buildExportFilename("ics-207", "pdf");
       const blob = pdf.output("blob");
       if (window.exportPdfHelper?.saveAndSharePdfBlob) {
