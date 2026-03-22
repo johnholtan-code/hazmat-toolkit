@@ -14,6 +14,9 @@
   };
   const POLL_INTERVAL_MS = 4000;
   const UPDATE_FLUSH_MS = 10000;
+  const ATTACHMENT_MAX_DIMENSION_PX = 1600;
+  const ATTACHMENT_TARGET_BYTES = 450 * 1024;
+  const ATTACHMENT_MIN_QUALITY = 0.45;
   const WEATHER_REFRESH_MS = 5 * 60 * 1000;
   const WEATHER_API_BASE_URL = (config.weatherApiBaseUrl || "https://api.open-meteo.com/v1/forecast").replace(/\/$/, "");
   const ICON_MANIFEST_URL = "./icon-manifest.json";
@@ -737,26 +740,17 @@
       setStatus("Select a valid image file.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result || "");
-      if (!/^data:image\//i.test(dataUrl)) {
-        setStatus("Image import failed.");
-        return;
-      }
-      state.pendingAttachmentPayload = {
-        fileName: file.name || "Attached Image",
-        dataUrl
-      };
-      state.drawState = null;
-      redrawPreviewLayer();
-      updateDrawControls();
-      setStatus("Attachment armed: click map to place image pin.");
-    };
-    reader.onerror = () => {
-      setStatus("Image import failed.");
-    };
-    reader.readAsDataURL(file);
+    void prepareAttachmentPayload(file)
+      .then((payload) => {
+        state.pendingAttachmentPayload = payload;
+        state.drawState = null;
+        redrawPreviewLayer();
+        updateDrawControls();
+        setStatus("Attachment armed: click map to place image pin.");
+      })
+      .catch((error) => {
+        setStatus(formatError(error));
+      });
   }
 
   function loadScenarioFromFile(file) {
@@ -5950,21 +5944,16 @@
       setStatus("Select a valid image file.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = String(reader.result || "");
-      if (!/^data:image\//i.test(dataUrl)) {
-        setStatus("Image import failed.");
-        return;
-      }
+    void prepareAttachmentPayload(file)
+      .then(async (payload) => {
       const nextFields = normalizeAttachmentFields({
         ...(object.fields || {}),
         attachmentImages: [
           ...getAttachmentImages(object),
           {
             id: createLocalID(),
-            name: file.name || `Attachment ${getAttachmentImages(object).length + 1}`,
-            dataUrl
+            name: payload.fileName || file.name || `Attachment ${getAttachmentImages(object).length + 1}`,
+            dataUrl: payload.dataUrl
           }
         ]
       });
@@ -5995,9 +5984,87 @@
       } catch (error) {
         setStatus(formatError(error));
       }
+      })
+      .catch((error) => {
+        setStatus(formatError(error));
+      });
+  }
+
+  async function prepareAttachmentPayload(file) {
+    const originalDataUrl = await readFileAsDataUrl(file);
+    if (!/^data:image\//i.test(originalDataUrl)) {
+      throw new Error("Image import failed.");
+    }
+    const optimizedDataUrl = await optimizeAttachmentDataUrl(originalDataUrl, file.type || "");
+    return {
+      fileName: file.name || "Attached Image",
+      dataUrl: optimizedDataUrl
     };
-    reader.onerror = () => setStatus("Image import failed.");
-    reader.readAsDataURL(file);
+  }
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("Image import failed."));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function optimizeAttachmentDataUrl(dataUrl, mimeTypeHint = "") {
+    const originalBytes = estimateDataUrlBytes(dataUrl);
+    const image = await loadImageFromDataUrl(dataUrl);
+    const width = Number(image.naturalWidth || image.width || 0);
+    const height = Number(image.naturalHeight || image.height || 0);
+    if (!width || !height) {
+      throw new Error("Image import failed.");
+    }
+
+    const scale = Math.min(1, ATTACHMENT_MAX_DIMENSION_PX / Math.max(width, height));
+    const targetWidth = Math.max(1, Math.round(width * scale));
+    const targetHeight = Math.max(1, Math.round(height * scale));
+    if (originalBytes <= ATTACHMENT_TARGET_BYTES && scale === 1) {
+      return dataUrl;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return dataUrl;
+    }
+    context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+    const normalizedMime = String(mimeTypeHint || "").toLowerCase();
+    const preservePng = normalizedMime === "image/png" && originalBytes <= ATTACHMENT_TARGET_BYTES;
+    if (preservePng) {
+      return canvas.toDataURL("image/png");
+    }
+
+    let quality = 0.82;
+    let optimized = canvas.toDataURL("image/jpeg", quality);
+    while (estimateDataUrlBytes(optimized) > ATTACHMENT_TARGET_BYTES && quality > ATTACHMENT_MIN_QUALITY) {
+      quality = Math.max(ATTACHMENT_MIN_QUALITY, quality - 0.08);
+      optimized = canvas.toDataURL("image/jpeg", quality);
+      if (quality === ATTACHMENT_MIN_QUALITY) break;
+    }
+    return optimized;
+  }
+
+  function loadImageFromDataUrl(dataUrl) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Image import failed."));
+      image.src = dataUrl;
+    });
+  }
+
+  function estimateDataUrlBytes(dataUrl) {
+    const base64 = String(dataUrl || "").split(",")[1] || "";
+    const padding = base64.endsWith("==") ? 2 : (base64.endsWith("=") ? 1 : 0);
+    return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
   }
 
   function openAttachmentPreview(object) {
@@ -7608,6 +7675,9 @@
   function formatError(error) {
     if (!error) return "Unknown error.";
     if (typeof error === "string") return error;
+    if (error?.status === 413) {
+      return "Attached image is still too large to upload. Try a smaller photo.";
+    }
     if (isViewerAccessDisabledError(error)) {
       return error?.message || "Viewer access has been turned off for this session.";
     }
