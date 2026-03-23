@@ -1657,6 +1657,24 @@ button.danger { background: rgba(182,59,59,0.14); color: #f4c9ce; border-color: 
 .export-modal-card {
   width: min(460px, 100%);
 }
+.add-to-cost-modal-card {
+  width: min(760px, 100%);
+}
+.add-to-cost-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.add-to-cost-grid .field-block-wide {
+  grid-column: 1 / -1;
+}
+.add-to-cost-grid .field-block textarea {
+  min-height: 88px;
+}
+.add-to-cost-meta-strong {
+  color: var(--text);
+  font-weight: 700;
+}
 .isolation-modal-card {
   width: min(720px, 100%);
 }
@@ -2663,6 +2681,9 @@ body[data-theme="light"] .geometry-handle {
 }
 
 @media (max-width: 900px) {
+  .add-to-cost-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .layout { display: block; }
   .landing-panel-header,
   .landing-card-header {

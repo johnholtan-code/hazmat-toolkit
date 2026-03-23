@@ -332,6 +332,9 @@
     { key: "quantity", label: "Quantity", type: "number", step: "0.01", min: "0" },
     { key: "costRate", label: "Cost Rate", type: "number", step: "0.01", min: "0" },
     { key: "costCode", label: "Cost Code", type: "text" },
+    { key: "description", label: "Description", type: "textarea" },
+    { key: "manufacturer", label: "Manufacturer", type: "text" },
+    { key: "specification", label: "Specification", type: "text" },
     { key: "placedAt", label: "Placed Time", type: "datetime-local" },
     { key: "demobilizedAt", label: "Demobilized Time", type: "datetime-local" },
     { key: "notes", label: "Notes", type: "textarea" }
@@ -472,9 +475,29 @@
     selectedObjectMeta: document.getElementById("selectedObjectMeta"),
     selectedObjectFields: document.getElementById("selectedObjectFields"),
     selectedObjectActions: document.getElementById("selectedObjectActions"),
+    addSelectedToCostBtn: document.getElementById("addSelectedToCostBtn"),
     saveFieldsBtn: document.getElementById("saveFieldsBtn"),
     editGeometryBtn: document.getElementById("editGeometryBtn"),
     deleteObjectBtn: document.getElementById("deleteObjectBtn"),
+    addToCostModal: document.getElementById("addToCostModal"),
+    addToCostMeta: document.getElementById("addToCostMeta"),
+    closeAddToCostBtn: document.getElementById("closeAddToCostBtn"),
+    cancelAddToCostBtn: document.getElementById("cancelAddToCostBtn"),
+    saveAddToCostBtn: document.getElementById("saveAddToCostBtn"),
+    addToCostCategorySelect: document.getElementById("addToCostCategorySelect"),
+    addToCostDisplayLabelInput: document.getElementById("addToCostDisplayLabelInput"),
+    addToCostCompanyInput: document.getElementById("addToCostCompanyInput"),
+    addToCostBillingModelSelect: document.getElementById("addToCostBillingModelSelect"),
+    addToCostUnitInput: document.getElementById("addToCostUnitInput"),
+    addToCostQuantityInput: document.getElementById("addToCostQuantityInput"),
+    addToCostRateInput: document.getElementById("addToCostRateInput"),
+    addToCostCostCodeInput: document.getElementById("addToCostCostCodeInput"),
+    addToCostPlacedAtInput: document.getElementById("addToCostPlacedAtInput"),
+    addToCostDemobilizedAtInput: document.getElementById("addToCostDemobilizedAtInput"),
+    addToCostDescriptionInput: document.getElementById("addToCostDescriptionInput"),
+    addToCostManufacturerInput: document.getElementById("addToCostManufacturerInput"),
+    addToCostSpecificationInput: document.getElementById("addToCostSpecificationInput"),
+    addToCostNotesInput: document.getElementById("addToCostNotesInput"),
     drawControls: document.getElementById("drawControls"),
     drawHintText: document.getElementById("drawHintText"),
     finishGeometryBtn: document.getElementById("finishGeometryBtn"),
@@ -723,6 +746,7 @@
       objectId: null,
       index: 0
     },
+    addToCostObjectId: null,
     ergCatalog: { materials: [], lookup: new Map() },
     pendingIsolationConfig: null,
     isolationEditContext: null,
@@ -1319,6 +1343,16 @@
     elements.attachmentPreviewModal?.addEventListener("click", (event) => {
       if (event.target === elements.attachmentPreviewModal) {
         closeAttachmentPreviewModal();
+      }
+    });
+    elements.addSelectedToCostBtn?.addEventListener("click", openAddToCostModal);
+    elements.closeAddToCostBtn?.addEventListener("click", closeAddToCostModal);
+    elements.cancelAddToCostBtn?.addEventListener("click", closeAddToCostModal);
+    elements.saveAddToCostBtn?.addEventListener("click", saveSelectedObjectAsCostedResource);
+    elements.addToCostCategorySelect?.addEventListener("change", syncAddToCostCategoryDefaults);
+    elements.addToCostModal?.addEventListener("click", (event) => {
+      if (event.target === elements.addToCostModal) {
+        closeAddToCostModal();
       }
     });
     elements.endSessionBtn.addEventListener("click", endSession);
@@ -6877,6 +6911,12 @@
     if (isCostedResourceObject(object)) {
       appendMetaRow(elements.selectedObjectMeta, "Category", object.fields?.resourceCategory || "Costed Resource");
       appendMetaRow(elements.selectedObjectMeta, "Current Total", formatCurrency(getCostedResourceTotal(object)));
+      appendMetaRow(elements.selectedObjectMeta, "Billing", object.fields?.billingModel === "quantity" ? "Quantity" : "Hourly");
+      appendMetaRow(elements.selectedObjectMeta, "Rate", `${formatCurrency(Number(object.fields?.costRate || 0))} / ${object.fields?.unit || "Unit"}`);
+      appendMetaRow(elements.selectedObjectMeta, "Company", object.fields?.company || "Not set");
+      if (Number(object.fields?.quantity || 0) > 0) {
+        appendMetaRow(elements.selectedObjectMeta, "Quantity", String(object.fields.quantity));
+      }
     } else if (object.objectType === MAP_NOTE_OBJECT_TYPE) {
       appendMetaRow(elements.selectedObjectMeta, "Priority", formatMapNotePriority(object.fields?.priority));
       appendMetaRow(elements.selectedObjectMeta, "Note", object.fields?.title || "Map Note");
@@ -6956,6 +6996,9 @@
 
     const editable = canEditObject(object);
     const attachmentObject = isAttachmentObject(object);
+    const canAddToCost = editable && isCostConvertibleIconMarker(object);
+    elements.addSelectedToCostBtn?.classList.toggle("hidden", !canAddToCost);
+    if (elements.addSelectedToCostBtn) elements.addSelectedToCostBtn.disabled = !canAddToCost;
     elements.saveFieldsBtn.textContent = "Save Details";
     elements.saveFieldsBtn.disabled = !editable || attachmentObject;
     elements.saveFieldsBtn.classList.toggle("hidden", attachmentObject);
@@ -8654,6 +8697,150 @@
     };
   }
 
+  function isCostConvertibleIconMarker(object) {
+    return Boolean(
+      object?.objectType === ICON_MARKER_OBJECT_TYPE
+      && object?.geometryType === "point"
+      && !isCostedResourceObject(object)
+      && !isAttachmentObject(object)
+    );
+  }
+
+  function getSelectedObjectForCostConversion() {
+    const object = state.addToCostObjectId ? state.objects.get(state.addToCostObjectId) : null;
+    return object && isCostConvertibleIconMarker(object) ? object : null;
+  }
+
+  function getDefaultCostCategoryForObject(object) {
+    const iconCategory = String(object?.fields?.iconCategory || "").trim().toLowerCase();
+    if (iconCategory.includes("consumable")) return CONSUMABLES_CATEGORY;
+    return EQUIPMENT_CATEGORY;
+  }
+
+  function getAddToCostTemplateForCategory(category, label) {
+    return normalizeCostTemplate({}, category === CONSUMABLES_CATEGORY ? CONSUMABLES_CATEGORY : EQUIPMENT_CATEGORY, {
+      name: category === CONSUMABLES_CATEGORY ? CUSTOM_CONSUMABLE_ID : CUSTOM_EQUIPMENT_ID,
+      label: label || (category === CONSUMABLES_CATEGORY ? "Consumable" : "Equipment"),
+      billingModel: category === CONSUMABLES_CATEGORY ? "quantity" : "hourly",
+      unit: category === CONSUMABLES_CATEGORY ? "Unit" : "Hour",
+      customResource: true,
+      description: "Manual costed resource"
+    });
+  }
+
+  function getAddToCostDefaults(object) {
+    const label = String(object?.fields?.iconLabel || object?.fields?.displayLabel || "Resource").trim() || "Resource";
+    const defaultCategory = getDefaultCostCategoryForObject(object);
+    const template = getAddToCostTemplateForCategory(defaultCategory, label);
+    const defaults = buildInitialCostFields(template);
+    const placedAt = object?.fields?.placedAt || object?.createdAt || defaults.placedAt;
+    return {
+      ...defaults,
+      displayLabel: label,
+      placedAt,
+      notes: object?.fields?.notes || defaults.notes,
+      company: object?.fields?.company || defaults.company,
+      costCode: object?.fields?.costCode || defaults.costCode,
+      description: object?.fields?.description || defaults.description,
+      manufacturer: object?.fields?.manufacturer || defaults.manufacturer,
+      specification: object?.fields?.specification || defaults.specification
+    };
+  }
+
+  function syncAddToCostCategoryDefaults() {
+    const category = elements.addToCostCategorySelect?.value === CONSUMABLES_CATEGORY ? CONSUMABLES_CATEGORY : EQUIPMENT_CATEGORY;
+    const displayLabel = (elements.addToCostDisplayLabelInput?.value || "").trim() || "Resource";
+    const template = getAddToCostTemplateForCategory(category, displayLabel);
+    if (elements.addToCostBillingModelSelect) elements.addToCostBillingModelSelect.value = template.billingModel;
+    if (elements.addToCostUnitInput) elements.addToCostUnitInput.value = template.unit;
+    if (elements.saveAddToCostBtn) {
+      elements.saveAddToCostBtn.textContent = category === CONSUMABLES_CATEGORY ? "Add Consumable Cost" : "Add Equipment Cost";
+    }
+  }
+
+  function openAddToCostModal() {
+    const object = state.selectedObjectId ? state.objects.get(state.selectedObjectId) : null;
+    if (!object || !isCostConvertibleIconMarker(object) || !canEditObject(object)) {
+      setStatus("Select an editable placed icon first.");
+      return;
+    }
+    state.addToCostObjectId = object.id;
+    const defaults = getAddToCostDefaults(object);
+    if (elements.addToCostMeta) {
+      elements.addToCostMeta.innerHTML = `Convert <span class="add-to-cost-meta-strong">${escapeHtml(defaults.displayLabel)}</span> into a cost-tracked resource. The original icon will stay on the map.`;
+    }
+    if (elements.addToCostCategorySelect) elements.addToCostCategorySelect.value = defaults.resourceCategory;
+    if (elements.addToCostDisplayLabelInput) elements.addToCostDisplayLabelInput.value = defaults.displayLabel;
+    if (elements.addToCostCompanyInput) elements.addToCostCompanyInput.value = defaults.company;
+    if (elements.addToCostBillingModelSelect) elements.addToCostBillingModelSelect.value = defaults.billingModel;
+    if (elements.addToCostUnitInput) elements.addToCostUnitInput.value = defaults.unit;
+    if (elements.addToCostQuantityInput) elements.addToCostQuantityInput.value = String(defaults.quantity);
+    if (elements.addToCostRateInput) elements.addToCostRateInput.value = String(defaults.costRate);
+    if (elements.addToCostCostCodeInput) elements.addToCostCostCodeInput.value = defaults.costCode;
+    if (elements.addToCostPlacedAtInput) elements.addToCostPlacedAtInput.value = isoToInputValue(defaults.placedAt);
+    if (elements.addToCostDemobilizedAtInput) elements.addToCostDemobilizedAtInput.value = isoToInputValue(defaults.demobilizedAt);
+    if (elements.addToCostDescriptionInput) elements.addToCostDescriptionInput.value = defaults.description;
+    if (elements.addToCostManufacturerInput) elements.addToCostManufacturerInput.value = defaults.manufacturer;
+    if (elements.addToCostSpecificationInput) elements.addToCostSpecificationInput.value = defaults.specification;
+    if (elements.addToCostNotesInput) elements.addToCostNotesInput.value = defaults.notes;
+    syncAddToCostCategoryDefaults();
+    elements.addToCostModal?.classList.remove("hidden");
+  }
+
+  function closeAddToCostModal() {
+    state.addToCostObjectId = null;
+    elements.addToCostModal?.classList.add("hidden");
+  }
+
+  async function saveSelectedObjectAsCostedResource() {
+    const object = getSelectedObjectForCostConversion();
+    if (!object || !canEditObject(object)) {
+      closeAddToCostModal();
+      setStatus("That item is no longer available to cost.");
+      return;
+    }
+    if (!sessionIsActive()) {
+      setStatus("This session is now read-only.");
+      return;
+    }
+    const category = elements.addToCostCategorySelect?.value === CONSUMABLES_CATEGORY ? CONSUMABLES_CATEGORY : EQUIPMENT_CATEGORY;
+    const template = getAddToCostTemplateForCategory(category, (elements.addToCostDisplayLabelInput?.value || "").trim());
+    const placedAt = inputValueToISOString(elements.addToCostPlacedAtInput?.value) || object.fields?.placedAt || object.createdAt || new Date().toISOString();
+    const demobilizedAt = inputValueToISOString(elements.addToCostDemobilizedAtInput?.value) || "";
+    const quantity = Math.max(0, Number(elements.addToCostQuantityInput?.value) || 0);
+    const costRate = Math.max(0, Number(elements.addToCostRateInput?.value) || 0);
+    const nextFields = {
+      ...(object.fields || {}),
+      displayLabel: (elements.addToCostDisplayLabelInput?.value || "").trim() || object.fields?.iconLabel || template.label,
+      resourceType: "custom",
+      resourceTemplateId: template.id,
+      resourceCategory: category,
+      company: (elements.addToCostCompanyInput?.value || "").trim(),
+      billingModel: elements.addToCostBillingModelSelect?.value === "quantity" ? "quantity" : "hourly",
+      unit: (elements.addToCostUnitInput?.value || "").trim() || template.unit,
+      quantity,
+      costRate,
+      costCode: (elements.addToCostCostCodeInput?.value || "").trim(),
+      description: (elements.addToCostDescriptionInput?.value || "").trim(),
+      manufacturer: (elements.addToCostManufacturerInput?.value || "").trim(),
+      specification: (elements.addToCostSpecificationInput?.value || "").trim(),
+      customResource: true,
+      placedAt,
+      demobilizedAt,
+      notes: (elements.addToCostNotesInput?.value || "").trim()
+    };
+    await queueUpdateMutation({
+      objectId: object.id,
+      mutationType: "update",
+      geometryType: object.geometryType,
+      geometry: object.geometry,
+      fields: nextFields,
+      baseVersion: object.version
+    }, true);
+    closeAddToCostModal();
+    setStatus(`${nextFields.displayLabel} is now tracked in cost summary.`);
+  }
+
   function buildObjectTooltip(object) {
     const template = resolveTemplateForObject(object);
     const author = state.participants.find((participant) => participant.id === object.createdByParticipantId);
@@ -8779,7 +8966,7 @@
   }
 
   function buildIconMarkerIcon(object, template) {
-    if (isCostedResourceObject(object)) {
+    if (isCostedResourceObject(object) && !object.fields?.iconAssetPath) {
       const category = String(object.fields?.resourceCategory || "").toUpperCase();
       const badge = category.startsWith("CON") ? "CON" : "EQ";
       const total = formatCurrency(getCostedResourceTotal(object));

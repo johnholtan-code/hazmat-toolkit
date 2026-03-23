@@ -429,6 +429,7 @@
               <div id="selectedObjectMeta" class="meta-list"></div>
               <div id="selectedObjectFields" class="stack"></div>
               <div id="selectedObjectActions" class="row">
+                <button id="addSelectedToCostBtn" class="secondary hidden" type="button">Add to Cost</button>
                 <button id="saveFieldsBtn" class="primary" type="button">Save Details</button>
                 <button id="editGeometryBtn" class="secondary" type="button">Edit Geometry</button>
                 <button id="deleteObjectBtn" class="danger" type="button">Delete</button>
@@ -996,6 +997,84 @@
         <button id="attachmentAddBtn" class="secondary" type="button">Add Image</button>
         <button id="attachmentRenameBtn" class="secondary" type="button">Rename</button>
         <button id="attachmentDeleteBtn" class="danger" type="button">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="addToCostModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="addToCostTitle">
+    <div class="modal-card add-to-cost-modal-card">
+      <div class="modal-header">
+        <h2 id="addToCostTitle">Add Item to Cost</h2>
+        <button id="closeAddToCostBtn" class="secondary" type="button">Close</button>
+      </div>
+      <div id="addToCostMeta" class="muted"></div>
+      <div class="add-to-cost-grid">
+        <label class="field-block">
+          Resource Category
+          <select id="addToCostCategorySelect">
+            <option value="Equipment">Equipment</option>
+            <option value="Consumables">Consumables</option>
+          </select>
+        </label>
+        <label class="field-block">
+          Item Name
+          <input id="addToCostDisplayLabelInput" type="text" />
+        </label>
+        <label class="field-block">
+          Company / Agency
+          <input id="addToCostCompanyInput" type="text" />
+        </label>
+        <label class="field-block">
+          Billing Model
+          <select id="addToCostBillingModelSelect">
+            <option value="hourly">Hourly</option>
+            <option value="quantity">Quantity</option>
+          </select>
+        </label>
+        <label class="field-block">
+          Unit
+          <input id="addToCostUnitInput" type="text" />
+        </label>
+        <label class="field-block">
+          Quantity
+          <input id="addToCostQuantityInput" type="number" min="0" step="0.01" value="1" />
+        </label>
+        <label class="field-block">
+          Cost Rate
+          <input id="addToCostRateInput" type="number" min="0" step="0.01" value="0" />
+        </label>
+        <label class="field-block">
+          Cost Code
+          <input id="addToCostCostCodeInput" type="text" />
+        </label>
+        <label class="field-block">
+          Placed Time
+          <input id="addToCostPlacedAtInput" type="datetime-local" />
+        </label>
+        <label class="field-block">
+          Demobilized Time
+          <input id="addToCostDemobilizedAtInput" type="datetime-local" />
+        </label>
+        <label class="field-block field-block-wide">
+          Description
+          <textarea id="addToCostDescriptionInput" rows="3"></textarea>
+        </label>
+        <label class="field-block">
+          Manufacturer
+          <input id="addToCostManufacturerInput" type="text" />
+        </label>
+        <label class="field-block">
+          Specification
+          <input id="addToCostSpecificationInput" type="text" />
+        </label>
+        <label class="field-block field-block-wide">
+          Notes
+          <textarea id="addToCostNotesInput" rows="3"></textarea>
+        </label>
+      </div>
+      <div class="row" style="justify-content:flex-end;">
+        <button id="cancelAddToCostBtn" class="secondary" type="button">Cancel</button>
+        <button id="saveAddToCostBtn" class="primary" type="button">Add to Cost</button>
       </div>
     </div>
   </div>
