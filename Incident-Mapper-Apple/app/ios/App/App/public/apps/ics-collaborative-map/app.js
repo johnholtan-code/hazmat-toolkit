@@ -421,6 +421,7 @@
     paletteSearchInput: document.getElementById("paletteSearchInput"),
     clearPaletteSearchBtn: document.getElementById("clearPaletteSearchBtn"),
     paletteContainer: document.getElementById("paletteContainer"),
+    helpTutorialBtn: document.getElementById("helpTutorialBtn"),
     attachImageBtn: document.getElementById("attachImageBtn"),
     printExportBtn: document.getElementById("printExportBtn"),
     isolationToolBtn: document.getElementById("isolationToolBtn"),
@@ -508,6 +509,13 @@
     addToCostManufacturerInput: document.getElementById("addToCostManufacturerInput"),
     addToCostSpecificationInput: document.getElementById("addToCostSpecificationInput"),
     addToCostNotesInput: document.getElementById("addToCostNotesInput"),
+    guidePopup: document.getElementById("guidePopup"),
+    guideTitle: document.getElementById("guideTitle"),
+    guideBody: document.getElementById("guideBody"),
+    guideMeta: document.getElementById("guideMeta"),
+    guideClose: document.getElementById("guideClose"),
+    guideBack: document.getElementById("guideBack"),
+    guideNext: document.getElementById("guideNext"),
     drawControls: document.getElementById("drawControls"),
     drawHintText: document.getElementById("drawHintText"),
     finishGeometryBtn: document.getElementById("finishGeometryBtn"),
@@ -786,6 +794,11 @@
     superAdminStandingSourceFilter: "",
     superAdminStandingTargetFilters: [],
     ics202ObjectiveDragIndex: -1
+  };
+
+  const guideState = {
+    active: false,
+    index: 0
   };
 
   async function init() {
@@ -1225,6 +1238,7 @@
     elements.scenarioFileInput.addEventListener("change", onScenarioFileSelected);
     elements.paletteSearchInput.addEventListener("input", onPaletteSearchInput);
     elements.clearPaletteSearchBtn.addEventListener("click", clearPaletteSearch);
+    elements.helpTutorialBtn?.addEventListener("click", openGuideTour);
     elements.attachImageBtn?.addEventListener("click", beginAttachmentFlow);
     elements.createSessionBtn.addEventListener("click", onCreateSession);
     elements.guidedSetupDefaultInput.addEventListener("change", renderCreateSessionFocusVisibility);
@@ -1303,6 +1317,29 @@
     elements.mapStyleCloseBtn.addEventListener("click", closeMapStyleTray);
     elements.themeModeSelect?.addEventListener("change", (event) => {
       applyThemeMode(event.target.value, { notify: true });
+    });
+    elements.guideClose?.addEventListener("click", closeGuideTour);
+    elements.guideBack?.addEventListener("click", () => {
+      if (!guideState.active) return;
+      guideState.index = Math.max(0, guideState.index - 1);
+      renderGuideStep();
+    });
+    elements.guideNext?.addEventListener("click", () => {
+      if (!guideState.active) return;
+      if (guideState.index >= getGuideSteps().length - 1) {
+        closeGuideTour();
+        return;
+      }
+      guideState.index += 1;
+      renderGuideStep();
+    });
+    window.addEventListener("resize", () => {
+      if (guideState.active) renderGuideStep();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && guideState.active) {
+        closeGuideTour();
+      }
     });
     elements.leaveSessionBtn.addEventListener("click", leaveCurrentSession);
     elements.sessionSignOutBtn.addEventListener("click", signOutCommander);
@@ -2586,6 +2623,7 @@
     renderPalettes();
     renderMapStyleTray();
     renderGuidedSteps();
+    renderGuideControls();
     renderCostSummary();
     renderSelectedObject();
     updateDrawControls();
@@ -2605,6 +2643,201 @@
     elements.guidedModeBtn.textContent = state.guidedMode ? "Hide IC Mode" : "10-Minute IC Mode";
     elements.quickFlowPanel.classList.toggle("collapsed", !state.guidedMode);
     elements.appView.classList.toggle("guided-collapsed", !state.guidedMode);
+  }
+
+  function renderGuideControls() {
+    if (!elements.helpTutorialBtn) return;
+    const visible = (Boolean(state.activeSession) || isScenarioReviewMode())
+      && !state.ics202Open
+      && !state.commandStructureOpen
+      && !state.superAdminOpen;
+    elements.helpTutorialBtn.classList.toggle("hidden", !visible);
+    if (!visible) {
+      closeGuideTour({ silent: true });
+    }
+  }
+
+  function getGuideSteps() {
+    return [
+      {
+        selector: "#sessionMeta",
+        title: "Start With Session Context",
+        body: "Use the Session panel to confirm the incident name, owner, join code, and whether the map is in a live session or scenario review."
+      },
+      {
+        selector: "#paletteContainer",
+        title: "Build The Incident Picture",
+        body: "Palettes are where you place hazards, responders, infrastructure, and other map objects. Search first if you know what you need."
+      },
+      {
+        selector: "#map",
+        title: "The Map Is The Shared Operating Picture",
+        body: "Every placed icon, sketch, note, isolation zone, and attachment lands here so collaborators see the same incident picture."
+      },
+      {
+        selector: "#weatherLauncherBtn",
+        title: "Check Incident Weather",
+        body: "Open weather when location is set to pull current conditions that can inform operations and the isolation tool."
+      },
+      {
+        selector: "#quickFlowPanel",
+        title: "Use 10-Minute IC Mode",
+        body: "This guided panel helps new users work through the first operational decisions instead of trying to learn the whole tool at once.",
+        prepare: () => {
+          if (state.rightSidebarCollapsed) {
+            state.rightSidebarCollapsed = false;
+            renderRightSidebarState();
+          }
+          state.collapsedModePanels.delete("quickFlow");
+          renderModePanelCollapses();
+        }
+      },
+      {
+        selector: "#selectedObjectEmpty",
+        title: "Inspect Selected Items",
+        body: "When you select an item on the map, this panel switches from the placeholder to item details, editable fields, attachments, and cost actions.",
+        prepare: () => {
+          if (state.rightSidebarCollapsed) {
+            state.rightSidebarCollapsed = false;
+            renderRightSidebarState();
+          }
+        }
+      },
+      {
+        selector: "#costSummaryPanel",
+        title: "Track Incident Cost",
+        body: "Cost Summary rolls up all costed equipment and consumables. Items added through the palette or converted with Add to Cost appear here."
+      },
+      {
+        selector: "#afterActionPanel",
+        title: "Replay The Incident",
+        body: "After-Action Mode lets trainers and responders replay the incident timeline, inspect changes, and review cost updates after the fact.",
+        prepare: () => {
+          if (state.rightSidebarCollapsed) {
+            state.rightSidebarCollapsed = false;
+            renderRightSidebarState();
+          }
+          state.afterActionPanelVisible = true;
+          state.collapsedModePanels.delete("afterAction");
+          renderAfterActionControls();
+          renderModePanelCollapses();
+        }
+      },
+      {
+        selector: "#isolationToolBtn",
+        title: "Model Isolation Zones",
+        body: "Isolation Tool helps place hazard isolation and protective action zones, including live wind lookup with a manual override when needed."
+      },
+      {
+        selector: "#printExportBtn",
+        title: "Export And Share",
+        body: "Use Print / Export for map output, cost exports, and incident paperwork support once the session has enough information to export."
+      }
+    ];
+  }
+
+  function clearGuideHighlight() {
+    document.querySelectorAll(".guide-highlight").forEach((element) => element.classList.remove("guide-highlight"));
+  }
+
+  function isGuideTargetVisible(element) {
+    if (!element) return false;
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return false;
+    const style = window.getComputedStyle(element);
+    return style.display !== "none" && style.visibility !== "hidden";
+  }
+
+  function getGuideTarget(step) {
+    if (!step?.selector) return null;
+    return document.querySelector(step.selector);
+  }
+
+  function positionGuidePopup(targetElement) {
+    if (!elements.guidePopup || !targetElement) return;
+    const rect = targetElement.getBoundingClientRect();
+    const popupWidth = elements.guidePopup.offsetWidth || 340;
+    const popupHeight = elements.guidePopup.offsetHeight || 180;
+    const viewportWidth = window.innerWidth || 1280;
+    const viewportHeight = window.innerHeight || 720;
+    let left = rect.left + (rect.width / 2) - (popupWidth / 2);
+    left = Math.max(12, Math.min(viewportWidth - popupWidth - 12, left));
+    let top = rect.bottom + 12;
+    if (top + popupHeight > viewportHeight - 12) {
+      top = Math.max(12, rect.top - popupHeight - 12);
+    }
+    elements.guidePopup.style.left = `${Math.round(left)}px`;
+    elements.guidePopup.style.top = `${Math.round(top)}px`;
+  }
+
+  function prepareGuideStep(step) {
+    hidePrintExportModal();
+    closeMapStyleTray();
+    if (state.weatherPanelOpen) {
+      state.weatherPanelOpen = false;
+      renderWeatherUI();
+    }
+    if (typeof step?.prepare === "function") {
+      step.prepare();
+    }
+  }
+
+  function closeGuideTour({ silent = false } = {}) {
+    guideState.active = false;
+    if (elements.guidePopup) {
+      elements.guidePopup.classList.remove("visible");
+    }
+    clearGuideHighlight();
+    if (!silent) {
+      setStatus("Walkthrough closed.");
+    }
+  }
+
+  function renderGuideStep() {
+    if (!guideState.active) return;
+    const steps = getGuideSteps();
+    const step = steps[guideState.index];
+    if (!step) {
+      closeGuideTour({ silent: true });
+      return;
+    }
+    prepareGuideStep(step);
+    const target = getGuideTarget(step);
+    if (!isGuideTargetVisible(target)) {
+      const nextIndex = guideState.index + 1;
+      if (nextIndex < steps.length) {
+        guideState.index = nextIndex;
+        renderGuideStep();
+      } else {
+        closeGuideTour({ silent: true });
+      }
+      return;
+    }
+    target.scrollIntoView?.({ block: "center", inline: "nearest", behavior: "smooth" });
+    clearGuideHighlight();
+    target.classList.add("guide-highlight");
+    if (elements.guideTitle) elements.guideTitle.textContent = step.title;
+    if (elements.guideBody) elements.guideBody.textContent = step.body;
+    if (elements.guideMeta) elements.guideMeta.textContent = `Step ${guideState.index + 1} of ${steps.length}`;
+    if (elements.guideBack) elements.guideBack.disabled = guideState.index === 0;
+    if (elements.guideNext) elements.guideNext.textContent = guideState.index === steps.length - 1 ? "Done" : "Next";
+    elements.guidePopup?.classList.add("visible");
+    positionGuidePopup(target);
+  }
+
+  function openGuideTour() {
+    const visible = (Boolean(state.activeSession) || isScenarioReviewMode())
+      && !state.ics202Open
+      && !state.commandStructureOpen
+      && !state.superAdminOpen;
+    if (!visible) {
+      setStatus("Open a collaborative session or scenario review first.");
+      return;
+    }
+    guideState.active = true;
+    guideState.index = 0;
+    renderGuideStep();
+    setStatus("Walkthrough started.");
   }
 
   function isIsolationZoneObject(object) {
