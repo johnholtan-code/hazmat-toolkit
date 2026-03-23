@@ -4933,6 +4933,9 @@
       }
 
       const displayObject = object || beforeObject;
+      const costChangeSummary = mutation.mutationType === "update"
+        ? buildPlaybackCostChangeSummary(beforeObject, object)
+        : "";
       return {
         id: Number(mutation.id || 0),
         version: Number(mutation.version || 0),
@@ -4943,9 +4946,79 @@
         object: displayObject ? deepClone(displayObject) : null,
         label: displayObject ? getObjectDisplayLabel(displayObject, resolveTemplateForObject(displayObject)) : "Map Object",
         category: getPlaybackCategory(displayObject),
-        focusPoint: getObjectFocusPoint(displayObject)
+        focusPoint: getObjectFocusPoint(displayObject),
+        costChangeSummary
       };
     });
+  }
+
+  function buildPlaybackCostChangeSummary(beforeObject, afterObject) {
+    const beforeCosted = isCostedResourceObject(beforeObject);
+    const afterCosted = isCostedResourceObject(afterObject);
+    if (!beforeCosted && !afterCosted) return "";
+
+    const beforeFields = beforeObject?.fields || {};
+    const afterFields = afterObject?.fields || {};
+    const changes = [];
+
+    if (!beforeCosted && afterCosted) {
+      changes.push(`added to ${afterFields.resourceCategory || "cost"} tracking`);
+    } else if (beforeCosted && !afterCosted) {
+      changes.push("removed from cost tracking");
+    }
+
+    const trackFieldChange = (key, label, formatter = formatPlaybackCostValue) => {
+      const beforeValue = formatter(key, beforeFields[key], beforeFields);
+      const afterValue = formatter(key, afterFields[key], afterFields);
+      if (beforeValue === afterValue) return;
+      if (!beforeValue && afterValue) {
+        changes.push(`${label} set to ${afterValue}`);
+        return;
+      }
+      if (beforeValue && !afterValue) {
+        changes.push(`${label} cleared`);
+        return;
+      }
+      changes.push(`${label} ${beforeValue} -> ${afterValue}`);
+    };
+
+    trackFieldChange("resourceCategory", "category");
+    trackFieldChange("displayLabel", "label");
+    trackFieldChange("billingModel", "billing");
+    trackFieldChange("unit", "unit");
+    trackFieldChange("quantity", "quantity");
+    trackFieldChange("costRate", "rate");
+    trackFieldChange("costCode", "cost code");
+    trackFieldChange("company", "company");
+    trackFieldChange("placedAt", "placed time");
+    trackFieldChange("demobilizedAt", "demobilized time");
+
+    if (!changes.length && afterCosted) {
+      changes.push("cost details updated");
+    }
+
+    return changes.slice(0, 3).join(" • ");
+  }
+
+  function formatPlaybackCostValue(key, value, fields = {}) {
+    if (value == null || value === "") return "";
+    if (key === "costRate") {
+      const numeric = Number(value);
+      const unit = fields?.unit || "Unit";
+      if (!Number.isFinite(numeric)) return "";
+      return `${formatCurrency(numeric)} / ${unit}`;
+    }
+    if (key === "quantity") {
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? String(round2(numeric)) : "";
+    }
+    if (key === "billingModel") {
+      return value === "quantity" ? "Quantity" : "Hourly";
+    }
+    if (key === "placedAt" || key === "demobilizedAt") {
+      return formatDateTime(value);
+    }
+    return String(value).trim();
   }
 
   function getPlaybackCategory(object) {
@@ -5011,7 +5084,8 @@
       : frame.mutationType === "delete"
         ? "Removed"
         : "Updated";
-    elements.playbackMeta.textContent = `${boundedIndex + 1}/${state.playbackEntries.length} • ${formatDateTime(frame.createdAt)} • ${actionLabel} ${frame.label} • ${actorLabel}`;
+    const detailLabel = frame.costChangeSummary ? ` • ${frame.costChangeSummary}` : "";
+    elements.playbackMeta.textContent = `${boundedIndex + 1}/${state.playbackEntries.length} • ${formatDateTime(frame.createdAt)} • ${actionLabel} ${frame.label}${detailLabel} • ${actorLabel}`;
 
     if (frame.focusPoint && state.map) {
       state.map.setView([frame.focusPoint.lat, frame.focusPoint.lng], Math.max(state.map.getZoom(), 15), { animate: false });
