@@ -2037,14 +2037,14 @@
     const sourceOrganizationId = String(elements.superAdminStandingSourceSelect?.value || "").trim();
     const targetOrganizationIds = Array.from(new Set((state.superAdminStandingTargetFilters || []).map((value) => String(value).trim()).filter(Boolean)));
     if (!sourceOrganizationId || !targetOrganizationIds.length) {
-      setStatus("Choose a source department and at least one target department.");
+      setStatus("Choose a department and at least one mutual-access department.");
       return;
     }
     if (targetOrganizationIds.includes(sourceOrganizationId)) {
-      setStatus("A department cannot grant standing access to itself.");
+      setStatus("A department cannot grant mutual access to itself.");
       return;
     }
-    setStatus(`Granting standing access to ${targetOrganizationIds.length} department${targetOrganizationIds.length === 1 ? "" : "s"}…`);
+    setStatus(`Granting mutual access to ${targetOrganizationIds.length} department${targetOrganizationIds.length === 1 ? "" : "s"}…`);
     try {
       const targetLabels = new Map(
         (Array.isArray(state.superAdminData.organizations) ? state.superAdminData.organizations : []).map((organization) => [
@@ -4223,7 +4223,7 @@
     });
     const sourceValue = String(state.superAdminStandingSourceFilter || "");
     const targetValues = new Set((state.superAdminStandingTargetFilters || []).map((value) => String(value)));
-    elements.superAdminStandingSourceSelect.innerHTML = '<option value="">Select source department</option>';
+    elements.superAdminStandingSourceSelect.innerHTML = '<option value="">Select department</option>';
     organizations.forEach((organization) => {
       const sourceOption = document.createElement("option");
       sourceOption.value = String(organization.id || "");
@@ -4236,7 +4236,7 @@
     if (!targetOrganizations.length) {
       const emptyTargets = document.createElement("div");
       emptyTargets.className = "muted";
-      emptyTargets.textContent = sourceValue ? "No other active departments are available." : "Choose a source department first.";
+      emptyTargets.textContent = sourceValue ? "No other active departments are available." : "Choose a department first.";
       elements.superAdminStandingTargetList.appendChild(emptyTargets);
     } else {
       targetOrganizations.forEach((organization) => {
@@ -4267,17 +4267,17 @@
     if (!standingRows.length) {
       const empty = document.createElement("div");
       empty.className = "muted";
-      empty.textContent = "No standing department access is active.";
+      empty.textContent = "No standing mutual access is active.";
       elements.superAdminStandingAccessList.appendChild(empty);
     } else {
       standingRows.forEach((entry) => {
         const card = document.createElement("div");
         card.className = "participant-card department-admin-member";
         const title = document.createElement("strong");
-        title.textContent = `${entry.targetOrganizationName} can view ${entry.sourceOrganizationName}`;
+        title.textContent = `${entry.sourceOrganizationName} and ${entry.targetOrganizationName} have mutual access`;
         const meta = document.createElement("div");
         meta.className = "muted";
-        meta.textContent = `Source: ${entry.sourceOrganizationName}${entry.sourceCountyName ? ` · ${entry.sourceCountyName}` : ""} · Target: ${entry.targetOrganizationName}${entry.targetCountyName ? ` · ${entry.targetCountyName}` : ""}`;
+        meta.textContent = `Mutual Access: ${entry.sourceOrganizationName}${entry.sourceCountyName ? ` · ${entry.sourceCountyName}` : ""} ↔ ${entry.targetOrganizationName}${entry.targetCountyName ? ` · ${entry.targetCountyName}` : ""}`;
         const actions = document.createElement("div");
         actions.className = "row department-admin-member-actions";
         const revokeBtn = document.createElement("button");
@@ -4288,7 +4288,7 @@
           void revokeStandingOrganizationAccess(
             entry.sourceOrganizationId,
             entry.targetOrganizationId,
-            `Standing access from ${entry.sourceOrganizationName} to ${entry.targetOrganizationName} revoked.`
+            `Mutual access between ${entry.sourceOrganizationName} and ${entry.targetOrganizationName} revoked.`
           );
         });
         actions.appendChild(revokeBtn);

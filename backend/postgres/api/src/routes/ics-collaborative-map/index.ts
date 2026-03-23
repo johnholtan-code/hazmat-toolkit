@@ -894,8 +894,10 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
             exists (
               select 1
               from collab_org_standing_access osa
-              where osa.source_organization_id = s.organization_id
-                and osa.target_organization_id = $1::uuid
+              where (
+                  (osa.source_organization_id = s.organization_id and osa.target_organization_id = $1::uuid)
+                  or (osa.source_organization_id = $1::uuid and osa.target_organization_id = s.organization_id)
+                )
                 and (
                   s.session_status = 'active'
                   or s.operational_period_end > now()
@@ -918,8 +920,10 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
             or exists (
               select 1
               from collab_org_standing_access osa
-              where osa.source_organization_id = s.organization_id
-                and osa.target_organization_id = $1::uuid
+              where (
+                  (osa.source_organization_id = s.organization_id and osa.target_organization_id = $1::uuid)
+                  or (osa.source_organization_id = $1::uuid and osa.target_organization_id = s.organization_id)
+                )
                 and (
                   s.session_status = 'active'
                   or s.operational_period_end > now()
@@ -985,8 +989,10 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
             exists (
               select 1
               from collab_org_standing_access osa
-              where osa.source_organization_id = s.organization_id
-                and osa.target_organization_id = $1::uuid
+              where (
+                  (osa.source_organization_id = s.organization_id and osa.target_organization_id = $1::uuid)
+                  or (osa.source_organization_id = $1::uuid and osa.target_organization_id = s.organization_id)
+                )
             ) as has_standing_access
           from collab_map_sessions s
           left join trainers t
@@ -1006,8 +1012,10 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
               or exists (
                 select 1
                 from collab_org_standing_access osa
-                where osa.source_organization_id = s.organization_id
-                  and osa.target_organization_id = $1::uuid
+                where (
+                    (osa.source_organization_id = s.organization_id and osa.target_organization_id = $1::uuid)
+                    or (osa.source_organization_id = $1::uuid and osa.target_organization_id = s.organization_id)
+                  )
               )
               or (s.organization_id is null and lower(s.trainer_ref) = lower($2))
             )
@@ -2539,8 +2547,10 @@ async function ensureOrganizationSessionAccess(
     `
       select true as exists
       from collab_org_standing_access
-      where source_organization_id = $1::uuid
-        and target_organization_id = $2::uuid
+      where (
+          (source_organization_id = $1::uuid and target_organization_id = $2::uuid)
+          or (source_organization_id = $2::uuid and target_organization_id = $1::uuid)
+        )
         and (
           $3::text = 'active'
           or $4::timestamptz > now()
@@ -3040,13 +3050,22 @@ async function createStandingOrganizationAccess(
 ) {
   const result = await pool.query<{ source_organization_id: string }>(
     `
+      with existing as (
+        select 1
+        from collab_org_standing_access
+        where (
+            (source_organization_id = $1::uuid and target_organization_id = $2::uuid)
+            or (source_organization_id = $2::uuid and target_organization_id = $1::uuid)
+          )
+        limit 1
+      )
       insert into collab_org_standing_access (
         source_organization_id,
         target_organization_id,
         created_by_trainer_ref
       )
-      values ($1::uuid, $2::uuid, $3)
-      on conflict do nothing
+      select $1::uuid, $2::uuid, $3
+      where not exists (select 1 from existing)
       returning source_organization_id::text as source_organization_id
     `,
     [params.sourceOrganizationId, params.targetOrganizationId, params.createdByTrainerRef]
@@ -3062,8 +3081,10 @@ async function deleteStandingOrganizationAccess(
   await pool.query(
     `
       delete from collab_org_standing_access
-      where source_organization_id = $1::uuid
-        and target_organization_id = $2::uuid
+      where (
+          (source_organization_id = $1::uuid and target_organization_id = $2::uuid)
+          or (source_organization_id = $2::uuid and target_organization_id = $1::uuid)
+        )
     `,
     [sourceOrganizationId, targetOrganizationId]
   );
