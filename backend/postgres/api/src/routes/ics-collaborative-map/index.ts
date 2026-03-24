@@ -44,6 +44,7 @@ const OBJECT_TYPES = [
   'Rehab',
   'Hydrant',
   'HoseLine',
+  'MeasurementLine',
   'RIT',
   'SafetyHazard',
   'EvacuationZone',
