@@ -25,18 +25,25 @@
           <button id="copyJoinLinkBtn" class="secondary hidden" type="button">Copy Join Link</button>
           <button id="showViewerQrBtn" class="secondary hidden" type="button">Show Viewer QR</button>
           <button id="toggleViewerAccessBtn" class="secondary hidden" type="button">Disable Viewer Access</button>
-          <button id="endSessionBtn" class="danger hidden" type="button">End Session</button>
+          <div id="topbarSettingsMenu" class="topbar-settings hidden">
+            <button id="topbarSettingsBtn" class="secondary topbar-settings-btn" type="button" aria-expanded="false" aria-controls="topbarSettingsDropdown" aria-label="Open toolbar settings">
+              <span aria-hidden="true">⚙</span>
+            </button>
+            <div id="topbarSettingsDropdown" class="topbar-settings-dropdown hidden">
+              <button id="helpTutorialBtn" class="secondary hidden" type="button">How Do I Use This Thing</button>
+              <button id="guidedModeBtn" class="secondary hidden" type="button">10-Minute IC Mode</button>
+              <button id="afterActionModeBtn" class="secondary hidden" type="button">After-Action Mode</button>
+              <button id="printExportBtn" class="secondary hidden" type="button">Print / Export</button>
+            </div>
+          </div>
+          <button id="endSessionBtn" class="danger topbar-alert-btn hidden" type="button">End Session</button>
         </div>
         <div class="topbar-action-row topbar-action-row-secondary">
           <button id="superAdminWorkspaceBtn" class="secondary hidden" type="button">Super Admin</button>
           <button id="ics202WorkspaceBtn" class="secondary hidden" type="button">ICS 202</button>
           <button id="commandStructureWorkspaceBtn" class="secondary hidden" type="button">Command Structure</button>
-          <button id="helpTutorialBtn" class="secondary hidden" type="button">How Do I Use This Thing</button>
           <button id="attachImageBtn" class="secondary hidden" type="button">Attach Image</button>
           <button id="isolationToolBtn" class="secondary hidden" type="button">Isolation Tool</button>
-          <button id="guidedModeBtn" class="secondary hidden" type="button">10-Minute IC Mode</button>
-          <button id="afterActionModeBtn" class="secondary hidden" type="button">After-Action Mode</button>
-          <button id="printExportBtn" class="secondary hidden" type="button">Print / Export</button>
         </div>
       </div>
     </header>

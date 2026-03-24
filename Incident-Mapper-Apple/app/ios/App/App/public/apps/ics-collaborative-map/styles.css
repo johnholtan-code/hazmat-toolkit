@@ -103,6 +103,41 @@ body[data-theme="light"] .topbar {
 .topbar-action-row-secondary {
   justify-content: flex-end;
 }
+.topbar-settings {
+  position: relative;
+}
+.topbar-settings-btn {
+  min-width: 44px;
+  padding-inline: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+}
+.topbar-settings-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 240px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid var(--border-strong);
+  background: rgba(10, 10, 10, 0.96);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.34);
+  z-index: 2400;
+}
+.topbar-settings-dropdown button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+body[data-theme="light"] .topbar-settings-dropdown {
+  background: rgba(248, 250, 253, 0.98);
+  box-shadow: 0 18px 36px rgba(27, 39, 51, 0.16);
+}
 
 .status-bar {
   padding: var(--space-3) var(--space-6);
@@ -1647,6 +1682,23 @@ button:disabled { cursor: not-allowed; opacity: .55; transform: none; }
 button.primary { background: var(--accent); color: #1d1d1d; font-weight: 700; }
 button.secondary { background: var(--panel-strong); color: var(--text); border-color: var(--stroke); }
 button.danger { background: rgba(182,59,59,0.14); color: #f4c9ce; border-color: rgba(182,59,59,0.35); }
+button.topbar-alert-btn {
+  background: linear-gradient(180deg, #d54b4b 0%, #a72d2d 100%);
+  color: #fff7f7;
+  border-color: rgba(255, 169, 169, 0.7);
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(167, 45, 45, 0.28);
+}
+button.topbar-alert-btn:hover {
+  background: linear-gradient(180deg, #e05a5a 0%, #b63333 100%);
+  box-shadow: 0 14px 28px rgba(167, 45, 45, 0.34);
+}
+body[data-theme="light"] button.topbar-alert-btn {
+  background: linear-gradient(180deg, #cf3e3e 0%, #a91f1f 100%);
+  color: #ffffff;
+  border-color: rgba(139, 12, 12, 0.45);
+  box-shadow: 0 10px 24px rgba(169, 31, 31, 0.2);
+}
 .modal {
   position: fixed;
   inset: 0;
@@ -2690,6 +2742,43 @@ body[data-theme="light"] .attachment-preview-img {
 }
 body[data-theme="light"] .geometry-handle {
   border-color: rgba(243,245,248,0.96);
+}
+.measurement-endpoint-icon {
+  background: transparent;
+  border: none;
+}
+.measurement-endpoint-handle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--measurement-color, var(--accent));
+  border: 2px solid rgba(255,255,255,0.92);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.28);
+}
+.measurement-distance-icon {
+  background: transparent;
+  border: none;
+  pointer-events: none;
+}
+.measurement-distance-label {
+  transform: translate(-50%, -130%);
+  width: max-content;
+  max-width: 180px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.18);
+  background: rgba(10,10,10,0.9);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.24);
+  white-space: nowrap;
+}
+body[data-theme="light"] .measurement-distance-label {
+  background: rgba(255,255,255,0.96);
+  color: #101418;
+  border-color: rgba(0,0,0,0.14);
 }
 .point-marker-icon {
   width: 34px;

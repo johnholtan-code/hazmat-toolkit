@@ -27,6 +27,7 @@
     : null;
   const ERG_WIND_BUCKETS = ["low", "moderate", "high"];
   const ICON_MARKER_OBJECT_TYPE = "IconMarker";
+  const MEASUREMENT_OBJECT_TYPE = "MeasurementLine";
   const IS_TOUCH_PREFERRED = Boolean(
     window.matchMedia?.("(pointer: coarse)")?.matches
     || window.navigator?.maxTouchPoints > 0
@@ -88,6 +89,12 @@
       { value: "urgent", label: "Urgent" }
     ] }
   ];
+  const MEASUREMENT_FIELD_DEFS = [
+    { key: "distanceUnit", label: "Distance Unit", type: "select", options: [
+      { value: "ft", label: "Feet" },
+      { value: "m", label: "Meters" }
+    ] }
+  ];
   const OBJECT_TEMPLATES = [
     { objectType: "IncidentCommand", label: "Incident Command Post", category: "Command", geometryType: "point", color: "#f3c613", defaults: { incidentName: "", ICName: "", channel: "" } },
     { objectType: "Staging", label: "Staging Area", category: "Command", geometryType: "point", color: "#0d6efd", defaults: { capacity: "", stagingManager: "", apparatusCount: "" } },
@@ -98,6 +105,7 @@
     { objectType: "Rehab", label: "Medical / Rehab", category: "Operations", geometryType: "point", color: "#94d82d", defaults: { medicUnit: "", capacity: "" } },
     { objectType: "Hydrant", label: "Water Supply / Hydrant", category: "Operations", geometryType: "point", color: "#4dabf7", defaults: { flowRate: "" } },
     { objectType: "HoseLine", label: "Hose Line / Tactical Line", category: "Operations", geometryType: "line", color: "#ff922b", defaults: { diameter: "", assignment: "" } },
+    { objectType: MEASUREMENT_OBJECT_TYPE, label: "Measurement", category: "Operations", geometryType: "line", color: "#ff6b35", defaults: { distanceUnit: "ft" }, fieldDefs: MEASUREMENT_FIELD_DEFS },
     { objectType: "HotZone", label: "Hot Zone", category: "HazMat", geometryType: "polygon", color: "#e03131", defaults: {} },
     { objectType: "WarmZone", label: "Warm Zone", category: "HazMat", geometryType: "polygon", color: "#f08c00", defaults: {} },
     { objectType: "ColdZone", label: "Cold Zone", category: "HazMat", geometryType: "polygon", color: "#1c7ed6", defaults: {} },
@@ -427,6 +435,9 @@
     paletteSearchInput: document.getElementById("paletteSearchInput"),
     clearPaletteSearchBtn: document.getElementById("clearPaletteSearchBtn"),
     paletteContainer: document.getElementById("paletteContainer"),
+    topbarSettingsMenu: document.getElementById("topbarSettingsMenu"),
+    topbarSettingsBtn: document.getElementById("topbarSettingsBtn"),
+    topbarSettingsDropdown: document.getElementById("topbarSettingsDropdown"),
     helpTutorialBtn: document.getElementById("helpTutorialBtn"),
     attachImageBtn: document.getElementById("attachImageBtn"),
     printExportBtn: document.getElementById("printExportBtn"),
@@ -760,6 +771,7 @@
     themeMode: "auto",
     incidentFocusSignature: "",
     weatherPanelOpen: false,
+    topbarSettingsOpen: false,
     weatherLoading: false,
     weatherData: null,
     weatherError: "",
@@ -1248,6 +1260,28 @@
     elements.scenarioFileInput.addEventListener("change", onScenarioFileSelected);
     elements.paletteSearchInput.addEventListener("input", onPaletteSearchInput);
     elements.clearPaletteSearchBtn.addEventListener("click", clearPaletteSearch);
+    elements.topbarSettingsBtn?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleTopbarSettingsMenu();
+    });
+    elements.topbarSettingsDropdown?.addEventListener("click", (event) => {
+      const button = event.target instanceof Element ? event.target.closest("button") : null;
+      if (button) {
+        closeTopbarSettingsMenu();
+      }
+    });
+    document.addEventListener("click", (event) => {
+      if (!state.topbarSettingsOpen) return;
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (elements.topbarSettingsMenu?.contains(target)) return;
+      closeTopbarSettingsMenu();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && state.topbarSettingsOpen) {
+        closeTopbarSettingsMenu();
+      }
+    });
     elements.helpTutorialBtn?.addEventListener("click", openGuideTour);
     elements.attachImageBtn?.addEventListener("click", beginAttachmentFlow);
     elements.createSessionBtn.addEventListener("click", onCreateSession);
@@ -2779,11 +2813,50 @@
     syncIncidentFocusLockState();
   }
 
+  function closeTopbarSettingsMenu() {
+    if (!state.topbarSettingsOpen) return;
+    state.topbarSettingsOpen = false;
+    renderTopbarSettingsMenu();
+  }
+
+  function getVisibleTopbarSettingsItems() {
+    return [
+      elements.helpTutorialBtn,
+      elements.guidedModeBtn,
+      elements.afterActionModeBtn,
+      elements.printExportBtn
+    ].filter((button) => button && !button.classList.contains("hidden"));
+  }
+
+  function renderTopbarSettingsMenu() {
+    if (!elements.topbarSettingsMenu || !elements.topbarSettingsBtn || !elements.topbarSettingsDropdown) return;
+    const hasVisibleItems = getVisibleTopbarSettingsItems().length > 0;
+    if (!hasVisibleItems) {
+      state.topbarSettingsOpen = false;
+    }
+    const open = hasVisibleItems && state.topbarSettingsOpen;
+    elements.topbarSettingsMenu.classList.toggle("hidden", !hasVisibleItems);
+    elements.topbarSettingsBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    elements.topbarSettingsDropdown.classList.toggle("hidden", !open);
+  }
+
+  function toggleTopbarSettingsMenu() {
+    const hasVisibleItems = getVisibleTopbarSettingsItems().length > 0;
+    if (!hasVisibleItems) {
+      state.topbarSettingsOpen = false;
+      renderTopbarSettingsMenu();
+      return;
+    }
+    state.topbarSettingsOpen = !state.topbarSettingsOpen;
+    renderTopbarSettingsMenu();
+  }
+
   function renderGuidedControls() {
     elements.guidedSetupToggle.checked = state.guidedMode;
     elements.guidedModeBtn.textContent = state.guidedMode ? "Hide IC Mode" : "10-Minute IC Mode";
     elements.quickFlowPanel.classList.toggle("collapsed", !state.guidedMode);
     elements.appView.classList.toggle("guided-collapsed", !state.guidedMode);
+    renderTopbarSettingsMenu();
   }
 
   function renderGuideControls() {
@@ -2796,6 +2869,7 @@
     if (!visible) {
       closeGuideTour({ silent: true });
     }
+    renderTopbarSettingsMenu();
   }
 
   function ensureGuidePanelVisible(panelKey) {
@@ -2996,6 +3070,7 @@
   }
 
   function openGuideTour() {
+    closeTopbarSettingsMenu();
     const visible = (Boolean(state.activeSession) || isScenarioReviewMode())
       && !state.ics202Open
       && !state.commandStructureOpen
@@ -3083,6 +3158,7 @@
     const visible = (Boolean(state.activeSession) || isScenarioReviewMode()) && !state.viewerMode;
     elements.afterActionPanel.classList.toggle("hidden", !visible || !state.afterActionPanelVisible);
     elements.afterActionModeBtn.classList.toggle("hidden", !visible);
+    renderTopbarSettingsMenu();
     if (!visible) return;
 
     const hasHistory = state.playbackEntries.length > 0;
@@ -3269,6 +3345,7 @@
     elements.showViewerQrBtn.classList.toggle("hidden", !viewerQrAllowed || !state.activeSession || state.viewerMode || isScenarioReviewMode());
     elements.toggleViewerAccessBtn.classList.toggle("hidden", !viewerToggleVisible || !state.activeSession || state.viewerMode || isScenarioReviewMode());
     elements.toggleViewerAccessBtn.textContent = isViewerAccessEnabled() ? "Disable Viewer Access" : "Enable Viewer Access";
+    renderTopbarSettingsMenu();
     elements.joinLockedNote.classList.toggle("hidden", signedIn && licensed);
     if (elements.joinLockedNote) {
       elements.joinLockedNote.textContent = !signedIn
@@ -3693,6 +3770,72 @@
   function formatErgDistance(valueMeters, unit = "ft") {
     const value = convertMetersToDistance(valueMeters, unit);
     return `${Math.round(value)} ${unit}`;
+  }
+
+  function isMeasurementObject(object) {
+    return object?.objectType === MEASUREMENT_OBJECT_TYPE;
+  }
+
+  function getMeasurementDistanceMeters(object) {
+    if (!isMeasurementObject(object)) return 0;
+    const points = Array.isArray(object?.geometry?.points) ? object.geometry.points : [];
+    if (points.length < 2) return 0;
+    const start = points[0];
+    const end = points[points.length - 1];
+    if (!start || !end) return 0;
+    return L.latLng(Number(start.lat), Number(start.lng)).distanceTo(L.latLng(Number(end.lat), Number(end.lng)));
+  }
+
+  function formatMeasurementDistance(valueMeters, unit = "ft") {
+    const value = convertMetersToDistance(valueMeters, unit === "m" ? "m" : "ft");
+    if (unit === "m") {
+      return `${value >= 10 ? Math.round(value) : value.toFixed(1)} m`;
+    }
+    return `${value >= 10 ? Math.round(value) : value.toFixed(1)} ft`;
+  }
+
+  function getMeasurementMidpoint(points) {
+    if (!Array.isArray(points) || points.length < 2 || !state.map) return null;
+    const start = points[0];
+    const end = points[points.length - 1];
+    const startPoint = state.map.latLngToLayerPoint([Number(start.lat), Number(start.lng)]);
+    const endPoint = state.map.latLngToLayerPoint([Number(end.lat), Number(end.lng)]);
+    return state.map.layerPointToLatLng(L.point((startPoint.x + endPoint.x) / 2, (startPoint.y + endPoint.y) / 2));
+  }
+
+  async function persistMeasurementGeometryUpdate(object, nextPoints) {
+    const previousGeometry = deepClone(object.geometry);
+    const nextGeometry = {
+      points: nextPoints.map((point) => ({
+        lat: roundCoord(point.lat),
+        lng: roundCoord(point.lng)
+      }))
+    };
+    try {
+      state.objects.set(object.id, {
+        ...object,
+        geometry: nextGeometry
+      });
+      syncMapObjects();
+      renderSelectedObject();
+      await queueUpdateMutation({
+        objectId: object.id,
+        mutationType: "update",
+        geometryType: object.geometryType,
+        geometry: nextGeometry,
+        fields: object.fields,
+        baseVersion: object.version
+      }, true);
+      setStatus("Measurement updated and saved.");
+    } catch (error) {
+      state.objects.set(object.id, {
+        ...object,
+        geometry: previousGeometry
+      });
+      syncMapObjects();
+      renderSelectedObject();
+      setStatus(formatError(error));
+    }
   }
 
   function resolveErgWindBucketFromMph(value) {
@@ -7443,6 +7586,10 @@
       appendMetaRow(elements.selectedObjectMeta, "Wind From", `${Math.round(Number(object.fields?.windFrom || 0))}°`);
       appendMetaRow(elements.selectedObjectMeta, "Wind Source", object.fields?.windSource === "live" ? "Live Weather" : "Manual");
       appendMetaRow(elements.selectedObjectMeta, "Last Wind Update", object.fields?.lastWindUpdatedAt ? formatDateTime(object.fields.lastWindUpdatedAt) : "Not yet updated");
+    } else if (isMeasurementObject(object)) {
+      const unit = object.fields?.distanceUnit === "m" ? "m" : "ft";
+      appendMetaRow(elements.selectedObjectMeta, "Distance", formatMeasurementDistance(getMeasurementDistanceMeters(object), unit));
+      appendMetaRow(elements.selectedObjectMeta, "Handles", "Drag either end pin to update the measurement.");
     } else if (object.objectType === ICON_MARKER_OBJECT_TYPE) {
       appendMetaRow(elements.selectedObjectMeta, "Category", object.fields?.iconCategory || "Legacy Icons");
       if (isAttachmentObject(object)) {
@@ -8523,6 +8670,8 @@
     const template = resolveTemplateForObject(object);
     const color = template?.color || "#f3c613";
     let layer = null;
+    let tooltipTarget = null;
+    let clickableLayers = [];
     if (object.geometryType === "point") {
       const icon = buildPointObjectIcon(object, template, color);
       layer = L.marker([object.geometry.lat, object.geometry.lng], {
@@ -8584,12 +8733,91 @@
           }
         });
       }
+      tooltipTarget = layer;
+      clickableLayers = [layer];
     } else if (object.geometryType === "line") {
-      layer = L.polyline(toLeafletLatLngs(object.geometry.points), { color, weight: 4, opacity: 0.9 });
+      if (isMeasurementObject(object)) {
+        const points = Array.isArray(object.geometry?.points) ? object.geometry.points : [];
+        const latLngs = toLeafletLatLngs(points);
+        const lineLayer = L.polyline(latLngs, { color, weight: 4, opacity: 0.95 });
+        const measurementLayers = [lineLayer];
+        const endpointPoints = points.length >= 2 ? [points[0], points[points.length - 1]] : [];
+        endpointPoints.forEach((point, index) => {
+          const handle = L.marker([point.lat, point.lng], {
+            draggable: canEditObject(object) && sessionIsActive(),
+            icon: L.divIcon({
+              className: "measurement-endpoint-icon",
+              html: `<div class="measurement-endpoint-handle" style="--measurement-color:${color}"></div>`,
+              iconSize: [16, 16],
+              iconAnchor: [8, 8]
+            }),
+            zIndexOffset: 1200
+          });
+          if (canEditObject(object) && sessionIsActive()) {
+            handle.on("dragstart", async () => {
+              if (!sessionIsActive()) {
+                setStatus("This session is now read-only.");
+                syncMapObjects();
+                return;
+              }
+              try {
+                await acquireObjectLock(object, { syncUI: false });
+              } catch (error) {
+                setStatus(formatError(error));
+              }
+            });
+            handle.on("dragend", async (event) => {
+              if (!sessionIsActive()) {
+                syncMapObjects();
+                setStatus("This session is now read-only.");
+                return;
+              }
+              const latlng = event.target.getLatLng();
+              const nextPoints = points.map((entry) => ({ lat: Number(entry.lat), lng: Number(entry.lng) }));
+              if (!nextPoints[index]) return;
+              nextPoints[index] = { lat: roundCoord(latlng.lat), lng: roundCoord(latlng.lng) };
+              try {
+                await persistMeasurementGeometryUpdate(object, nextPoints);
+              } finally {
+                try {
+                  await releaseObjectLock(object.id);
+                } catch (error) {
+                  setStatus(formatError(error));
+                }
+              }
+            });
+          }
+          measurementLayers.push(handle);
+        });
+        const midpoint = getMeasurementMidpoint(points);
+        if (midpoint) {
+          const unit = object.fields?.distanceUnit === "m" ? "m" : "ft";
+          const labelMarker = L.marker(midpoint, {
+            interactive: false,
+            keyboard: false,
+            icon: L.divIcon({
+              className: "measurement-distance-icon",
+              html: `<div class="measurement-distance-label">${escapeHtml(formatMeasurementDistance(getMeasurementDistanceMeters(object), unit))}</div>`,
+              iconSize: [0, 0],
+              iconAnchor: [0, 0]
+            })
+          });
+          measurementLayers.push(labelMarker);
+        }
+        layer = L.featureGroup(measurementLayers);
+        tooltipTarget = lineLayer;
+        clickableLayers = measurementLayers.filter((entry) => typeof entry.on === "function" && entry.options?.interactive !== false);
+      } else {
+        layer = L.polyline(toLeafletLatLngs(object.geometry.points), { color, weight: 4, opacity: 0.9 });
+        tooltipTarget = layer;
+        clickableLayers = [layer];
+      }
     } else {
       layer = L.polygon(toLeafletLatLngs(object.geometry.points), { color, weight: 2, fillColor: color, fillOpacity: 0.18 });
+      tooltipTarget = layer;
+      clickableLayers = [layer];
     }
-    layer.on("click", async (event) => {
+    (clickableLayers.length ? clickableLayers : [layer]).forEach((clickLayer) => clickLayer.on("click", async (event) => {
       if (state.pendingIsolationConfig && event?.latlng) {
         if (typeof event.originalEvent?.stopPropagation === "function") {
           event.originalEvent.stopPropagation();
@@ -8605,9 +8833,9 @@
       if (isAttachmentObject(object)) {
         openAttachmentPreview(object);
       }
-    });
+    }));
     const tooltip = buildObjectTooltip(object);
-    if (tooltip) layer.bindTooltip(tooltip);
+    if (tooltip && tooltipTarget) tooltipTarget.bindTooltip(tooltip);
     layer.addTo(state.objectLayerGroup);
     state.layers.set(object.id, layer);
   }
@@ -9363,6 +9591,10 @@
         ? Number(object.fields?.initialMeters || 0)
         : Number(object.fields?.evacMeters || 0);
       parts.push(`${Math.round(convertMetersToDistance(distanceMeters, unit))} ${unit} · wind ${Math.round(Number(object.fields?.windFrom || 0))}°`);
+    } else if (isMeasurementObject(object)) {
+      const unit = object.fields?.distanceUnit === "m" ? "m" : "ft";
+      parts.push(formatMeasurementDistance(getMeasurementDistanceMeters(object), unit));
+      parts.push("Drag end pins to update");
     } else if (object.objectType === ICON_MARKER_OBJECT_TYPE && object.fields?.iconCategory) {
       parts.push(object.fields.iconCategory);
       if (isAttachmentObject(object)) {
@@ -9896,6 +10128,7 @@
       hidePrintExportModal();
     }
     elements.printExportBtn.disabled = !visible || (!hasMapObjects && !hasCostRows && !hasLiveSession);
+    renderTopbarSettingsMenu();
     elements.exportCostCsvBtn.disabled = !hasCostRows;
     elements.exportCostPdfBtn.disabled = !hasCostRows;
     elements.printMapBtn.disabled = !hasMapObjects;
