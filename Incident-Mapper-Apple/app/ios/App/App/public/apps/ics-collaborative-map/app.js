@@ -10669,7 +10669,8 @@
       setStatus(`Map PDF downloaded: ${filename}`);
     } catch (error) {
       console.error("Unable to export map PDF.", error);
-      setStatus("Map PDF export failed.");
+      const detail = error?.message ? ` (${error.message})` : "";
+      setStatus(`Map PDF export failed${detail}.`);
     }
   }
 
