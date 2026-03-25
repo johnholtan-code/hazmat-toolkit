@@ -10519,7 +10519,7 @@
     hidePrintExportModal();
     closeMapStyleTray();
     state.weatherPanelOpen = false;
-    renderWeatherPanel();
+    renderWeatherUI();
 
     try {
       state.map.invalidateSize({ pan: false, animate: false });
@@ -10550,7 +10550,7 @@
       state.mapStyleTrayOpen = previousMapStyleTrayOpen;
       renderMapStyleTray();
       state.weatherPanelOpen = previousWeatherPanelOpen;
-      renderWeatherPanel();
+      renderWeatherUI();
       state.map.setView(previousCenter, previousZoom, { animate: false });
       await waitForMapMoveEnd();
       await waitForActiveTilesLoaded();
