@@ -100,13 +100,10 @@
         }
         shared = true;
       } catch (error) {
-        if (options?.requireSharePrompt) {
-          throw error;
-        }
         console.warn("Capacitor share failed after file write; file remains saved", error);
       }
     } else if (options?.requireSharePrompt) {
-      throw new Error("Capacitor Share plugin unavailable");
+      console.warn("Capacitor Share plugin unavailable; file remains saved locally.");
     }
 
     return {
