@@ -21,6 +21,8 @@
   const FREEHAND_MIN_POINT_DISTANCE_PX = 6;
   const WEATHER_REFRESH_MS = 5 * 60 * 1000;
   const WEATHER_API_BASE_URL = (config.weatherApiBaseUrl || "https://api.open-meteo.com/v1/forecast").replace(/\/$/, "");
+  const GEOCODE_API_BASE_URL = (config.geocodeApiBaseUrl || "https://nominatim.openstreetmap.org/search").replace(/\/$/, "");
+  const ROUTE_API_BASE_URL = (config.routeApiBaseUrl || "https://router.project-osrm.org/route/v1/driving").replace(/\/$/, "");
   const ICON_MANIFEST_URL = "./icon-manifest.json";
   const themeMediaQuery = window.matchMedia
     ? window.matchMedia("(prefers-color-scheme: dark)")
@@ -37,6 +39,9 @@
   const CONSUMABLES_CATEGORY = "Consumables";
   const CUSTOM_EQUIPMENT_ID = "custom_equipment";
   const CUSTOM_CONSUMABLE_ID = "custom_consumable";
+  const STATION_ROUTE_OBJECT_TYPE = "AccessRoute";
+  const STATION_ROUTE_COST_CODE = "MILEAGE";
+  const STATION_ROUTE_OBJECT_TAG = "department_station_route";
   const RATE_CATALOGS = window.HAZMAT_RATE_CATALOGS || { equipment: [], consumables: [] };
   const COSTED_RESOURCE_CATEGORIES = new Set([EQUIPMENT_CATEGORY, CONSUMABLES_CATEGORY]);
   const ICS_ROLES = [
@@ -391,6 +396,11 @@
     departmentAdminSummary: document.getElementById("departmentAdminSummary"),
     departmentAdminNameInput: document.getElementById("departmentAdminNameInput"),
     departmentAdminEmailInput: document.getElementById("departmentAdminEmailInput"),
+    departmentStationNameInput: document.getElementById("departmentStationNameInput"),
+    departmentStationAddressInput: document.getElementById("departmentStationAddressInput"),
+    departmentMileageRateInput: document.getElementById("departmentMileageRateInput"),
+    departmentStationCoordinates: document.getElementById("departmentStationCoordinates"),
+    departmentStationSaveBtn: document.getElementById("departmentStationSaveBtn"),
     departmentAdminIsAdminInput: document.getElementById("departmentAdminIsAdminInput"),
     departmentAdminIsActiveInput: document.getElementById("departmentAdminIsActiveInput"),
     departmentAdminAddBtn: document.getElementById("departmentAdminAddBtn"),
@@ -451,6 +461,7 @@
     exportCostPdfBtn: document.getElementById("exportCostPdfBtn"),
     ics202WorkspaceBtn: document.getElementById("ics202WorkspaceBtn"),
     commandStructureWorkspaceBtn: document.getElementById("commandStructureWorkspaceBtn"),
+    routeFromStationBtn: document.getElementById("routeFromStationBtn"),
     setIncidentFocusBtn: document.getElementById("setIncidentFocusBtn"),
     centerIncidentBtn: document.getElementById("centerIncidentBtn"),
     closeScenarioReviewBtn: document.getElementById("closeScenarioReviewBtn"),
@@ -655,6 +666,9 @@
     superAdminLicenseStatusSelect: document.getElementById("superAdminLicenseStatusSelect"),
     superAdminFirstAdminNameInput: document.getElementById("superAdminFirstAdminNameInput"),
     superAdminFirstAdminEmailInput: document.getElementById("superAdminFirstAdminEmailInput"),
+    superAdminStationNameInput: document.getElementById("superAdminStationNameInput"),
+    superAdminStationAddressInput: document.getElementById("superAdminStationAddressInput"),
+    superAdminMileageRateInput: document.getElementById("superAdminMileageRateInput"),
     superAdminCreateOrgBtn: document.getElementById("superAdminCreateOrgBtn"),
     superAdminOrganizationsList: document.getElementById("superAdminOrganizationsList"),
     superAdminUsersOrgFilter: document.getElementById("superAdminUsersOrgFilter"),
@@ -1252,6 +1266,9 @@
     elements.superAdminWorkspaceBtn?.addEventListener("click", openSuperAdminWorkspace);
     elements.departmentAdminPanelToggle?.addEventListener("click", () => toggleLandingSection("departmentAdmin"));
     elements.departmentAdminAddBtn?.addEventListener("click", onAddOrganizationMember);
+    elements.departmentStationSaveBtn?.addEventListener("click", () => {
+      void saveDepartmentStationDefaults();
+    });
     elements.createSessionPanelToggle.addEventListener("click", () => toggleLandingSection("createSession"));
     elements.sessionListPanelToggle.addEventListener("click", () => toggleLandingSection("reviewSessions"));
     elements.scenarioReviewPanelToggle.addEventListener("click", () => toggleLandingSection("reviewScenario"));
@@ -1293,6 +1310,9 @@
     elements.guidedModeBtn.addEventListener("click", () => toggleGuidedMode(!state.guidedMode));
     elements.afterActionModeBtn.addEventListener("click", onAfterActionModeAction);
     elements.printExportBtn.addEventListener("click", showPrintExportModal);
+    elements.routeFromStationBtn?.addEventListener("click", () => {
+      void routeFromDepartmentStation();
+    });
     elements.isolationToolBtn.addEventListener("click", openIsolationToolModal);
     elements.exportCostCsvBtn.addEventListener("click", exportCostCsv);
     elements.exportCostPdfBtn.addEventListener("click", exportCostPdf);
@@ -2125,6 +2145,224 @@
     }
   }
 
+  async function geocodeStationAddress(stationAddress) {
+    const query = String(stationAddress || "").trim();
+    if (!query) {
+      throw new Error("Enter a station address first.");
+    }
+    const url = new URL(GEOCODE_API_BASE_URL);
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("limit", "1");
+    url.searchParams.set("q", query);
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json"
+      }
+    });
+    const payload = await parseJsonSafely(response);
+    if (!response.ok) {
+      throw new Error(`Station geocode failed (${response.status}).`);
+    }
+    const match = Array.isArray(payload) ? payload[0] : null;
+    const lat = Number(match?.lat);
+    const lng = Number(match?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw new Error("Unable to geocode that station address.");
+    }
+    return {
+      lat: roundCoord(lat),
+      lng: roundCoord(lng),
+      label: String(match?.display_name || query).trim()
+    };
+  }
+
+  async function buildStationPayload({ stationName, stationAddress, defaultMileageRate, fallbackStationName = "" }) {
+    const normalizedName = String(stationName || "").trim() || String(fallbackStationName || "").trim();
+    const normalizedAddress = String(stationAddress || "").trim();
+    const rateRaw = String(defaultMileageRate ?? "").trim();
+    const mileageRate = rateRaw === "" ? null : Number(rateRaw);
+    if (rateRaw !== "" && (!Number.isFinite(mileageRate) || mileageRate < 0)) {
+      throw new Error("Enter a valid default mileage rate.");
+    }
+    if (!normalizedName && !normalizedAddress && rateRaw === "") {
+      return {
+        stationName: null,
+        stationAddress: null,
+        stationLat: null,
+        stationLng: null,
+        defaultMileageRate: null
+      };
+    }
+    if (!normalizedName || !normalizedAddress) {
+      throw new Error("Enter both the station name and station address.");
+    }
+    const geocoded = await geocodeStationAddress(normalizedAddress);
+    return {
+      stationName: normalizedName,
+      stationAddress: normalizedAddress,
+      stationLat: geocoded.lat,
+      stationLng: geocoded.lng,
+      defaultMileageRate: mileageRate == null ? null : round2(mileageRate)
+    };
+  }
+
+  async function saveDepartmentStationDefaults() {
+    if (!state.organizationContext?.isAdmin || !hasActiveOrganizationAccess()) {
+      setStatus("Department admin access is required.");
+      return;
+    }
+    const stationName = elements.departmentStationNameInput?.value.trim() || "";
+    const stationAddress = elements.departmentStationAddressInput?.value.trim() || "";
+    setStatus("Saving department station defaults…");
+    try {
+      const stationPayload = await buildStationPayload({
+        stationName,
+        stationAddress,
+        defaultMileageRate: elements.departmentMileageRateInput?.value.trim() || "",
+        fallbackStationName: state.organizationContext?.organizationName || ""
+      });
+      const result = await apiFetch("/v1/ics-collab/admin/organization", {
+        method: "PATCH",
+        actorType: "commander",
+        body: stationPayload
+      });
+      state.organizationSummary = result?.organization || state.organizationSummary;
+      state.organizationContext = result?.membership || state.organizationContext;
+      state.organizationRoster = Array.isArray(result?.roster) ? result.roster : state.organizationRoster;
+      renderCommanderAuthPanels();
+      renderDepartmentAdminPanel();
+      setStatus(`${stationName} saved as the default station.`);
+    } catch (error) {
+      setStatus(formatError(error));
+    }
+  }
+
+  async function fetchStationRoute(origin, destination) {
+    const url = new URL(`${ROUTE_API_BASE_URL}/${origin.lng},${origin.lat};${destination.lng},${destination.lat}`);
+    url.searchParams.set("overview", "full");
+    url.searchParams.set("geometries", "geojson");
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json"
+      }
+    });
+    const payload = await parseJsonSafely(response);
+    if (!response.ok) {
+      throw new Error(`Routing failed (${response.status}).`);
+    }
+    const route = Array.isArray(payload?.routes) ? payload.routes[0] : null;
+    const coords = Array.isArray(route?.geometry?.coordinates) ? route.geometry.coordinates : [];
+    const points = coords
+      .map((entry) => ({
+        lat: roundCoord(Number(entry?.[1])),
+        lng: roundCoord(Number(entry?.[0]))
+      }))
+      .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+    const distanceMeters = Number(route?.distance);
+    if (!points.length || !Number.isFinite(distanceMeters) || distanceMeters <= 0) {
+      throw new Error("Unable to build a drivable route from the station to the incident focus.");
+    }
+    return {
+      points,
+      distanceMeters: round2(distanceMeters),
+      distanceMiles: round2(distanceMeters / 1609.344)
+    };
+  }
+
+  function findDepartmentStationRouteObject() {
+    const organizationId = String(state.organizationContext?.organizationId || "").trim();
+    if (!organizationId) return null;
+    return Array.from(state.objects.values()).find((object) => {
+      return !object.isDeleted
+        && object.objectType === STATION_ROUTE_OBJECT_TYPE
+        && String(object.fields?.stationRouteTag || "") === STATION_ROUTE_OBJECT_TAG
+        && String(object.fields?.stationRouteOrganizationId || "") === organizationId;
+    }) || null;
+  }
+
+  async function routeFromDepartmentStation() {
+    if (!state.activeSession || !canCreateObjects()) {
+      setStatus("You must be editing an active session to route from station.");
+      return;
+    }
+    const station = getDepartmentStationProfile();
+    if (!station) {
+      setStatus("Save a default station before creating a route.");
+      return;
+    }
+    const incidentFocus = getIncidentFocusPoint();
+    if (!incidentFocus) {
+      setStatus("Set the incident focus first so the route has a destination.");
+      return;
+    }
+    setStatus("Routing from department station…");
+    try {
+      const route = await fetchStationRoute(
+        { lat: station.stationLat, lng: station.stationLng },
+        { lat: incidentFocus.lat, lng: incidentFocus.lng }
+      );
+      const displayLabel = `${station.stationName} to ${incidentFocus.label || "Incident"} Mileage Route`;
+      const nextFields = {
+        ...(findDepartmentStationRouteObject()?.fields || {}),
+        stationRouteTag: STATION_ROUTE_OBJECT_TAG,
+        stationRouteOrganizationId: state.organizationContext?.organizationId || "",
+        stationRouteOriginName: station.stationName,
+        stationRouteOriginAddress: station.stationAddress,
+        stationRouteDestinationLabel: incidentFocus.label || "Incident Focus",
+        stationRouteDistanceMeters: route.distanceMeters,
+        stationRouteDistanceMiles: route.distanceMiles,
+        displayLabel,
+        resourceType: "custom",
+        resourceTemplateId: "department_station_mileage_route",
+        resourceCategory: EQUIPMENT_CATEGORY,
+        company: state.organizationContext?.organizationName || "",
+        billingModel: "quantity",
+        unit: "mile",
+        quantity: route.distanceMiles,
+        costRate: station.defaultMileageRate,
+        costCode: STATION_ROUTE_COST_CODE,
+        description: "Department station to incident mileage route",
+        manufacturer: "",
+        specification: "Road route",
+        customResource: true,
+        placedAt: new Date().toISOString(),
+        demobilizedAt: "",
+        notes: `${station.stationAddress} to ${incidentFocus.label || "Incident Focus"}`
+      };
+      const existingRoute = findDepartmentStationRouteObject();
+      if (existingRoute) {
+        await queueUpdateMutation({
+          objectId: existingRoute.id,
+          mutationType: "update",
+          geometryType: existingRoute.geometryType,
+          geometry: { points: route.points },
+          fields: nextFields,
+          baseVersion: existingRoute.version
+        }, true);
+      } else {
+        const baseTemplate = templateByType[STATION_ROUTE_OBJECT_TYPE] || {
+          objectType: STATION_ROUTE_OBJECT_TYPE,
+          label: displayLabel,
+          category: "Operations",
+          geometryType: "line",
+          color: "#63c174",
+          defaults: {}
+        };
+        await createObject({
+          ...baseTemplate,
+          label: displayLabel,
+          defaults: {
+            ...(baseTemplate.defaults || {}),
+            ...nextFields
+          }
+        }, { points: route.points });
+      }
+      setStatus(`${displayLabel} updated at ${route.distanceMiles.toFixed(2)} miles.`);
+    } catch (error) {
+      setStatus(formatError(error));
+    }
+  }
+
   async function updateOrganizationMember(memberId, updates, successMessage) {
     if (!state.organizationContext?.isAdmin || !hasActiveOrganizationAccess()) {
       setStatus("Department admin access is required.");
@@ -2156,6 +2394,9 @@
     const licenseStatus = elements.superAdminLicenseStatusSelect?.value || "active";
     const firstAdminName = elements.superAdminFirstAdminNameInput?.value.trim();
     const firstAdminEmail = elements.superAdminFirstAdminEmailInput?.value.trim().toLowerCase();
+    const stationName = elements.superAdminStationNameInput?.value.trim() || "";
+    const stationAddress = elements.superAdminStationAddressInput?.value.trim() || "";
+    const defaultMileageRate = elements.superAdminMileageRateInput?.value.trim() || "";
     if (!organizationName) {
       setStatus("Enter the department or station name.");
       return;
@@ -2166,6 +2407,12 @@
     }
     setStatus("Creating department license…");
     try {
+      const stationPayload = await buildStationPayload({
+        stationName,
+        stationAddress,
+        defaultMileageRate,
+        fallbackStationName: organizationName
+      });
       await apiFetch("/v1/ics-collab/super-admin/organizations", {
         method: "POST",
         actorType: "commander",
@@ -2175,7 +2422,8 @@
           seatLimit: seatLimit || null,
           licenseStatus,
           firstAdminName: firstAdminName || undefined,
-          firstAdminEmail: firstAdminEmail || undefined
+          firstAdminEmail: firstAdminEmail || undefined,
+          ...stationPayload
         }
       });
       if (elements.superAdminOrgNameInput) elements.superAdminOrgNameInput.value = "";
@@ -2184,6 +2432,9 @@
       if (elements.superAdminLicenseStatusSelect) elements.superAdminLicenseStatusSelect.value = "active";
       if (elements.superAdminFirstAdminNameInput) elements.superAdminFirstAdminNameInput.value = "";
       if (elements.superAdminFirstAdminEmailInput) elements.superAdminFirstAdminEmailInput.value = "";
+      if (elements.superAdminStationNameInput) elements.superAdminStationNameInput.value = "";
+      if (elements.superAdminStationAddressInput) elements.superAdminStationAddressInput.value = "";
+      if (elements.superAdminMileageRateInput) elements.superAdminMileageRateInput.value = "";
       await refreshSuperAdminWorkspace();
       setSuperAdminTab("organizations");
       setStatus(`${organizationName} is now provisioned.`);
@@ -3336,6 +3587,53 @@
     );
   }
 
+  function getDepartmentStationProfile(source = state.organizationSummary || state.organizationContext) {
+    if (!source) return null;
+    const stationName = String(source.stationName || "").trim();
+    const stationAddress = String(source.stationAddress || "").trim();
+    const stationLat = Number(source.stationLat);
+    const stationLng = Number(source.stationLng);
+    const defaultMileageRate = Number(source.defaultMileageRate);
+    if (
+      !stationName
+      || !stationAddress
+      || !Number.isFinite(stationLat)
+      || !Number.isFinite(stationLng)
+      || !Number.isFinite(defaultMileageRate)
+      || defaultMileageRate < 0
+    ) {
+      return null;
+    }
+    return {
+      stationName,
+      stationAddress,
+      stationLat: roundCoord(stationLat),
+      stationLng: roundCoord(stationLng),
+      defaultMileageRate: round2(defaultMileageRate)
+    };
+  }
+
+  function formatDepartmentStationCoordinates(source = state.organizationSummary || state.organizationContext) {
+    const stationName = String(source?.stationName || "").trim();
+    const stationAddress = String(source?.stationAddress || "").trim();
+    const stationLat = Number(source?.stationLat);
+    const stationLng = Number(source?.stationLng);
+    const rate = Number(source?.defaultMileageRate);
+    if (!stationName && !stationAddress && !Number.isFinite(stationLat) && !Number.isFinite(stationLng)) {
+      return "Coordinates not saved yet.";
+    }
+    const parts = [];
+    if (stationName) parts.push(stationName);
+    if (stationAddress) parts.push(stationAddress);
+    if (Number.isFinite(stationLat) && Number.isFinite(stationLng)) {
+      parts.push(`${stationLat.toFixed(5)}, ${stationLng.toFixed(5)}`);
+    }
+    if (Number.isFinite(rate)) {
+      parts.push(`${formatCurrency(rate)} / mile`);
+    }
+    return parts.join(" · ");
+  }
+
   function renderCommanderAuthPanels() {
     const signedIn = Boolean(state.commanderAuth?.accessToken);
     const recoveryMode = Boolean(state.passwordRecovery?.accessToken);
@@ -3400,6 +3698,18 @@
     elements.leaveSessionBtn.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode());
     elements.ics202WorkspaceBtn.classList.toggle("hidden", (!(state.activeSession || isScenarioReviewMode()) || state.viewerMode));
     elements.commandStructureWorkspaceBtn.classList.toggle("hidden", (!(state.activeSession || isScenarioReviewMode()) || state.viewerMode));
+    const routeFromStationVisible = Boolean(
+      state.activeSession
+      && !isScenarioReviewMode()
+      && !state.viewerMode
+      && canCreateObjects()
+      && getDepartmentStationProfile()
+      && getIncidentFocusPoint()
+    );
+    elements.routeFromStationBtn?.classList.toggle("hidden", !routeFromStationVisible);
+    if (elements.routeFromStationBtn) {
+      elements.routeFromStationBtn.disabled = !routeFromStationVisible;
+    }
     elements.attachImageBtn.classList.toggle("hidden", !(Boolean(state.activeSession) || isScenarioReviewMode()) || state.viewerMode);
     elements.isolationToolBtn.classList.toggle("hidden", !(Boolean(state.activeSession) || isScenarioReviewMode()) || state.viewerMode);
     elements.setIncidentFocusBtn.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode() || !isCommander() || Boolean(getIncidentFocusPoint()));
@@ -4559,6 +4869,9 @@
     if (!state.organizationContext?.isAdmin || !hasActiveOrganizationAccess()) {
       elements.departmentAdminSummary.innerHTML = "";
       elements.departmentAdminMemberList.innerHTML = "";
+      if (elements.departmentStationCoordinates) {
+        elements.departmentStationCoordinates.textContent = "Coordinates not saved yet.";
+      }
       return;
     }
     const summary = state.organizationSummary || {
@@ -4566,6 +4879,11 @@
       countyName: state.organizationContext.countyName,
       licenseStatus: state.organizationContext.licenseStatus,
       seatLimit: state.organizationContext.seatLimit,
+      stationName: state.organizationContext.stationName,
+      stationAddress: state.organizationContext.stationAddress,
+      stationLat: state.organizationContext.stationLat,
+      stationLng: state.organizationContext.stationLng,
+      defaultMileageRate: state.organizationContext.defaultMileageRate,
       seatsUsed: state.organizationRoster.length
     };
     const seatsUsed = Number(summary.seatsUsed ?? state.organizationRoster.length ?? 0);
@@ -4588,6 +4906,16 @@
         <div class="value">${seatLimit == null ? `${seatsUsed}` : `${seatsUsed} / ${seatLimit}`}</div>
       </div>
     `;
+    if (elements.departmentStationNameInput) elements.departmentStationNameInput.value = summary.stationName || "";
+    if (elements.departmentStationAddressInput) elements.departmentStationAddressInput.value = summary.stationAddress || "";
+    if (elements.departmentMileageRateInput) {
+      elements.departmentMileageRateInput.value = Number.isFinite(Number(summary.defaultMileageRate))
+        ? String(round2(Number(summary.defaultMileageRate)))
+        : "";
+    }
+    if (elements.departmentStationCoordinates) {
+      elements.departmentStationCoordinates.textContent = formatDepartmentStationCoordinates(summary);
+    }
     elements.departmentAdminMemberList.innerHTML = "";
     if (!state.organizationRoster.length) {
       const empty = document.createElement("div");
@@ -4702,13 +5030,26 @@
       seatInput.type = "number";
       seatInput.min = "0";
       seatInput.value = organization.seatLimit ?? "";
+      const stationNameInput = document.createElement("input");
+      stationNameInput.type = "text";
+      stationNameInput.value = organization.stationName || "";
+      stationNameInput.placeholder = "Station name";
+      const stationAddressInput = document.createElement("input");
+      stationAddressInput.type = "text";
+      stationAddressInput.value = organization.stationAddress || "";
+      stationAddressInput.placeholder = "Station address";
+      const mileageRateInput = document.createElement("input");
+      mileageRateInput.type = "number";
+      mileageRateInput.min = "0";
+      mileageRateInput.step = "0.01";
+      mileageRateInput.value = Number.isFinite(Number(organization.defaultMileageRate)) ? String(round2(Number(organization.defaultMileageRate))) : "";
       const statusSelect = document.createElement("select");
       statusSelect.innerHTML = `
         <option value="active">Active</option>
         <option value="inactive">Inactive</option>
       `;
       statusSelect.value = organization.licenseStatus || "active";
-      fields.append(countyInput, seatInput, statusSelect);
+      fields.append(countyInput, seatInput, statusSelect, stationNameInput, stationAddressInput, mileageRateInput);
 
       const addMemberFields = document.createElement("div");
       addMemberFields.className = "super-admin-inline-grid";
@@ -4738,15 +5079,28 @@
       saveBtn.type = "button";
       saveBtn.textContent = "Save Department";
       saveBtn.addEventListener("click", () => {
-        void updateSuperAdminOrganization(
-          organization.id,
-          {
-            countyName: countyInput.value.trim() || null,
-            seatLimit: seatInput.value.trim() === "" ? null : Number(seatInput.value),
-            licenseStatus: statusSelect.value
-          },
-          `${organization.organizationName} updated.`
-        );
+        void (async () => {
+          try {
+            const stationPayload = await buildStationPayload({
+              stationName: stationNameInput.value.trim(),
+              stationAddress: stationAddressInput.value.trim(),
+              defaultMileageRate: mileageRateInput.value.trim(),
+              fallbackStationName: organization.organizationName
+            });
+            await updateSuperAdminOrganization(
+              organization.id,
+              {
+                countyName: countyInput.value.trim() || null,
+                seatLimit: seatInput.value.trim() === "" ? null : Number(seatInput.value),
+                licenseStatus: statusSelect.value,
+                ...stationPayload
+              },
+              `${organization.organizationName} updated.`
+            );
+          } catch (error) {
+            setStatus(formatError(error));
+          }
+        })();
       });
       const addMemberBtn = document.createElement("button");
       addMemberBtn.className = "secondary";
@@ -4775,6 +5129,7 @@
       card.innerHTML = `
         <strong>${escapeHtml(organization.organizationName)}</strong>
         <div class="muted">${escapeHtml(organization.memberCount)} users · ${escapeHtml(organization.adminCount)} admins · ${escapeHtml(organization.sessionCount)} sessions</div>
+        <div class="muted">${escapeHtml(formatDepartmentStationCoordinates(organization))}</div>
       `;
       card.append(fields, addMemberFields, actions);
       elements.superAdminOrganizationsList.appendChild(card);
@@ -5672,7 +6027,14 @@
     if (object.geometryType === "point" && Number.isFinite(Number(object.geometry.lat)) && Number.isFinite(Number(object.geometry.lng))) {
       return { lat: Number(object.geometry.lat), lng: Number(object.geometry.lng) };
     }
-    const firstPoint = Array.isArray(object.geometry.points) ? object.geometry.points[0] : null;
+    const points = Array.isArray(object.geometry.points) ? object.geometry.points : [];
+    if (points.length) {
+      const midpoint = points[Math.floor(points.length / 2)];
+      if (midpoint && Number.isFinite(Number(midpoint.lat)) && Number.isFinite(Number(midpoint.lng))) {
+        return { lat: Number(midpoint.lat), lng: Number(midpoint.lng) };
+      }
+    }
+    const firstPoint = points[0];
     if (firstPoint && Number.isFinite(Number(firstPoint.lat)) && Number.isFinite(Number(firstPoint.lng))) {
       return { lat: Number(firstPoint.lat), lng: Number(firstPoint.lng) };
     }
@@ -10323,6 +10685,7 @@
 
   function normalizeCostRowsForExport() {
     return getCostedResourceObjects().map((object) => ({
+      ...(getObjectFocusPoint(object) || {}),
       objectId: object.id,
       label: object.fields?.displayLabel || resolveTemplateForObject(object)?.label || "Costed Resource",
       category: object.fields?.resourceCategory || "",
@@ -10338,8 +10701,8 @@
       demobilizedAt: object.fields?.demobilizedAt || "",
       notes: object.fields?.notes || "",
       createdBy: state.participants.find((participant) => participant.id === object.createdByParticipantId)?.displayName || object.createdByParticipantId || "",
-      lat: Number(object.geometry?.lat),
-      lng: Number(object.geometry?.lng)
+      lat: Number((getObjectFocusPoint(object) || {}).lat),
+      lng: Number((getObjectFocusPoint(object) || {}).lng)
     }));
   }
 

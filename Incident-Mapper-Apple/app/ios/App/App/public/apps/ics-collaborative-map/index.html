@@ -41,6 +41,7 @@
           <button id="superAdminWorkspaceBtn" class="secondary hidden" type="button">Super Admin</button>
           <button id="ics202WorkspaceBtn" class="secondary hidden" type="button">ICS 202</button>
           <button id="commandStructureWorkspaceBtn" class="secondary hidden" type="button">Command Structure</button>
+          <button id="routeFromStationBtn" class="secondary hidden" type="button">Route From Station</button>
           <button id="attachImageBtn" class="secondary hidden topbar-icon-btn" type="button" aria-label="Add Image" title="Add Image">
             <span aria-hidden="true">📷</span>
           </button>
@@ -117,6 +118,28 @@
                 <p class="muted">Manage the licensed roster for your department and keep seats aligned to your station membership.</p>
                 <div id="departmentAdminSummary" class="department-admin-summary"></div>
                 <div class="stack department-admin-form">
+                  <h4 class="department-admin-section-title">Default Station</h4>
+                  <div class="department-admin-grid">
+                    <label class="field-block">
+                      Station Name
+                      <input id="departmentStationNameInput" type="text" placeholder="Station 1" />
+                    </label>
+                    <label class="field-block">
+                      Default Mileage Rate
+                      <input id="departmentMileageRateInput" type="number" min="0" step="0.01" placeholder="0.70" />
+                    </label>
+                  </div>
+                  <label class="field-block">
+                    Station Address
+                    <input id="departmentStationAddressInput" type="text" placeholder="123 Main St, Spring, TX" />
+                  </label>
+                  <div class="department-admin-station-meta">
+                    <div id="departmentStationCoordinates" class="muted">Coordinates not saved yet.</div>
+                    <button id="departmentStationSaveBtn" class="secondary" type="button">Save Default Station</button>
+                  </div>
+                </div>
+                <div class="stack department-admin-form">
+                  <h4 class="department-admin-section-title">Department Users</h4>
                   <div class="department-admin-grid">
                     <label class="field-block">
                       User Name
@@ -521,6 +544,18 @@
                 <label class="field-block">
                   First Admin Email
                   <input id="superAdminFirstAdminEmailInput" type="email" placeholder="admin@agency.org" />
+                </label>
+                <label class="field-block">
+                  Default Station Name
+                  <input id="superAdminStationNameInput" type="text" placeholder="Station 1" />
+                </label>
+                <label class="field-block">
+                  Default Station Address
+                  <input id="superAdminStationAddressInput" type="text" placeholder="123 Main St, Spring, TX" />
+                </label>
+                <label class="field-block">
+                  Default Mileage Rate
+                  <input id="superAdminMileageRateInput" type="number" min="0" step="0.01" placeholder="0.70" />
                 </label>
               </div>
               <button id="superAdminCreateOrgBtn" class="primary" type="button">Create Department License</button>

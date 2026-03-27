@@ -145,6 +145,11 @@ type CreateSuperAdminOrganizationBody = {
   licenseStatus?: string;
   firstAdminName?: string;
   firstAdminEmail?: string;
+  stationName?: string;
+  stationAddress?: string;
+  stationLat?: number | string | null;
+  stationLng?: number | string | null;
+  defaultMileageRate?: number | string | null;
 };
 
 type UpdateSuperAdminOrganizationBody = {
@@ -152,6 +157,19 @@ type UpdateSuperAdminOrganizationBody = {
   countyName?: string | null;
   seatLimit?: number | string | null;
   licenseStatus?: string;
+  stationName?: string | null;
+  stationAddress?: string | null;
+  stationLat?: number | string | null;
+  stationLng?: number | string | null;
+  defaultMileageRate?: number | string | null;
+};
+
+type UpdateAdminOrganizationBody = {
+  stationName?: string | null;
+  stationAddress?: string | null;
+  stationLat?: number | string | null;
+  stationLng?: number | string | null;
+  defaultMileageRate?: number | string | null;
 };
 
 type UpdateSuperAdminUserBody = {
@@ -227,6 +245,11 @@ type CollabOrganizationRow = {
   seat_limit: number | null;
   county_id: string | null;
   county_name: string | null;
+  station_name: string | null;
+  station_address: string | null;
+  station_lat: string | number | null;
+  station_lng: string | number | null;
+  default_mileage_rate: string | number | null;
   created_at: string;
   updated_at: string;
 };
@@ -297,6 +320,11 @@ type CollabOrgMembershipRow = {
   seat_limit: number | null;
   county_id: string | null;
   county_name: string | null;
+  station_name: string | null;
+  station_address: string | null;
+  station_lat: string | number | null;
+  station_lng: string | number | null;
+  default_mileage_rate: string | number | null;
 };
 
 type CollabParticipantRow = {
@@ -441,6 +469,11 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
       const firstAdminEmail = normalizeEmail(request.body?.firstAdminEmail);
       const licenseStatus = normalizeLicenseStatus(request.body?.licenseStatus) ?? 'active';
       const seatLimit = normalizeSeatLimit(request.body?.seatLimit);
+      const stationName = normalizeOptionalText(request.body?.stationName);
+      const stationAddress = normalizeOptionalText(request.body?.stationAddress);
+      const stationLat = normalizeNullableCoordinate(request.body?.stationLat);
+      const stationLng = normalizeNullableCoordinate(request.body?.stationLng);
+      const defaultMileageRate = normalizeNullableMoney(request.body?.defaultMileageRate);
       if (!organizationName) {
         return reply.code(400).send({ error: 'BAD_REQUEST', message: 'organizationName is required.' });
       }
@@ -458,7 +491,12 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         organizationName,
         countyId,
         licenseStatus,
-        seatLimit
+        seatLimit,
+        stationName,
+        stationAddress,
+        stationLat,
+        stationLng,
+        defaultMileageRate
       });
       if (!organization) {
         return reply.code(500).send({ error: 'CREATE_FAILED', message: 'Unable to create organization.' });
@@ -502,6 +540,21 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
       const nextSeatLimit = request.body?.seatLimit === undefined
         ? existing.seat_limit
         : normalizeSeatLimit(request.body?.seatLimit);
+      const nextStationName = request.body?.stationName === undefined
+        ? existing.station_name
+        : normalizeOptionalText(request.body?.stationName ?? undefined);
+      const nextStationAddress = request.body?.stationAddress === undefined
+        ? existing.station_address
+        : normalizeOptionalText(request.body?.stationAddress ?? undefined);
+      const nextStationLat = request.body?.stationLat === undefined
+        ? normalizeNullableCoordinate(existing.station_lat)
+        : normalizeNullableCoordinate(request.body?.stationLat);
+      const nextStationLng = request.body?.stationLng === undefined
+        ? normalizeNullableCoordinate(existing.station_lng)
+        : normalizeNullableCoordinate(request.body?.stationLng);
+      const nextDefaultMileageRate = request.body?.defaultMileageRate === undefined
+        ? normalizeNullableMoney(existing.default_mileage_rate)
+        : normalizeNullableMoney(request.body?.defaultMileageRate);
       if (!nextOrganizationName) {
         return reply.code(400).send({ error: 'BAD_REQUEST', message: 'organizationName is required.' });
       }
@@ -519,13 +572,51 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         organizationName: nextOrganizationName,
         countyId,
         licenseStatus: nextLicenseStatus,
-        seatLimit: nextSeatLimit
+        seatLimit: nextSeatLimit,
+        stationName: nextStationName,
+        stationAddress: nextStationAddress,
+        stationLat: nextStationLat,
+        stationLng: nextStationLng,
+        defaultMileageRate: nextDefaultMileageRate
       });
       return reply.send({
         organization: updated ? mapSuperAdminOrganization(updated) : null
       });
     } catch (error) {
       return sendTrainerError(reply, request, error, 'Failed to update organization.');
+    }
+  });
+
+  app.patch<{ Body: UpdateAdminOrganizationBody }>('/v1/ics-collab/admin/organization', async (request, reply) => {
+    try {
+      const trainer = await requireTrainerIdentity(app, request.headers);
+      const membership = await requireLicensedCollabMembership(app.pg, trainer);
+      ensureOrganizationAdmin(membership);
+      const existing = await fetchOrganizationByID(app.pg, membership.organization_id);
+      if (!existing) {
+        return reply.code(404).send({ error: 'NOT_FOUND', message: 'Organization not found.' });
+      }
+      const updated = await updateOrganization(app.pg, {
+        organizationId: membership.organization_id,
+        organizationName: existing.organization_name,
+        countyId: existing.county_id,
+        licenseStatus: existing.license_status,
+        seatLimit: existing.seat_limit,
+        stationName: request.body?.stationName === undefined ? existing.station_name : normalizeOptionalText(request.body?.stationName ?? undefined),
+        stationAddress: request.body?.stationAddress === undefined ? existing.station_address : normalizeOptionalText(request.body?.stationAddress ?? undefined),
+        stationLat: request.body?.stationLat === undefined ? normalizeNullableCoordinate(existing.station_lat) : normalizeNullableCoordinate(request.body?.stationLat),
+        stationLng: request.body?.stationLng === undefined ? normalizeNullableCoordinate(existing.station_lng) : normalizeNullableCoordinate(request.body?.stationLng),
+        defaultMileageRate: request.body?.defaultMileageRate === undefined ? normalizeNullableMoney(existing.default_mileage_rate) : normalizeNullableMoney(request.body?.defaultMileageRate)
+      });
+      const roster = await listOrganizationMembers(app.pg, membership.organization_id);
+      const refreshedMembership = await requireLicensedCollabMembership(app.pg, trainer);
+      return reply.send({
+        organization: mapOrganizationSummary(refreshedMembership, roster.length, updated),
+        roster: roster.map(mapOrganizationRosterMember),
+        membership: mapOrganizationMembership(refreshedMembership, updated)
+      });
+    } catch (error) {
+      return sendTrainerError(reply, request, error, 'Failed to update department station defaults.');
     }
   });
 
@@ -2504,7 +2595,12 @@ async function fetchLicensedCollabMembership(
         org.license_status,
         org.seat_limit,
         org.county_id::text as county_id,
-        county.county_name
+        county.county_name,
+        org.station_name,
+        org.station_address,
+        org.station_lat,
+        org.station_lng,
+        org.default_mileage_rate
       from collab_org_members m
       join collab_organizations org
         on org.id = m.organization_id
@@ -2605,7 +2701,12 @@ async function listOrganizationMembers(pool: { query: PoolClient['query'] }, org
         org.license_status,
         org.seat_limit,
         org.county_id::text as county_id,
-        county.county_name
+        county.county_name,
+        org.station_name,
+        org.station_address,
+        org.station_lat,
+        org.station_lng,
+        org.default_mileage_rate
       from collab_org_members m
       join collab_organizations org
         on org.id = m.organization_id
@@ -2642,6 +2743,11 @@ async function listSuperAdminOrganizations(pool: { query: PoolClient['query'] })
         org.seat_limit,
         org.county_id::text as county_id,
         county.county_name,
+        org.station_name,
+        org.station_address,
+        org.station_lat,
+        org.station_lng,
+        org.default_mileage_rate,
         org.created_at,
         org.updated_at,
         count(distinct m.id)::int as member_count,
@@ -2672,6 +2778,11 @@ async function fetchSuperAdminOrganizationByID(pool: { query: PoolClient['query'
         org.seat_limit,
         org.county_id::text as county_id,
         county.county_name,
+        org.station_name,
+        org.station_address,
+        org.station_lat,
+        org.station_lng,
+        org.default_mileage_rate,
         org.created_at,
         org.updated_at,
         count(distinct m.id)::int as member_count,
@@ -2710,7 +2821,12 @@ async function fetchOrganizationMemberByID(pool: { query: PoolClient['query'] },
         org.license_status,
         org.seat_limit,
         org.county_id::text as county_id,
-        county.county_name
+        county.county_name,
+        org.station_name,
+        org.station_address,
+        org.station_lat,
+        org.station_lng,
+        org.default_mileage_rate
       from collab_org_members m
       join collab_organizations org
         on org.id = m.organization_id
@@ -2766,7 +2882,12 @@ async function upsertOrganizationMember(
         'active'::text as license_status,
         null::int as seat_limit,
         null::text as county_id,
-        null::text as county_name
+        null::text as county_name,
+        null::text as station_name,
+        null::text as station_address,
+        null::numeric as station_lat,
+        null::numeric as station_lng,
+        null::numeric as default_mileage_rate
     `,
     [params.organizationId, params.trainerRef, params.email, params.displayName, params.isAdmin, params.isActive]
   );
@@ -2806,7 +2927,12 @@ async function updateOrganizationMember(
         'active'::text as license_status,
         null::int as seat_limit,
         null::text as county_id,
-        null::text as county_name
+        null::text as county_name,
+        null::text as station_name,
+        null::text as station_address,
+        null::numeric as station_lat,
+        null::numeric as station_lng,
+        null::numeric as default_mileage_rate
     `,
     [params.memberId, params.organizationId, params.displayName, params.isAdmin, params.isActive]
   );
@@ -2846,7 +2972,12 @@ async function updateOrganizationMemberAsSuperAdmin(
         'active'::text as license_status,
         null::int as seat_limit,
         null::text as county_id,
-        null::text as county_name
+        null::text as county_name,
+        null::text as station_name,
+        null::text as station_address,
+        null::numeric as station_lat,
+        null::numeric as station_lng,
+        null::numeric as default_mileage_rate
     `,
     [params.memberId, params.organizationId, params.displayName, params.isAdmin, params.isActive]
   );
@@ -2874,6 +3005,11 @@ async function fetchOrganizationByID(pool: { query: PoolClient['query'] }, organ
         org.seat_limit,
         org.county_id::text as county_id,
         county.county_name,
+        org.station_name,
+        org.station_address,
+        org.station_lat,
+        org.station_lng,
+        org.default_mileage_rate,
         org.created_at,
         org.updated_at
       from collab_organizations org
@@ -2894,6 +3030,11 @@ async function createOrganization(
     countyId: string | null;
     licenseStatus: LicenseStatus;
     seatLimit: number | null;
+    stationName: string | null;
+    stationAddress: string | null;
+    stationLat: number | null;
+    stationLng: number | null;
+    defaultMileageRate: number | null;
   }
 ) {
   const result = await pool.query<{ id: string }>(
@@ -2902,12 +3043,27 @@ async function createOrganization(
         county_id,
         organization_name,
         license_status,
-        seat_limit
+        seat_limit,
+        station_name,
+        station_address,
+        station_lat,
+        station_lng,
+        default_mileage_rate
       )
-      values ($1::uuid, $2, $3, $4)
+      values ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9)
       returning id::text as id
     `,
-    [params.countyId, params.organizationName, params.licenseStatus, params.seatLimit]
+    [
+      params.countyId,
+      params.organizationName,
+      params.licenseStatus,
+      params.seatLimit,
+      params.stationName,
+      params.stationAddress,
+      params.stationLat,
+      params.stationLng,
+      params.defaultMileageRate
+    ]
   );
   const organizationId = result.rows[0]?.id;
   return organizationId ? await fetchOrganizationByID(pool, organizationId) : null;
@@ -2921,6 +3077,11 @@ async function updateOrganization(
     countyId: string | null;
     licenseStatus: LicenseStatus;
     seatLimit: number | null;
+    stationName: string | null;
+    stationAddress: string | null;
+    stationLat: number | null;
+    stationLng: number | null;
+    defaultMileageRate: number | null;
   }
 ) {
   await pool.query(
@@ -2930,10 +3091,26 @@ async function updateOrganization(
         county_id = $2::uuid,
         organization_name = $3,
         license_status = $4,
-        seat_limit = $5
+        seat_limit = $5,
+        station_name = $6,
+        station_address = $7,
+        station_lat = $8,
+        station_lng = $9,
+        default_mileage_rate = $10
       where id = $1::uuid
     `,
-    [params.organizationId, params.countyId, params.organizationName, params.licenseStatus, params.seatLimit]
+    [
+      params.organizationId,
+      params.countyId,
+      params.organizationName,
+      params.licenseStatus,
+      params.seatLimit,
+      params.stationName,
+      params.stationAddress,
+      params.stationLat,
+      params.stationLng,
+      params.defaultMileageRate
+    ]
   );
   return await fetchSuperAdminOrganizationByID(pool, params.organizationId);
 }
@@ -2962,6 +3139,11 @@ async function listSessionSharedOrganizations(pool: { query: PoolClient['query']
         org.seat_limit,
         org.county_id::text as county_id,
         county.county_name,
+        org.station_name,
+        org.station_address,
+        org.station_lat,
+        org.station_lng,
+        org.default_mileage_rate,
         org.created_at,
         org.updated_at
       from collab_map_session_org_access soa
@@ -2993,7 +3175,12 @@ async function listSuperAdminUsers(pool: { query: PoolClient['query'] }) {
         org.license_status,
         org.seat_limit,
         org.county_id::text as county_id,
-        county.county_name
+        county.county_name,
+        org.station_name,
+        org.station_address,
+        org.station_lat,
+        org.station_lng,
+        org.default_mileage_rate
       from collab_org_members m
       join collab_organizations org
         on org.id = m.organization_id
@@ -3239,7 +3426,8 @@ function mapParticipant(row: CollabParticipantRow) {
   };
 }
 
-function mapOrganizationMembership(row: CollabOrgMembershipRow) {
+function mapOrganizationMembership(row: CollabOrgMembershipRow, organizationOverride?: CollabOrganizationRow | null) {
+  const org = organizationOverride ?? row;
   return {
     id: row.id,
     organizationId: row.organization_id,
@@ -3252,7 +3440,12 @@ function mapOrganizationMembership(row: CollabOrgMembershipRow) {
     isAdmin: row.is_admin,
     isActive: row.is_active,
     licenseStatus: row.license_status,
-    seatLimit: row.seat_limit
+    seatLimit: row.seat_limit,
+    stationName: org.station_name,
+    stationAddress: org.station_address,
+    stationLat: normalizeNullableCoordinate(org.station_lat),
+    stationLng: normalizeNullableCoordinate(org.station_lng),
+    defaultMileageRate: normalizeNullableMoney(org.default_mileage_rate)
   };
 }
 
@@ -3274,11 +3467,17 @@ function mapSharedOrganization(row: CollabOrganizationRow) {
     countyId: row.county_id,
     countyName: row.county_name,
     licenseStatus: row.license_status,
-    seatLimit: row.seat_limit
+    seatLimit: row.seat_limit,
+    stationName: row.station_name,
+    stationAddress: row.station_address,
+    stationLat: normalizeNullableCoordinate(row.station_lat),
+    stationLng: normalizeNullableCoordinate(row.station_lng),
+    defaultMileageRate: normalizeNullableMoney(row.default_mileage_rate)
   };
 }
 
-function mapOrganizationSummary(row: CollabOrgMembershipRow, seatsUsed: number) {
+function mapOrganizationSummary(row: CollabOrgMembershipRow, seatsUsed: number, organizationOverride?: CollabOrganizationRow | null) {
+  const org = organizationOverride ?? row;
   return {
     organizationId: row.organization_id,
     organizationName: row.organization_name,
@@ -3286,7 +3485,12 @@ function mapOrganizationSummary(row: CollabOrgMembershipRow, seatsUsed: number) 
     countyName: row.county_name,
     licenseStatus: row.license_status,
     seatLimit: row.seat_limit,
-    seatsUsed
+    seatsUsed,
+    stationName: org.station_name,
+    stationAddress: org.station_address,
+    stationLat: normalizeNullableCoordinate(org.station_lat),
+    stationLng: normalizeNullableCoordinate(org.station_lng),
+    defaultMileageRate: normalizeNullableMoney(org.default_mileage_rate)
   };
 }
 
@@ -3320,6 +3524,11 @@ function mapSuperAdminOrganization(row: SuperAdminOrganizationRow) {
     countyName: row.county_name,
     licenseStatus: row.license_status,
     seatLimit: row.seat_limit,
+    stationName: row.station_name,
+    stationAddress: row.station_address,
+    stationLat: normalizeNullableCoordinate(row.station_lat),
+    stationLng: normalizeNullableCoordinate(row.station_lng),
+    defaultMileageRate: normalizeNullableMoney(row.default_mileage_rate),
     memberCount: Number(row.member_count ?? 0),
     adminCount: Number(row.admin_count ?? 0),
     seatsUsed: Number(row.seats_used ?? 0),
@@ -3340,7 +3549,12 @@ function mapSuperAdminUser(row: CollabOrgMembershipRow) {
     organizationId: row.organization_id,
     organizationName: row.organization_name,
     countyName: row.county_name,
-    licenseStatus: row.license_status
+    licenseStatus: row.license_status,
+    stationName: row.station_name,
+    stationAddress: row.station_address,
+    stationLat: normalizeNullableCoordinate(row.station_lat),
+    stationLng: normalizeNullableCoordinate(row.station_lng),
+    defaultMileageRate: normalizeNullableMoney(row.default_mileage_rate)
   };
 }
 
@@ -3430,6 +3644,18 @@ function normalizeSeatLimit(value: number | string | null | undefined) {
   if (value === null || value === undefined || value === '') return null;
   const parsed = typeof value === 'number' ? value : Number.parseInt(String(value), 10);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function normalizeNullableCoordinate(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = typeof value === 'number' ? value : Number.parseFloat(String(value));
+  return Number.isFinite(parsed) ? Math.round(parsed * 1_000_000) / 1_000_000 : null;
+}
+
+function normalizeNullableMoney(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = typeof value === 'number' ? value : Number.parseFloat(String(value));
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed * 100) / 100 : null;
 }
 
 function normalizeJoinCode(value: string | undefined) {
