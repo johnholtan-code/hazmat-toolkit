@@ -1862,7 +1862,7 @@ body[data-theme="light"] #deleteObjectBtn {
   align-items: center;
   justify-content: center;
   padding: var(--space-6);
-  z-index: 3000;
+  z-index: 3400;
 }
 .modal-card {
   width: min(420px, 100%);
