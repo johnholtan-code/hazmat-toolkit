@@ -503,6 +503,7 @@
           <button id="superAdminTabOverview" class="secondary active" type="button">Overview</button>
           <button id="superAdminTabOrganizations" class="secondary" type="button">Departments</button>
           <button id="superAdminTabUsers" class="secondary" type="button">Users</button>
+          <button id="superAdminTabSessions" class="secondary" type="button">Scenarios</button>
           <button id="superAdminTabAccess" class="secondary" type="button">Access</button>
         </aside>
         <div class="super-admin-content">
@@ -581,6 +582,70 @@
             </div>
           </section>
 
+          <section id="superAdminSessionsPanel" class="super-admin-panel hidden">
+            <div class="panel compact">
+              <h3>All Collaborative Scenarios / Sessions</h3>
+              <div id="superAdminSessionsStats" class="super-admin-stat-grid"></div>
+              <div class="super-admin-filter-row">
+                <label class="field-block">
+                  Search
+                  <input id="superAdminSessionsSearchInput" type="search" placeholder="Incident, join code, creator, or department" />
+                </label>
+                <label class="field-block">
+                  Status
+                  <select id="superAdminSessionsStatusFilter">
+                    <option value="">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="ended">Ended</option>
+                    <option value="expired">Expired</option>
+                  </select>
+                </label>
+                <label class="field-block">
+                  Department
+                  <select id="superAdminSessionsDepartmentFilter">
+                    <option value="">All Departments</option>
+                  </select>
+                </label>
+                <label class="field-block">
+                  Creator
+                  <select id="superAdminSessionsCreatorFilter">
+                    <option value="">All Creators</option>
+                  </select>
+                </label>
+                <label class="field-block">
+                  Shared Access
+                  <select id="superAdminSessionsSharedFilter">
+                    <option value="">All</option>
+                    <option value="yes">Shared</option>
+                    <option value="no">Not Shared</option>
+                  </select>
+                </label>
+                <label class="field-block">
+                  Viewer Access
+                  <select id="superAdminSessionsViewerFilter">
+                    <option value="">All</option>
+                    <option value="enabled">Enabled</option>
+                    <option value="disabled">Disabled</option>
+                  </select>
+                </label>
+                <label class="field-block">
+                  Sort
+                  <select id="superAdminSessionsSortSelect">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="name">Name A-Z</option>
+                    <option value="creator">Creator A-Z</option>
+                  </select>
+                </label>
+              </div>
+              <div class="row" style="justify-content:space-between;align-items:center;">
+                <div id="superAdminSessionsResultCount" class="muted">0 sessions</div>
+                <button id="superAdminSessionsResetBtn" class="secondary" type="button">Reset Filters</button>
+              </div>
+              <div id="superAdminSessionsList" class="session-list super-admin-session-gallery"></div>
+            </div>
+          </section>
+
           <section id="superAdminAccessPanel" class="super-admin-panel hidden">
             <div class="panel compact">
               <h3>Standing Mutual Access</h3>
@@ -607,6 +672,23 @@
         </div>
       </div>
     </section>
+
+    <div id="superAdminSessionDetailModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="superAdminSessionDetailTitle">
+      <div class="modal-card super-admin-session-modal-card">
+        <div class="panel-header">
+          <div>
+            <h2 id="superAdminSessionDetailTitle">Session Details</h2>
+            <div id="superAdminSessionDetailSubtitle" class="muted">Collaborative session metadata</div>
+          </div>
+          <button id="superAdminSessionDetailCloseBtn" class="secondary" type="button">Close</button>
+        </div>
+        <div id="superAdminSessionDetailMeta" class="super-admin-session-detail-grid"></div>
+        <div class="row" style="justify-content:flex-end;">
+          <button id="superAdminSessionCopyIdBtn" class="secondary" type="button">Copy Session ID</button>
+          <button id="superAdminSessionDeleteBtn" class="danger" type="button">Delete Session</button>
+        </div>
+      </div>
+    </div>
 
     <section id="ics202Workspace" class="ics202-workspace hidden" aria-hidden="true">
       <div class="ics202-topbar">

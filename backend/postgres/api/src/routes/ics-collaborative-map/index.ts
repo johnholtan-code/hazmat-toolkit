@@ -306,6 +306,31 @@ type SuperAdminStandingAccessRow = {
   updated_at: string;
 };
 
+type SuperAdminSessionRow = {
+  session_id: string;
+  incident_name: string;
+  join_code: string;
+  session_status: SessionStatus;
+  viewer_access_enabled: boolean;
+  operational_period_start: string;
+  operational_period_end: string;
+  ended_at: string | null;
+  created_at: string;
+  updated_at: string;
+  creator_trainer_ref: string;
+  creator_display_name: string | null;
+  creator_email: string | null;
+  creator_organization_id: string | null;
+  creator_organization_name: string | null;
+  creator_county_name: string | null;
+  shared_organization_count: string;
+  participant_count: string;
+  object_count: string;
+  shared_organization_names: string | null;
+  command_structure_saved: boolean;
+  ics207_export_saved: boolean;
+};
+
 type CollabOrgMembershipRow = {
   id: string;
   organization_id: string;
@@ -752,6 +777,40 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
       return reply.send(access.map(mapSuperAdminAccess));
     } catch (error) {
       return sendTrainerError(reply, request, error, 'Failed to fetch session access.');
+    }
+  });
+
+  app.get('/v1/ics-collab/super-admin/sessions', async (request, reply) => {
+    try {
+      const trainer = await requireTrainerIdentity(app, request.headers);
+      await requireSuperAdmin(app.pg, trainer);
+      const sessions = await listSuperAdminSessions(app.pg);
+      return reply.send(sessions.map(mapSuperAdminSession));
+    } catch (error) {
+      return sendTrainerError(reply, request, error, 'Failed to fetch super admin sessions.');
+    }
+  });
+
+  app.delete<{ Params: { sessionId: string } }>('/v1/ics-collab/super-admin/sessions/:sessionId', async (request, reply) => {
+    try {
+      const trainer = await requireTrainerIdentity(app, request.headers);
+      await requireSuperAdmin(app.pg, trainer);
+      const sessionId = normalizeUUID(request.params.sessionId);
+      if (!sessionId) {
+        return reply.code(400).send({ error: 'BAD_REQUEST', message: 'Valid sessionId is required.' });
+      }
+      const existing = await fetchSessionByID(app.pg, sessionId);
+      if (!existing) {
+        return reply.code(404).send({ error: 'NOT_FOUND', message: 'Session not found.' });
+      }
+      await deleteCollaborativeSession(app.pg, sessionId);
+      return reply.send({
+        deleted: true,
+        sessionId,
+        incidentName: existing.incident_name
+      });
+    } catch (error) {
+      return sendTrainerError(reply, request, error, 'Failed to delete collaborative session.');
     }
   });
 
@@ -3265,6 +3324,121 @@ async function listSuperAdminStandingAccess(pool: { query: PoolClient['query'] }
   return result.rows;
 }
 
+async function listSuperAdminSessions(pool: { query: PoolClient['query'] }) {
+  const result = await pool.query<SuperAdminSessionRow>(
+    `
+      select
+        s.id::text as session_id,
+        s.incident_name,
+        s.join_code,
+        s.session_status,
+        s.viewer_access_enabled,
+        s.operational_period_start,
+        s.operational_period_end,
+        s.ended_at,
+        s.created_at,
+        s.updated_at,
+        s.trainer_ref as creator_trainer_ref,
+        coalesce(member.display_name, trainer.display_name, s.commander_name) as creator_display_name,
+        member.email as creator_email,
+        owner.id::text as creator_organization_id,
+        owner.organization_name as creator_organization_name,
+        owner_county.county_name as creator_county_name,
+        (
+          select count(*)::text
+          from collab_map_session_org_access soa
+          where soa.session_id = s.id
+        ) as shared_organization_count,
+        (
+          select count(*)::text
+          from collab_map_participants p
+          where p.session_id = s.id
+        ) as participant_count,
+        (
+          select count(*)::text
+          from collab_map_objects o
+          where o.session_id = s.id
+            and o.is_deleted = false
+        ) as object_count,
+        (
+          select string_agg(shared.organization_name, '||' order by lower(shared.organization_name))
+          from collab_map_session_org_access soa
+          join collab_organizations shared
+            on shared.id = soa.organization_id
+          where soa.session_id = s.id
+        ) as shared_organization_names,
+        (s.command_structure_json is not null) as command_structure_saved,
+        (s.ics207_export_json is not null) as ics207_export_saved
+      from collab_map_sessions s
+      left join collab_organizations owner
+        on owner.id = s.organization_id
+      left join collab_counties owner_county
+        on owner_county.id = owner.county_id
+      left join trainers trainer
+        on lower(trainer.trainer_ref) = lower(s.trainer_ref)
+      left join lateral (
+        select
+          m.display_name,
+          m.email
+        from collab_org_members m
+        where lower(m.trainer_ref) = lower(s.trainer_ref)
+        order by m.updated_at desc nulls last, m.created_at desc
+        limit 1
+      ) member on true
+      order by s.created_at desc, s.updated_at desc, lower(s.incident_name)
+    `
+  );
+  return result.rows;
+}
+
+async function deleteCollaborativeSession(pool: { connect: () => Promise<PoolClient> }, sessionId: string) {
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+    await client.query(
+      `
+        delete from collab_map_mutations
+        where session_id = $1::uuid
+      `,
+      [sessionId]
+    );
+    await client.query(
+      `
+        delete from collab_map_objects
+        where session_id = $1::uuid
+      `,
+      [sessionId]
+    );
+    await client.query(
+      `
+        delete from collab_map_participants
+        where session_id = $1::uuid
+      `,
+      [sessionId]
+    );
+    await client.query(
+      `
+        delete from collab_map_session_org_access
+        where session_id = $1::uuid
+      `,
+      [sessionId]
+    );
+    await client.query(
+      `
+        delete from collab_map_sessions
+        where id = $1::uuid
+      `,
+      [sessionId]
+    );
+    await client.query('commit');
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function createStandingOrganizationAccess(
   pool: { query: PoolClient['query'] },
   params: { sourceOrganizationId: string; targetOrganizationId: string; createdByTrainerRef: string }
@@ -3584,6 +3758,36 @@ function mapSuperAdminStandingAccess(row: SuperAdminStandingAccessRow) {
     createdByTrainerRef: row.created_by_trainer_ref,
     createdAt: row.created_at,
     updatedAt: row.updated_at
+  };
+}
+
+function mapSuperAdminSession(row: SuperAdminSessionRow) {
+  return {
+    sessionId: row.session_id,
+    incidentName: row.incident_name,
+    joinCode: row.join_code,
+    status: row.session_status,
+    viewerAccessEnabled: row.viewer_access_enabled !== false,
+    operationalPeriodStart: row.operational_period_start,
+    operationalPeriodEnd: row.operational_period_end,
+    endedAt: row.ended_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    creatorTrainerRef: row.creator_trainer_ref,
+    creatorDisplayName: row.creator_display_name || row.creator_trainer_ref || 'Unknown creator',
+    creatorEmail: row.creator_email,
+    creatorOrganizationId: row.creator_organization_id,
+    creatorOrganizationName: row.creator_organization_name,
+    creatorCountyName: row.creator_county_name,
+    sharedOrganizationCount: Number(row.shared_organization_count ?? 0),
+    participantCount: Number(row.participant_count ?? 0),
+    objectCount: Number(row.object_count ?? 0),
+    sharedOrganizations: String(row.shared_organization_names || '')
+      .split('||')
+      .map((value) => value.trim())
+      .filter(Boolean),
+    commandStructureSaved: row.command_structure_saved === true,
+    ics207ExportSaved: row.ics207_export_saved === true
   };
 }
 

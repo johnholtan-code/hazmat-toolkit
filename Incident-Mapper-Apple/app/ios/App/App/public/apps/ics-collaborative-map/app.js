@@ -653,10 +653,12 @@
     superAdminTabOverview: document.getElementById("superAdminTabOverview"),
     superAdminTabOrganizations: document.getElementById("superAdminTabOrganizations"),
     superAdminTabUsers: document.getElementById("superAdminTabUsers"),
+    superAdminTabSessions: document.getElementById("superAdminTabSessions"),
     superAdminTabAccess: document.getElementById("superAdminTabAccess"),
     superAdminOverviewPanel: document.getElementById("superAdminOverviewPanel"),
     superAdminOrganizationsPanel: document.getElementById("superAdminOrganizationsPanel"),
     superAdminUsersPanel: document.getElementById("superAdminUsersPanel"),
+    superAdminSessionsPanel: document.getElementById("superAdminSessionsPanel"),
     superAdminAccessPanel: document.getElementById("superAdminAccessPanel"),
     superAdminOverviewStats: document.getElementById("superAdminOverviewStats"),
     superAdminRecentOrganizations: document.getElementById("superAdminRecentOrganizations"),
@@ -673,11 +675,29 @@
     superAdminOrganizationsList: document.getElementById("superAdminOrganizationsList"),
     superAdminUsersOrgFilter: document.getElementById("superAdminUsersOrgFilter"),
     superAdminUsersList: document.getElementById("superAdminUsersList"),
+    superAdminSessionsStats: document.getElementById("superAdminSessionsStats"),
+    superAdminSessionsSearchInput: document.getElementById("superAdminSessionsSearchInput"),
+    superAdminSessionsStatusFilter: document.getElementById("superAdminSessionsStatusFilter"),
+    superAdminSessionsDepartmentFilter: document.getElementById("superAdminSessionsDepartmentFilter"),
+    superAdminSessionsCreatorFilter: document.getElementById("superAdminSessionsCreatorFilter"),
+    superAdminSessionsSharedFilter: document.getElementById("superAdminSessionsSharedFilter"),
+    superAdminSessionsViewerFilter: document.getElementById("superAdminSessionsViewerFilter"),
+    superAdminSessionsSortSelect: document.getElementById("superAdminSessionsSortSelect"),
+    superAdminSessionsResetBtn: document.getElementById("superAdminSessionsResetBtn"),
+    superAdminSessionsResultCount: document.getElementById("superAdminSessionsResultCount"),
+    superAdminSessionsList: document.getElementById("superAdminSessionsList"),
     superAdminStandingSourceSelect: document.getElementById("superAdminStandingSourceSelect"),
     superAdminStandingTargetList: document.getElementById("superAdminStandingTargetList"),
     superAdminCreateStandingAccessBtn: document.getElementById("superAdminCreateStandingAccessBtn"),
     superAdminStandingAccessList: document.getElementById("superAdminStandingAccessList"),
     superAdminAccessList: document.getElementById("superAdminAccessList"),
+    superAdminSessionDetailModal: document.getElementById("superAdminSessionDetailModal"),
+    superAdminSessionDetailTitle: document.getElementById("superAdminSessionDetailTitle"),
+    superAdminSessionDetailSubtitle: document.getElementById("superAdminSessionDetailSubtitle"),
+    superAdminSessionDetailMeta: document.getElementById("superAdminSessionDetailMeta"),
+    superAdminSessionDetailCloseBtn: document.getElementById("superAdminSessionDetailCloseBtn"),
+    superAdminSessionCopyIdBtn: document.getElementById("superAdminSessionCopyIdBtn"),
+    superAdminSessionDeleteBtn: document.getElementById("superAdminSessionDeleteBtn"),
     map: document.getElementById("map"),
     mapPrintRoot: document.getElementById("mapPrintRoot"),
     printExportModal: document.getElementById("printExportModal"),
@@ -733,6 +753,7 @@
       overview: null,
       organizations: [],
       users: [],
+      sessions: [],
       access: [],
       standingAccess: []
     },
@@ -826,6 +847,14 @@
     superAdminOpen: false,
     superAdminTab: "overview",
     superAdminUsersOrgFilter: "",
+    superAdminSessionsSearch: "",
+    superAdminSessionsStatusFilter: "",
+    superAdminSessionsDepartmentFilter: "",
+    superAdminSessionsCreatorFilter: "",
+    superAdminSessionsSharedFilter: "",
+    superAdminSessionsViewerFilter: "",
+    superAdminSessionsSort: "newest",
+    superAdminSelectedSessionId: "",
     superAdminStandingSourceFilter: "",
     superAdminStandingTargetFilters: [],
     ics202ObjectiveDragIndex: -1
@@ -1501,18 +1530,66 @@
     elements.superAdminTabOverview?.addEventListener("click", () => setSuperAdminTab("overview"));
     elements.superAdminTabOrganizations?.addEventListener("click", () => setSuperAdminTab("organizations"));
     elements.superAdminTabUsers?.addEventListener("click", () => setSuperAdminTab("users"));
+    elements.superAdminTabSessions?.addEventListener("click", () => setSuperAdminTab("sessions"));
     elements.superAdminTabAccess?.addEventListener("click", () => setSuperAdminTab("access"));
     elements.superAdminCreateOrgBtn?.addEventListener("click", onCreateSuperAdminOrganization);
     elements.superAdminUsersOrgFilter?.addEventListener("change", (event) => {
       state.superAdminUsersOrgFilter = String(event.target.value || "");
       renderSuperAdminUsers();
     });
+    elements.superAdminSessionsSearchInput?.addEventListener("input", (event) => {
+      state.superAdminSessionsSearch = String(event.target.value || "");
+      renderSuperAdminSessions();
+    });
+    elements.superAdminSessionsStatusFilter?.addEventListener("change", (event) => {
+      state.superAdminSessionsStatusFilter = String(event.target.value || "");
+      renderSuperAdminSessions();
+    });
+    elements.superAdminSessionsDepartmentFilter?.addEventListener("change", (event) => {
+      state.superAdminSessionsDepartmentFilter = String(event.target.value || "");
+      renderSuperAdminSessions();
+    });
+    elements.superAdminSessionsCreatorFilter?.addEventListener("change", (event) => {
+      state.superAdminSessionsCreatorFilter = String(event.target.value || "");
+      renderSuperAdminSessions();
+    });
+    elements.superAdminSessionsSharedFilter?.addEventListener("change", (event) => {
+      state.superAdminSessionsSharedFilter = String(event.target.value || "");
+      renderSuperAdminSessions();
+    });
+    elements.superAdminSessionsViewerFilter?.addEventListener("change", (event) => {
+      state.superAdminSessionsViewerFilter = String(event.target.value || "");
+      renderSuperAdminSessions();
+    });
+    elements.superAdminSessionsSortSelect?.addEventListener("change", (event) => {
+      state.superAdminSessionsSort = String(event.target.value || "newest");
+      renderSuperAdminSessions();
+    });
+    elements.superAdminSessionsResetBtn?.addEventListener("click", resetSuperAdminSessionFilters);
     elements.superAdminStandingSourceSelect?.addEventListener("change", (event) => {
       state.superAdminStandingSourceFilter = String(event.target.value || "");
       state.superAdminStandingTargetFilters = [];
       renderSuperAdminAccess();
     });
     elements.superAdminCreateStandingAccessBtn?.addEventListener("click", onCreateStandingOrganizationAccess);
+    elements.superAdminSessionDetailCloseBtn?.addEventListener("click", closeSuperAdminSessionDetails);
+    elements.superAdminSessionCopyIdBtn?.addEventListener("click", () => {
+      const session = getSelectedSuperAdminSession();
+      if (session) {
+        void copySuperAdminSessionId(session);
+      }
+    });
+    elements.superAdminSessionDeleteBtn?.addEventListener("click", () => {
+      const session = getSelectedSuperAdminSession();
+      if (session) {
+        void deleteSuperAdminSession(session);
+      }
+    });
+    elements.superAdminSessionDetailModal?.addEventListener("click", (event) => {
+      if (event.target === elements.superAdminSessionDetailModal) {
+        closeSuperAdminSessionDetails();
+      }
+    });
     bindIcs202Events();
     bindCommandStructureEvents();
     window.addEventListener("resize", scheduleMapResizeRefresh);
@@ -2033,7 +2110,7 @@
   async function loadSuperAdminContext() {
     if (!state.commanderAuth?.accessToken) {
       state.superAdminContext = null;
-      state.superAdminData = { overview: null, organizations: [], users: [], access: [], standingAccess: [] };
+      state.superAdminData = { overview: null, organizations: [], users: [], sessions: [], access: [], standingAccess: [] };
       return null;
     }
     try {
@@ -2042,7 +2119,7 @@
       return state.superAdminContext;
     } catch (_error) {
       state.superAdminContext = null;
-      state.superAdminData = { overview: null, organizations: [], users: [], access: [], standingAccess: [] };
+      state.superAdminData = { overview: null, organizations: [], users: [], sessions: [], access: [], standingAccess: [] };
       return null;
     }
   }
@@ -2083,14 +2160,15 @@
 
   async function refreshSuperAdminWorkspace(options = {}) {
     if (!state.commanderAuth?.accessToken || !state.superAdminContext?.email) {
-      state.superAdminData = { overview: null, organizations: [], users: [], access: [], standingAccess: [] };
+      state.superAdminData = { overview: null, organizations: [], users: [], sessions: [], access: [], standingAccess: [] };
       return null;
     }
     try {
-      const [overview, organizations, users, access, standingAccess] = await Promise.all([
+      const [overview, organizations, users, sessions, access, standingAccess] = await Promise.all([
         apiFetch("/v1/ics-collab/super-admin/overview", { actorType: "commander" }),
         apiFetch("/v1/ics-collab/super-admin/organizations", { actorType: "commander" }),
         apiFetch("/v1/ics-collab/super-admin/users", { actorType: "commander" }),
+        apiFetch("/v1/ics-collab/super-admin/sessions", { actorType: "commander" }),
         apiFetch("/v1/ics-collab/super-admin/access", { actorType: "commander" }),
         apiFetch("/v1/ics-collab/super-admin/standing-access", { actorType: "commander" })
       ]);
@@ -2098,6 +2176,7 @@
         overview: overview || null,
         organizations: Array.isArray(organizations) ? organizations : [],
         users: Array.isArray(users) ? users : [],
+        sessions: Array.isArray(sessions) ? sessions : [],
         access: Array.isArray(access) ? access : [],
         standingAccess: Array.isArray(standingAccess) ? standingAccess : []
       };
@@ -4829,6 +4908,7 @@
 
   function closeSuperAdminWorkspace() {
     state.superAdminOpen = false;
+    closeSuperAdminSessionDetails();
     elements.superAdminWorkspace?.classList.add("hidden");
     if (state.activeSession || isScenarioReviewMode()) {
       elements.appView.classList.remove("hidden");
@@ -4852,16 +4932,20 @@
     elements.superAdminTabOverview?.classList.toggle("active", activeTab === "overview");
     elements.superAdminTabOrganizations?.classList.toggle("active", activeTab === "organizations");
     elements.superAdminTabUsers?.classList.toggle("active", activeTab === "users");
+    elements.superAdminTabSessions?.classList.toggle("active", activeTab === "sessions");
     elements.superAdminTabAccess?.classList.toggle("active", activeTab === "access");
     elements.superAdminOverviewPanel?.classList.toggle("hidden", activeTab !== "overview");
     elements.superAdminOrganizationsPanel?.classList.toggle("hidden", activeTab !== "organizations");
     elements.superAdminUsersPanel?.classList.toggle("hidden", activeTab !== "users");
+    elements.superAdminSessionsPanel?.classList.toggle("hidden", activeTab !== "sessions");
     elements.superAdminAccessPanel?.classList.toggle("hidden", activeTab !== "access");
 
     renderSuperAdminOverview();
     renderSuperAdminOrganizations();
     renderSuperAdminUsers();
+    renderSuperAdminSessions();
     renderSuperAdminAccess();
+    renderSuperAdminSessionDetailModal();
   }
 
   function renderDepartmentAdminPanel() {
@@ -5203,6 +5287,320 @@
       card.append(title, meta, actions);
       elements.superAdminUsersList.appendChild(card);
     });
+  }
+
+  function getSuperAdminSessions() {
+    return Array.isArray(state.superAdminData.sessions) ? state.superAdminData.sessions : [];
+  }
+
+  function normalizeSessionSearchValue(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function isDateToday(value) {
+    if (!value) return false;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return false;
+    const now = new Date();
+    return date.getFullYear() === now.getFullYear()
+      && date.getMonth() === now.getMonth()
+      && date.getDate() === now.getDate();
+  }
+
+  function formatSuperAdminSessionStatus(status) {
+    const normalized = String(status || "").trim().toLowerCase();
+    if (normalized === "active") return "Active";
+    if (normalized === "ended") return "Closed";
+    if (normalized === "expired") return "Expired";
+    return normalized ? normalized[0].toUpperCase() + normalized.slice(1) : "Unknown";
+  }
+
+  function getFilteredSuperAdminSessions() {
+    const search = normalizeSessionSearchValue(state.superAdminSessionsSearch);
+    const statusFilter = String(state.superAdminSessionsStatusFilter || "").trim().toLowerCase();
+    const departmentFilter = String(state.superAdminSessionsDepartmentFilter || "").trim();
+    const creatorFilter = String(state.superAdminSessionsCreatorFilter || "").trim();
+    const sharedFilter = String(state.superAdminSessionsSharedFilter || "").trim().toLowerCase();
+    const viewerFilter = String(state.superAdminSessionsViewerFilter || "").trim().toLowerCase();
+    const sort = String(state.superAdminSessionsSort || "newest");
+    const filtered = getSuperAdminSessions().filter((session) => {
+      if (statusFilter && String(session.status || "").toLowerCase() !== statusFilter) return false;
+      if (departmentFilter && String(session.creatorOrganizationId || "") !== departmentFilter) return false;
+      if (creatorFilter && String(session.creatorTrainerRef || "") !== creatorFilter) return false;
+      if (sharedFilter === "yes" && Number(session.sharedOrganizationCount || 0) <= 0) return false;
+      if (sharedFilter === "no" && Number(session.sharedOrganizationCount || 0) > 0) return false;
+      if (viewerFilter === "enabled" && session.viewerAccessEnabled === false) return false;
+      if (viewerFilter === "disabled" && session.viewerAccessEnabled !== false) return false;
+      if (!search) return true;
+      const haystack = [
+        session.incidentName,
+        session.joinCode,
+        session.creatorDisplayName,
+        session.creatorEmail,
+        session.creatorTrainerRef,
+        session.creatorOrganizationName,
+        session.creatorCountyName
+      ].map(normalizeSessionSearchValue).join(" ");
+      return haystack.includes(search);
+    });
+    filtered.sort((left, right) => {
+      if (sort === "oldest") {
+        return new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
+      }
+      if (sort === "name") {
+        return String(left.incidentName || "").localeCompare(String(right.incidentName || ""), undefined, { sensitivity: "base" });
+      }
+      if (sort === "creator") {
+        return String(left.creatorDisplayName || left.creatorTrainerRef || "").localeCompare(
+          String(right.creatorDisplayName || right.creatorTrainerRef || ""),
+          undefined,
+          { sensitivity: "base" }
+        );
+      }
+      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+    });
+    return filtered;
+  }
+
+  function getSelectedSuperAdminSession() {
+    const sessionId = String(state.superAdminSelectedSessionId || "");
+    return getSuperAdminSessions().find((session) => String(session.sessionId || "") === sessionId) || null;
+  }
+
+  function resetSuperAdminSessionFilters() {
+    state.superAdminSessionsSearch = "";
+    state.superAdminSessionsStatusFilter = "";
+    state.superAdminSessionsDepartmentFilter = "";
+    state.superAdminSessionsCreatorFilter = "";
+    state.superAdminSessionsSharedFilter = "";
+    state.superAdminSessionsViewerFilter = "";
+    state.superAdminSessionsSort = "newest";
+    if (elements.superAdminSessionsSearchInput) elements.superAdminSessionsSearchInput.value = "";
+    if (elements.superAdminSessionsStatusFilter) elements.superAdminSessionsStatusFilter.value = "";
+    if (elements.superAdminSessionsDepartmentFilter) elements.superAdminSessionsDepartmentFilter.value = "";
+    if (elements.superAdminSessionsCreatorFilter) elements.superAdminSessionsCreatorFilter.value = "";
+    if (elements.superAdminSessionsSharedFilter) elements.superAdminSessionsSharedFilter.value = "";
+    if (elements.superAdminSessionsViewerFilter) elements.superAdminSessionsViewerFilter.value = "";
+    if (elements.superAdminSessionsSortSelect) elements.superAdminSessionsSortSelect.value = "newest";
+    renderSuperAdminSessions();
+  }
+
+  function openSuperAdminSessionDetails(sessionId) {
+    state.superAdminSelectedSessionId = String(sessionId || "");
+    renderSuperAdminSessionDetailModal();
+  }
+
+  function closeSuperAdminSessionDetails() {
+    state.superAdminSelectedSessionId = "";
+    renderSuperAdminSessionDetailModal();
+  }
+
+  async function copySuperAdminSessionId(session) {
+    try {
+      await writeToClipboard(String(session.sessionId || ""));
+      setStatus(`Session ID copied for ${session.incidentName || "session"}.`);
+    } catch (error) {
+      setStatus(formatError(error));
+    }
+  }
+
+  async function deleteSuperAdminSession(session) {
+    if (!state.superAdminContext?.email) {
+      setStatus("Super admin access is required.");
+      return;
+    }
+    const label = session?.incidentName || "this session";
+    const confirmation = window.prompt(`Type DELETE to permanently remove "${label}" (${session.sessionId}).`);
+    if (confirmation !== "DELETE") {
+      setStatus("Session delete canceled.");
+      return;
+    }
+    setStatus(`Deleting ${label}…`);
+    try {
+      await apiFetch(`/v1/ics-collab/super-admin/sessions/${encodeURIComponent(session.sessionId)}`, {
+        method: "DELETE",
+        actorType: "commander"
+      });
+      closeSuperAdminSessionDetails();
+      await refreshSuperAdminWorkspace();
+      setSuperAdminTab("sessions");
+      setStatus(`${label} was deleted.`);
+    } catch (error) {
+      setStatus(formatError(error));
+    }
+  }
+
+  function renderSuperAdminSessions() {
+    if (
+      !elements.superAdminSessionsList
+      || !elements.superAdminSessionsStats
+      || !elements.superAdminSessionsDepartmentFilter
+      || !elements.superAdminSessionsCreatorFilter
+    ) return;
+    const sessions = getSuperAdminSessions();
+    const filtered = getFilteredSuperAdminSessions();
+    const departments = Array.from(new Map(
+      sessions
+        .filter((session) => session.creatorOrganizationId)
+        .map((session) => [String(session.creatorOrganizationId), session])
+    ).values());
+    const creators = Array.from(new Map(
+      sessions
+        .filter((session) => session.creatorTrainerRef)
+        .map((session) => [String(session.creatorTrainerRef), session])
+    ).values());
+    const currentDepartment = String(state.superAdminSessionsDepartmentFilter || "");
+    const currentCreator = String(state.superAdminSessionsCreatorFilter || "");
+    if (elements.superAdminSessionsSearchInput) elements.superAdminSessionsSearchInput.value = state.superAdminSessionsSearch || "";
+    if (elements.superAdminSessionsStatusFilter) elements.superAdminSessionsStatusFilter.value = state.superAdminSessionsStatusFilter || "";
+    if (elements.superAdminSessionsSharedFilter) elements.superAdminSessionsSharedFilter.value = state.superAdminSessionsSharedFilter || "";
+    if (elements.superAdminSessionsViewerFilter) elements.superAdminSessionsViewerFilter.value = state.superAdminSessionsViewerFilter || "";
+    if (elements.superAdminSessionsSortSelect) elements.superAdminSessionsSortSelect.value = state.superAdminSessionsSort || "newest";
+    elements.superAdminSessionsDepartmentFilter.innerHTML = '<option value="">All Departments</option>';
+    departments
+      .sort((left, right) => String(left.creatorOrganizationName || "").localeCompare(String(right.creatorOrganizationName || ""), undefined, { sensitivity: "base" }))
+      .forEach((session) => {
+        const option = document.createElement("option");
+        option.value = String(session.creatorOrganizationId || "");
+        option.textContent = session.creatorOrganizationName || "Unassigned department";
+        elements.superAdminSessionsDepartmentFilter.appendChild(option);
+      });
+    elements.superAdminSessionsDepartmentFilter.value = currentDepartment;
+    elements.superAdminSessionsCreatorFilter.innerHTML = '<option value="">All Creators</option>';
+    creators
+      .sort((left, right) => String(left.creatorDisplayName || left.creatorTrainerRef || "").localeCompare(String(right.creatorDisplayName || right.creatorTrainerRef || ""), undefined, { sensitivity: "base" }))
+      .forEach((session) => {
+        const option = document.createElement("option");
+        option.value = String(session.creatorTrainerRef || "");
+        option.textContent = session.creatorDisplayName || session.creatorTrainerRef || "Unknown creator";
+        elements.superAdminSessionsCreatorFilter.appendChild(option);
+      });
+    elements.superAdminSessionsCreatorFilter.value = currentCreator;
+
+    const stats = {
+      total: filtered.length,
+      active: filtered.filter((session) => String(session.status || "").toLowerCase() === "active").length,
+      closed: filtered.filter((session) => String(session.status || "").toLowerCase() !== "active").length,
+      today: filtered.filter((session) => isDateToday(session.createdAt)).length,
+      departments: new Set(filtered.map((session) => String(session.creatorOrganizationId || "")).filter(Boolean)).size,
+      creators: new Set(filtered.map((session) => String(session.creatorTrainerRef || "")).filter(Boolean)).size
+    };
+    elements.superAdminSessionsStats.innerHTML = `
+      <div class="department-admin-kpi"><div class="label">Sessions</div><div class="value">${stats.total}</div></div>
+      <div class="department-admin-kpi"><div class="label">Active</div><div class="value">${stats.active}</div></div>
+      <div class="department-admin-kpi"><div class="label">Closed</div><div class="value">${stats.closed}</div></div>
+      <div class="department-admin-kpi"><div class="label">Created Today</div><div class="value">${stats.today}</div></div>
+      <div class="department-admin-kpi"><div class="label">Departments</div><div class="value">${stats.departments}</div></div>
+      <div class="department-admin-kpi"><div class="label">Creators</div><div class="value">${stats.creators}</div></div>
+    `;
+    if (elements.superAdminSessionsResultCount) {
+      elements.superAdminSessionsResultCount.textContent = `${filtered.length} session${filtered.length === 1 ? "" : "s"} shown`;
+    }
+
+    elements.superAdminSessionsList.innerHTML = "";
+    if (!filtered.length) {
+      const empty = document.createElement("div");
+      empty.className = "muted";
+      empty.textContent = sessions.length ? "No sessions match the current filters." : "No collaborative scenarios have been created yet.";
+      elements.superAdminSessionsList.appendChild(empty);
+      return;
+    }
+
+    filtered.forEach((session) => {
+      const card = document.createElement("div");
+      card.className = "session-card super-admin-session-card";
+      const sharedBadge = Number(session.sharedOrganizationCount || 0) > 0
+        ? `<span class="super-admin-session-badge">Shared ${escapeHtml(String(session.sharedOrganizationCount))}</span>`
+        : "";
+      const viewerBadge = `<span class="super-admin-session-badge">${session.viewerAccessEnabled === false ? "Viewer Off" : "Viewer On"}</span>`;
+      card.innerHTML = `
+        <div class="session-card-top">
+          <div class="session-card-content">
+            <strong>${escapeHtml(session.incidentName || "Untitled Session")}</strong>
+            <div class="muted">${escapeHtml(formatSuperAdminSessionStatus(session.status))} · ${escapeHtml(session.creatorOrganizationName || "Unassigned department")}</div>
+          </div>
+        </div>
+        <div class="super-admin-session-badges">
+          <span class="super-admin-session-badge ${escapeAttribute(String(session.status || "").toLowerCase())}">${escapeHtml(formatSuperAdminSessionStatus(session.status))}</span>
+          ${sharedBadge}
+          ${viewerBadge}
+        </div>
+        <div class="super-admin-session-meta">
+          <div class="muted">Created ${escapeHtml(formatDateTime(session.createdAt))} by ${escapeHtml(session.creatorDisplayName || session.creatorTrainerRef || "Unknown creator")}</div>
+          <div class="muted">Join Code: ${escapeHtml(session.joinCode || "—")} · Participants: ${escapeHtml(String(session.participantCount ?? 0))} · Objects: ${escapeHtml(String(session.objectCount ?? 0))}</div>
+          <div class="muted">Updated ${escapeHtml(formatDateTime(session.updatedAt))}</div>
+        </div>
+      `;
+      const actions = document.createElement("div");
+      actions.className = "super-admin-session-actions";
+      const detailsBtn = document.createElement("button");
+      detailsBtn.className = "secondary";
+      detailsBtn.type = "button";
+      detailsBtn.textContent = "Open Details";
+      detailsBtn.addEventListener("click", () => openSuperAdminSessionDetails(session.sessionId));
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "secondary";
+      copyBtn.type = "button";
+      copyBtn.textContent = "Copy Session ID";
+      copyBtn.addEventListener("click", () => {
+        void copySuperAdminSessionId(session);
+      });
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "danger";
+      deleteBtn.type = "button";
+      deleteBtn.textContent = "Delete Session";
+      deleteBtn.addEventListener("click", () => {
+        void deleteSuperAdminSession(session);
+      });
+      actions.append(detailsBtn, copyBtn, deleteBtn);
+      card.appendChild(actions);
+      elements.superAdminSessionsList.appendChild(card);
+    });
+  }
+
+  function renderSuperAdminSessionDetailModal() {
+    if (
+      !elements.superAdminSessionDetailModal
+      || !elements.superAdminSessionDetailMeta
+      || !elements.superAdminSessionDetailTitle
+      || !elements.superAdminSessionDetailSubtitle
+    ) return;
+    const session = getSelectedSuperAdminSession();
+    const visible = Boolean(session);
+    elements.superAdminSessionDetailModal.classList.toggle("hidden", !visible);
+    if (!visible || !session) return;
+    elements.superAdminSessionDetailTitle.textContent = session.incidentName || "Session Details";
+    elements.superAdminSessionDetailSubtitle.textContent = `${formatSuperAdminSessionStatus(session.status)} · ${session.creatorOrganizationName || "Unassigned department"}`;
+    const sharedOrganizations = Array.isArray(session.sharedOrganizations) && session.sharedOrganizations.length
+      ? session.sharedOrganizations.join(", ")
+      : "None";
+    const creatorEmail = session.creatorEmail || "Unknown email";
+    const details = [
+      ["Session ID", session.sessionId],
+      ["Join Code", session.joinCode || "—"],
+      ["Status", formatSuperAdminSessionStatus(session.status)],
+      ["Created", formatDateTime(session.createdAt)],
+      ["Updated", formatDateTime(session.updatedAt)],
+      ["Ended", session.endedAt ? formatDateTime(session.endedAt) : "—"],
+      ["Creator", session.creatorDisplayName || session.creatorTrainerRef || "Unknown creator"],
+      ["Creator Email", creatorEmail],
+      ["Creator Ref", session.creatorTrainerRef || "—"],
+      ["Department", session.creatorOrganizationName || "Unassigned department"],
+      ["County", session.creatorCountyName || "Unassigned county"],
+      ["Viewer Access", session.viewerAccessEnabled === false ? "Disabled" : "Enabled"],
+      ["Participants", String(session.participantCount ?? 0)],
+      ["Map Objects", String(session.objectCount ?? 0)],
+      ["Shared Departments", sharedOrganizations],
+      ["Command Structure Saved", session.commandStructureSaved ? "Yes" : "No"],
+      ["ICS 207 Export Saved", session.ics207ExportSaved ? "Yes" : "No"],
+      ["Operational Period", `${formatDateTime(session.operationalPeriodStart)} to ${formatDateTime(session.operationalPeriodEnd)}`]
+    ];
+    elements.superAdminSessionDetailMeta.innerHTML = details.map(([label, value]) => `
+      <label class="field-block">
+        ${escapeHtml(label)}
+        <span class="super-admin-session-detail-value">${escapeHtml(value)}</span>
+      </label>
+    `).join("");
   }
 
   function renderSuperAdminAccess() {
