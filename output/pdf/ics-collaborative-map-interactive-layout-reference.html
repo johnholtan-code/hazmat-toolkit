@@ -132,6 +132,136 @@
       gap: 18px;
     }
 
+    .workspace-extension-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .workspace-action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 12px 0 18px;
+    }
+
+    .workspace-tool {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #1a2635;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+    }
+
+    .workspace-tool small {
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      margin-left: 8px;
+    }
+
+    button.workspace-tool {
+      cursor: pointer;
+    }
+
+    .command-sim-shell {
+      display: grid;
+      gap: 18px;
+    }
+
+    .command-sim-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .command-sim-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .command-sim-canvas {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--panel);
+      padding: 18px;
+      overflow: auto;
+    }
+
+    .command-sim-chart {
+      position: relative;
+      width: 1280px;
+      height: 900px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(rgba(255,255,255,0.03), rgba(255,255,255,0.03)),
+        #0f1722;
+    }
+
+    .command-sim-node {
+      position: absolute;
+      border: 2px solid #d9e0e8;
+      background: #fbfcfd;
+      color: #111827;
+      padding: 10px 8px;
+      font-weight: 700;
+      text-align: center;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.04);
+    }
+
+    .command-sim-node small {
+      display: block;
+      margin-top: 6px;
+      color: #5b6572;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .command-sim-connectors {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .command-sim-connectors path {
+      fill: none;
+      stroke: #d7dde5;
+      stroke-width: 3;
+      stroke-linecap: square;
+      stroke-linejoin: miter;
+    }
+
+    @media (max-width: 1100px) {
+      .command-sim-layout,
+      .workspace-extension-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .reference-note {
+      border: 1px dashed var(--line);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.03);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
     .panel {
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
@@ -503,6 +633,7 @@
       <div class="mode-switch">
         <button class="pill" data-surface="landing">Landing / Sign-In View</button>
         <button class="pill" data-surface="workspace">Live Workspace View</button>
+        <button class="pill" data-surface="commandStructure">Command Structure View</button>
         <button class="pill" data-surface="superAdmin">Super Admin View</button>
       </div>
     </div>
@@ -573,6 +704,16 @@
               <div class="inline-row">
                 <div class="badge">#forgotPasswordBtn</div>
               </div>
+              <div class="container-name">#recoveryAuthPanel.hidden</div>
+              <div class="field-grid">
+                <div class="field"><label>#recoveryPasswordInput</label><div class="value">New password</div></div>
+                <div class="field"><label>#recoveryPasswordConfirmInput</label><div class="value">Confirm password</div></div>
+              </div>
+              <div class="inline-row">
+                <div class="badge">#cancelRecoveryBtn</div>
+                <div class="badge">#completeRecoveryBtn</div>
+              </div>
+              <div class="muted">Latest landing behavior hides the Create Account tab while already signed in, keeps the signed-in summary visible, and routes password recovery through the dedicated reset panel above.</div>
             </div>
           </div>
 
@@ -604,6 +745,7 @@
                 <div class="badge">#departmentAdminAddBtn</div>
               </div>
               <div class="container-name">#departmentAdminMemberList</div>
+              <div class="muted">Landing cards now animate open and closed instead of snapping between states.</div>
             </div>
           </div>
 
@@ -841,6 +983,14 @@
     <section id="workspaceSurface" class="surface hidden">
       <div class="container-name">.layout > #appView.app</div>
       <h2 class="section-title">Live Workspace Layout</h2>
+      <div class="reference-note">
+        Top-bar workspace actions now include <strong>#ics202WorkspaceBtn</strong>, <strong>#commandStructureWorkspaceBtn</strong>, and <strong>#printExportBtn</strong>. The live app also includes a dedicated Command Structure workspace plus an ICS 207 preview/export modal that are documented below.
+      </div>
+      <div class="workspace-action-row">
+        <button class="workspace-tool" type="button">ICS 202 <small>#ics202WorkspaceBtn</small></button>
+        <button class="workspace-tool" type="button" data-surface="commandStructure">Command Structure <small>#commandStructureWorkspaceBtn</small></button>
+        <button class="workspace-tool" type="button">Print / Export <small>#printExportBtn</small></button>
+      </div>
       <div class="layout-shell">
         <div class="left-stack">
           <div class="compact-panel">
@@ -906,6 +1056,8 @@
                 <div class="dim-badge" data-dim-for="palettesRef">--</div>
               </div>
               <div class="container-name">#paletteSearchInput</div>
+              <div class="container-name">#paletteScrollHint</div>
+              <div class="muted">Palette category buttons were tightened so the full library stays within the sidebar more reliably before the scroll hint appears.</div>
             </div>
           </div>
         </div>
@@ -926,6 +1078,10 @@
               <small>Wx / styles / focus</small>
               <div class="dim-badge" data-dim-for="mapStyleDock">--</div>
             </div>
+            <div class="floating-control" style="right: 18px; top: 110px;">
+              #weatherLauncherBtn + #weatherPanel
+              <small>Incident weather drawer</small>
+            </div>
             <div class="floating-control" style="left: 18px; bottom: 18px;">
               #drawControls
               <small>Geometry / draw action bar</small>
@@ -938,6 +1094,10 @@
             <div class="map-label" style="left: 340px; top: 260px;">
               #incidentFocus
               <small>Reference label for centered view</small>
+            </div>
+            <div class="map-label" style="left: 470px; top: 360px;">
+              measurement object
+              <small>Distance label + drag handles</small>
             </div>
           </div>
         </div>
@@ -996,7 +1156,255 @@
               </div>
               <div class="container-name">#selectedObjectMeta</div>
               <div class="container-name">#saveSelectedObjectBtn</div>
+              <div class="inline-row">
+                <div class="badge">#deleteObjectBtn.danger</div>
+                <div class="badge">measurement labels</div>
+              </div>
+              <div class="muted">Measurement objects now save and sync correctly, show readable labels, expose draggable end handles, and use the same alert styling as other destructive actions.</div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="workspace-extension-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="container-name">.topbar + .topbar-actions</div>
+              <h2>Toolbar and Map Actions</h2>
+            </div>
+          </div>
+          <div class="container-name">.topbar-action-row</div>
+          <div class="container-name">.topbar-action-row.topbar-action-row-secondary</div>
+          <div class="muted">The live map toolbar is now intentionally constrained to two rows. Settings and workflow actions live in the first row, while workspace switches and critical map tools live in the second.</div>
+          <div class="inline-row">
+            <div class="badge">#topbarSettingsBtn</div>
+            <div class="badge">#helpTutorialBtn</div>
+            <div class="badge">#guidedModeBtn</div>
+            <div class="badge">#afterActionModeBtn</div>
+            <div class="badge">#printExportBtn</div>
+          </div>
+          <div class="inline-row">
+            <div class="badge">#superAdminWorkspaceBtn</div>
+            <div class="badge">#ics202WorkspaceBtn</div>
+            <div class="badge">#commandStructureWorkspaceBtn</div>
+            <div class="badge">#attachImageBtn.topbar-icon-btn</div>
+            <div class="badge">#isolationToolBtn</div>
+            <div class="badge">#endSessionBtn.topbar-alert-btn</div>
+          </div>
+          <div class="muted">The image action now uses a camera icon treatment in the top bar instead of the older text-heavy button style.</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="container-name">#guidePopup + #attachmentPreviewModal</div>
+              <h2>Walkthrough and Attachments</h2>
+            </div>
+          </div>
+          <div class="container-name">#guideTitle</div>
+          <div class="container-name">#guideBody</div>
+          <div class="container-name">#guideMeta</div>
+          <div class="inline-row">
+            <div class="badge">#guideClose</div>
+            <div class="badge">#guideBack</div>
+            <div class="badge">#guideNext</div>
+          </div>
+          <div class="container-name">#attachmentImageInput</div>
+          <div class="container-name">#attachmentImageAppendInput</div>
+          <div class="container-name">#attachmentPreviewImage</div>
+          <div class="inline-row">
+            <div class="badge">#attachmentPrevBtn</div>
+            <div class="badge">#attachmentNextBtn</div>
+            <div class="badge">#attachmentAddBtn</div>
+            <div class="badge">#attachmentRenameBtn</div>
+            <div class="badge">#attachmentDeleteBtn.danger</div>
+          </div>
+          <div class="muted">Walkthrough steps now reveal the panels they are describing, and attached images open in a dedicated preview modal with add, rename, browse, and delete controls.</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="container-name">#commandStructureWorkspace.command-structure-workspace</div>
+              <h2>Command Structure Workspace</h2>
+            </div>
+            <div class="panel-header-actions">
+              <div class="badge">#commandStructureSaveBtn</div>
+              <div class="badge">#commandStructureBackBtn</div>
+            </div>
+          </div>
+          <div class="container-name">.command-structure-topbar</div>
+          <div class="container-name">.command-structure-body</div>
+          <div class="container-name">.command-structure-summary</div>
+          <div class="container-name">#commandStructureIncidentName</div>
+          <div class="container-name">#commandStructureCurrentUser</div>
+          <div class="container-name">#commandStructureAssignmentCount</div>
+          <div class="container-name">.command-structure-chart-card</div>
+          <div class="container-name">.command-structure-chart-scroll</div>
+          <div class="container-name">#commandStructureChart</div>
+          <div class="container-name">#commandStructureRolePanel</div>
+          <div class="muted">The role panel now starts collapsed by default. Clicking a node opens the assignment editor for that role.</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="container-name">#printExportModal + #ics207PreviewModal</div>
+              <h2>ICS 207 Export Flow</h2>
+            </div>
+            <div class="panel-header-actions">
+              <div class="badge">#exportIcs207Btn</div>
+              <div class="badge">#ics207PrintBtn</div>
+              <div class="badge">#ics207ExportPdfBtn</div>
+            </div>
+          </div>
+          <div class="container-name">#printExportModal</div>
+          <div class="container-name">#printExportModalNote</div>
+          <div class="muted">ICS 207 is generated from the latest saved Command Structure and opens in a validation-only preview before print or PDF export.</div>
+          <div class="container-name">#ics207PreviewModal</div>
+          <div class="container-name">#ics207PreviewValidation</div>
+          <div class="field-grid">
+            <div class="field"><label>#ics207IncidentNameInput</label><div class="value">Incident Name override for preview</div></div>
+            <div class="field"><label>#ics207PreparedByNameInput</label><div class="value">Prepared By Name</div></div>
+            <div class="field"><label>#ics207PreparedByPositionInput</label><div class="value">Prepared By Position / Title</div></div>
+            <div class="field"><label>#ics207PreparedByDateTimeInput</label><div class="value">Prepared Date / Time</div></div>
+            <div class="field"><label>#ics207OpStartInput</label><div class="value">Period Start</div></div>
+            <div class="field"><label>#ics207OpEndInput</label><div class="value">Period End</div></div>
+          </div>
+          <div class="container-name">#ics207PreviewFrame</div>
+          <div class="container-name">#ics207PrintRoot</div>
+          <div class="muted">Print now uses a dedicated ICS 207 document, PDF export surfaces clearer failure messages, and weather-backed export data uses the corrected render path before falling back.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="commandStructureSurface" class="surface hidden">
+      <div class="container-name">#commandStructureWorkspace.command-structure-workspace</div>
+      <h2 class="section-title">Command Structure Workspace Layout</h2>
+      <div class="command-sim-shell">
+        <div class="reference-note">
+          This is a simulated dedicated Command Structure page in the reference itself. It mirrors the live workspace pattern: a top toolbar, a wide fixed org chart canvas, and a role-assignment panel on the right.
+        </div>
+
+        <div class="command-sim-topbar">
+          <div class="workspace-action-row" style="margin:0;">
+            <button class="workspace-tool" type="button" data-surface="workspace">Back to Map <small>#commandStructureBackBtn</small></button>
+            <button class="workspace-tool" type="button">Save Command Structure <small>#commandStructureSaveBtn</small></button>
+          </div>
+          <div class="muted">Chart uses a fixed canvas and scrolls instead of compressing boxes.</div>
+        </div>
+
+        <div class="command-sim-layout">
+          <div class="command-sim-canvas">
+            <div class="container-name">#commandStructureChart</div>
+            <div class="command-sim-chart">
+              <svg class="command-sim-connectors" viewBox="0 0 1280 900" aria-hidden="true" focusable="false">
+                <path d="M 640 90 V 150"></path>
+                <path d="M 420 150 H 860"></path>
+                <path d="M 420 150 V 220"></path>
+                <path d="M 640 150 V 220"></path>
+                <path d="M 860 150 V 220"></path>
+                <path d="M 240 300 H 1040"></path>
+                <path d="M 240 300 V 360"></path>
+                <path d="M 480 300 V 360"></path>
+                <path d="M 740 300 V 360"></path>
+                <path d="M 1040 300 V 360"></path>
+                <path d="M 240 450 V 520"></path>
+                <path d="M 240 520 H 360"></path>
+                <path d="M 360 520 V 590"></path>
+                <path d="M 360 590 H 300"></path>
+                <path d="M 360 590 H 470"></path>
+                <path d="M 300 660 V 790"></path>
+                <path d="M 300 700 H 190"></path>
+                <path d="M 300 745 H 190"></path>
+                <path d="M 300 790 H 190"></path>
+                <path d="M 480 432 V 500"></path>
+                <path d="M 480 500 H 430"></path>
+                <path d="M 480 500 H 610"></path>
+                <path d="M 430 500 V 560"></path>
+                <path d="M 610 500 V 560"></path>
+                <path d="M 740 432 V 500"></path>
+                <path d="M 740 500 H 690"></path>
+                <path d="M 740 500 H 850"></path>
+                <path d="M 690 500 V 560"></path>
+                <path d="M 850 500 V 560"></path>
+                <path d="M 690 618 V 780"></path>
+                <path d="M 690 655 H 620"></path>
+                <path d="M 690 705 H 620"></path>
+                <path d="M 690 755 H 620"></path>
+                <path d="M 850 618 V 780"></path>
+                <path d="M 850 655 H 780"></path>
+                <path d="M 850 705 H 780"></path>
+                <path d="M 850 755 H 780"></path>
+                <path d="M 1040 432 V 500"></path>
+                <path d="M 1040 500 H 980"></path>
+                <path d="M 1040 500 H 1140"></path>
+                <path d="M 980 500 V 560"></path>
+                <path d="M 1140 500 V 560"></path>
+              </svg>
+
+              <div class="command-sim-node" style="left:560px;top:30px;width:160px;height:60px;">Incident Commander<small>#incident_commander</small></div>
+              <div class="command-sim-node" style="left:360px;top:160px;width:180px;height:60px;">Public Information Officer<small>#public_information_officer</small></div>
+              <div class="command-sim-node" style="left:560px;top:160px;width:160px;height:60px;">Safety Officer<small>#safety_officer</small></div>
+              <div class="command-sim-node" style="left:780px;top:160px;width:160px;height:60px;">Liaison Officer<small>#liaison_officer</small></div>
+
+              <div class="command-sim-node" style="left:120px;top:360px;width:240px;height:72px;">Operations Section<small>#operations_section_chief</small></div>
+              <div class="command-sim-node" style="left:390px;top:360px;width:180px;height:72px;">Planning Section<small>#planning_section_chief</small></div>
+              <div class="command-sim-node" style="left:650px;top:360px;width:220px;height:72px;">Logistics Section<small>#logistics_section_chief</small></div>
+              <div class="command-sim-node" style="left:940px;top:360px;width:220px;height:72px;">Finance / Admin Section<small>#finance_admin_section_chief</small></div>
+
+              <div class="command-sim-node" style="left:80px;top:520px;width:200px;height:58px;">Staging Area<small>#staging_area</small></div>
+              <div class="command-sim-node" style="left:300px;top:560px;width:180px;height:58px;">Branches<small>#branches</small></div>
+              <div class="command-sim-node" style="left:500px;top:560px;width:180px;height:58px;">Air Ops Branch<small>#air_operations_branch</small></div>
+              <div class="command-sim-node" style="left:300px;top:660px;width:170px;height:58px;">Divisions<small>#divisions</small></div>
+              <div class="command-sim-node" style="left:500px;top:660px;width:170px;height:58px;">Groups<small>#groups</small></div>
+              <div class="command-sim-node" style="left:190px;top:740px;width:300px;height:50px;">Strike Team<small>#strike_team</small></div>
+              <div class="command-sim-node" style="left:190px;top:798px;width:300px;height:50px;">Task Force<small>#task_force</small></div>
+              <div class="command-sim-node" style="left:190px;top:856px;width:300px;height:50px;">Single Resource<small>#single_resource</small></div>
+
+              <div class="command-sim-node" style="left:390px;top:520px;width:180px;height:58px;">Resources Unit<small>#resources_unit</small></div>
+              <div class="command-sim-node" style="left:590px;top:520px;width:180px;height:58px;">Demobilization Unit<small>#demobilization_unit</small></div>
+              <div class="command-sim-node" style="left:390px;top:620px;width:180px;height:58px;">Situation Unit<small>#situation_unit</small></div>
+              <div class="command-sim-node" style="left:590px;top:620px;width:180px;height:58px;">Documentation Unit<small>#documentation_unit</small></div>
+
+              <div class="command-sim-node" style="left:620px;top:520px;width:140px;height:58px;">Service Branch<small>#service_branch</small></div>
+              <div class="command-sim-node" style="left:780px;top:520px;width:160px;height:58px;">Support Branch<small>#support_branch</small></div>
+              <div class="command-sim-node" style="left:620px;top:620px;width:140px;height:58px;">Communications Unit<small>#communications_unit</small></div>
+              <div class="command-sim-node" style="left:620px;top:690px;width:140px;height:58px;">Medical Unit<small>#medical_unit</small></div>
+              <div class="command-sim-node" style="left:620px;top:760px;width:140px;height:58px;">Food Unit<small>#food_unit</small></div>
+              <div class="command-sim-node" style="left:780px;top:620px;width:160px;height:58px;">Supply Unit<small>#supply_unit</small></div>
+              <div class="command-sim-node" style="left:780px;top:690px;width:160px;height:58px;">Facilities Unit<small>#facilities_unit</small></div>
+              <div class="command-sim-node" style="left:780px;top:760px;width:160px;height:58px;">Ground Support Unit<small>#ground_support_unit</small></div>
+
+              <div class="command-sim-node" style="left:940px;top:520px;width:180px;height:58px;">Time Unit<small>#time_unit</small></div>
+              <div class="command-sim-node" style="left:1140px;top:520px;width:180px;height:58px;">Compensation / Claims Unit<small>#compensation_claims_unit</small></div>
+              <div class="command-sim-node" style="left:940px;top:620px;width:180px;height:58px;">Procurement Unit<small>#procurement_unit</small></div>
+              <div class="command-sim-node" style="left:1140px;top:620px;width:180px;height:58px;">Cost Unit<small>#cost_unit</small></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="container-name">#commandStructureRolePanel</div>
+                <h2>Role Panel</h2>
+              </div>
+              <div class="badge">#commandStructureClosePanelBtn</div>
+            </div>
+            <div class="container-name">#commandStructureRoleStatus</div>
+            <div class="container-name">#commandStructureRoleTitle</div>
+            <div class="container-name">#commandStructureRoleParent</div>
+            <div class="container-name">#commandStructureRoleCurrentAssignee</div>
+            <div class="field">
+              <label>#commandStructureRoleAssigneeInput</label>
+              <div class="value">Assign person to selected role</div>
+            </div>
+            <div class="inline-row">
+              <div class="badge">#commandStructureAssignBtn</div>
+              <div class="badge">#commandStructureRemoveBtn</div>
+            </div>
+            <div class="muted">In the live app, this panel starts collapsed and opens when a role node is selected.</div>
           </div>
         </div>
       </div>
@@ -1082,6 +1490,12 @@
               <div class="list-card">
                 <div class="container-name">#superAdminUsersList</div>
                 <div class="muted">Global licensed-user roster filtered by department</div>
+                <div class="inline-row">
+                  <div class="badge">Deactivate / Reactivate</div>
+                  <div class="badge">Make Admin / Remove Admin</div>
+                  <div class="badge">Delete User Everywhere</div>
+                </div>
+                <div class="muted">Super Admin can now fully remove a user across departments instead of only toggling active/admin state.</div>
               </div>
             </div>
           </div>
@@ -1131,6 +1545,7 @@
   <script>
     const landingSurface = document.getElementById('landingSurface');
     const workspaceSurface = document.getElementById('workspaceSurface');
+    const commandStructureSurface = document.getElementById('commandStructureSurface');
     const superAdminSurface = document.getElementById('superAdminSurface');
     const interactiveGuidedSetupToggle = document.getElementById('interactiveGuidedSetupToggle');
     const interactiveFocusSetupRef = document.getElementById('interactiveFocusSetupRef');
@@ -1143,6 +1558,7 @@
         const target = button.getAttribute('data-surface');
         landingSurface.classList.toggle('hidden', target !== 'landing');
         workspaceSurface.classList.toggle('hidden', target !== 'workspace');
+        commandStructureSurface.classList.toggle('hidden', target !== 'commandStructure');
         superAdminSurface.classList.toggle('hidden', target !== 'superAdmin');
         requestAnimationFrame(updateDimensions);
       });
