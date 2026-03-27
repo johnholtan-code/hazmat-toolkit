@@ -9781,9 +9781,15 @@
   }
 
   function isCostedResourceObject(object) {
+    const isDepartmentStationRoute = object?.objectType === STATION_ROUTE_OBJECT_TYPE
+      && object?.fields?.stationRouteTag === STATION_ROUTE_OBJECT_TAG
+      && COSTED_RESOURCE_CATEGORIES.has(String(object?.fields?.resourceCategory || ""));
     return Boolean(
-      object?.objectType === ICON_MARKER_OBJECT_TYPE
-      && COSTED_RESOURCE_CATEGORIES.has(String(object?.fields?.resourceCategory || ""))
+      isDepartmentStationRoute
+      || (
+        object?.objectType === ICON_MARKER_OBJECT_TYPE
+        && COSTED_RESOURCE_CATEGORIES.has(String(object?.fields?.resourceCategory || ""))
+      )
     );
   }
 
