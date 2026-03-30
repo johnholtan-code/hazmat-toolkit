@@ -1,0 +1,1353 @@
+{
+  "categories": [
+    {
+      "id": "access_hazards",
+      "label": "Access Hazards"
+    },
+    {
+      "id": "hazard",
+      "label": "Hazard"
+    },
+    {
+      "id": "hazardous_materials",
+      "label": "Hazardous Materials"
+    },
+    {
+      "id": "human_caused_hazards",
+      "label": "Human Caused Hazards"
+    },
+    {
+      "id": "incident",
+      "label": "Incident"
+    },
+    {
+      "id": "lifelines",
+      "label": "Lifelines"
+    },
+    {
+      "id": "nims_positions",
+      "label": "NIMS Positions"
+    },
+    {
+      "id": "natural_hazards",
+      "label": "Natural Hazards"
+    },
+    {
+      "id": "resources",
+      "label": "Resources"
+    },
+    {
+      "id": "infrastructure",
+      "label": "Infrastructure"
+    },
+    {
+      "id": "preplan",
+      "label": "Preplan"
+    }
+  ],
+  "icons": [
+    {
+      "id": "napsg_ambulance_access",
+      "label": "Ambulance Access",
+      "categoryId": "access_hazards",
+      "category": "Access Hazards",
+      "assetPath": "./icons/access_hazards/napsg_ambulance_access.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "ambulance",
+        "access",
+        "ems",
+        "entry"
+      ]
+    },
+    {
+      "id": "napsg_blocked_road",
+      "label": "Blocked Road",
+      "categoryId": "access_hazards",
+      "category": "Access Hazards",
+      "assetPath": "./icons/access_hazards/napsg_blocked_road.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "blocked",
+        "road",
+        "access",
+        "hazard"
+      ]
+    },
+    {
+      "id": "napsg_fire_engine_access",
+      "label": "Fire Engine Access",
+      "categoryId": "access_hazards",
+      "category": "Access Hazards",
+      "assetPath": "./icons/access_hazards/napsg_fire_engine_access.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "fire",
+        "engine",
+        "pumper",
+        "access"
+      ]
+    },
+    {
+      "id": "napsg_no_vehicle_access",
+      "label": "No Vehicle Access",
+      "categoryId": "access_hazards",
+      "category": "Access Hazards",
+      "assetPath": "./icons/access_hazards/napsg_no_vehicle_access.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "no",
+        "vehicle",
+        "access",
+        "hazard"
+      ]
+    },
+    {
+      "id": "napsg_restricted_weight",
+      "label": "Restricted Weight",
+      "categoryId": "access_hazards",
+      "category": "Access Hazards",
+      "assetPath": "./icons/access_hazards/napsg_restricted_weight.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "restricted",
+        "weight",
+        "bridge",
+        "access"
+      ]
+    },
+    {
+      "id": "road_barricade",
+      "label": "Road Barricade",
+      "categoryId": "access_hazards",
+      "category": "Access Hazards",
+      "assetPath": "./icons/access_hazards/road_barricade.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "road",
+        "barricade",
+        "access hazards"
+      ]
+    },
+    {
+      "id": "road_sign_b7a",
+      "label": "Road Sign",
+      "categoryId": "access_hazards",
+      "category": "Access Hazards",
+      "assetPath": "./icons/access_hazards/road_sign_b7a.svg",
+      "markerSize": 32,
+      "paletteSize": 28,
+      "keywords": [
+        "road",
+        "sign",
+        "access",
+        "hazard"
+      ]
+    },
+    {
+      "id": "traffic_cones",
+      "label": "Traffic Cones",
+      "categoryId": "access_hazards",
+      "category": "Access Hazards",
+      "assetPath": "./icons/access_hazards/traffic_cones.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "traffic",
+        "cones",
+        "access hazards"
+      ]
+    },
+    {
+      "id": "traffic_control_truck",
+      "label": "Traffic Control Truck",
+      "categoryId": "access_hazards",
+      "category": "Access Hazards",
+      "assetPath": "./icons/access_hazards/traffic_control_truck.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "traffic",
+        "control",
+        "truck",
+        "access hazards"
+      ]
+    },
+    {
+      "id": "napsg_water_access",
+      "label": "Water Access",
+      "categoryId": "access_hazards",
+      "category": "Access Hazards",
+      "assetPath": "./icons/access_hazards/napsg_water_access.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "water",
+        "access",
+        "marine",
+        "entry"
+      ]
+    },
+    {
+      "id": "napsg_biohazard",
+      "label": "Biohazard",
+      "categoryId": "hazard",
+      "category": "Hazard",
+      "assetPath": "./icons/hazard/napsg_biohazard.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "biohazard",
+        "hazard",
+        "biological"
+      ]
+    },
+    {
+      "id": "napsg_collapse_likely",
+      "label": "Collapse Likely",
+      "categoryId": "hazard",
+      "category": "Hazard",
+      "assetPath": "./icons/hazard/napsg_collapse_likely.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "collapse",
+        "likely",
+        "structural",
+        "hazard"
+      ]
+    },
+    {
+      "id": "napsg_confined_space",
+      "label": "Confined Space",
+      "categoryId": "hazard",
+      "category": "Hazard",
+      "assetPath": "./icons/hazard/napsg_confined_space.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "confined",
+        "space",
+        "hazard"
+      ]
+    },
+    {
+      "id": "napsg_do_not_enter_building",
+      "label": "Do Not Enter Building",
+      "categoryId": "hazard",
+      "category": "Hazard",
+      "assetPath": "./icons/hazard/napsg_do_not_enter_building.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "do",
+        "not",
+        "enter",
+        "building",
+        "hazard"
+      ]
+    },
+    {
+      "id": "napsg_electrical_hazards",
+      "label": "Electrical Hazards",
+      "categoryId": "hazard",
+      "category": "Hazard",
+      "assetPath": "./icons/hazard/napsg_electrical_hazards.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "electrical",
+        "hazards",
+        "power"
+      ]
+    },
+    {
+      "id": "hazard_warning_symbol",
+      "label": "Hazard Warning Symbol",
+      "categoryId": "hazard",
+      "category": "Hazard",
+      "assetPath": "./icons/hazard/hazard_warning_symbol.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "hazard",
+        "warning",
+        "symbol"
+      ]
+    },
+    {
+      "id": "napsg_poison",
+      "label": "Poison",
+      "categoryId": "hazard",
+      "category": "Hazard",
+      "assetPath": "./icons/hazard/napsg_poison.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "poison",
+        "toxic",
+        "hazard"
+      ]
+    },
+    {
+      "id": "napsg_chlorine",
+      "label": "Chlorine",
+      "categoryId": "hazardous_materials",
+      "category": "Hazardous Materials",
+      "assetPath": "./icons/hazardous_materials/napsg_chlorine.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "chlorine",
+        "hazmat",
+        "dot",
+        "placard"
+      ]
+    },
+    {
+      "id": "napsg_corrosive",
+      "label": "Corrosive",
+      "categoryId": "hazardous_materials",
+      "category": "Hazardous Materials",
+      "assetPath": "./icons/hazardous_materials/napsg_corrosive.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "corrosive",
+        "acid",
+        "hazmat",
+        "dot"
+      ]
+    },
+    {
+      "id": "napsg_flammable_gas",
+      "label": "Flammable Gas",
+      "categoryId": "hazardous_materials",
+      "category": "Hazardous Materials",
+      "assetPath": "./icons/hazardous_materials/napsg_flammable_gas.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "flammable",
+        "gas",
+        "hazmat",
+        "dot"
+      ]
+    },
+    {
+      "id": "napsg_flammable_liquid",
+      "label": "Flammable Liquid",
+      "categoryId": "hazardous_materials",
+      "category": "Hazardous Materials",
+      "assetPath": "./icons/hazardous_materials/napsg_flammable_liquid.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "flammable",
+        "liquid",
+        "hazmat",
+        "dot"
+      ]
+    },
+    {
+      "id": "napsg_nfpa_704",
+      "label": "NFPA 704",
+      "categoryId": "hazardous_materials",
+      "category": "Hazardous Materials",
+      "assetPath": "./icons/hazardous_materials/napsg_nfpa_704.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "nfpa",
+        "704",
+        "hazmat",
+        "placard"
+      ]
+    },
+    {
+      "id": "napsg_oxygen",
+      "label": "Oxygen",
+      "categoryId": "hazardous_materials",
+      "category": "Hazardous Materials",
+      "assetPath": "./icons/hazardous_materials/napsg_oxygen.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "oxygen",
+        "oxidizer",
+        "hazmat",
+        "dot"
+      ]
+    },
+    {
+      "id": "napsg_poison_gas",
+      "label": "Poison Gas",
+      "categoryId": "hazardous_materials",
+      "category": "Hazardous Materials",
+      "assetPath": "./icons/hazardous_materials/napsg_poison_gas.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "poison",
+        "gas",
+        "toxic",
+        "hazmat"
+      ]
+    },
+    {
+      "id": "napsg_radioactive",
+      "label": "Radioactive",
+      "categoryId": "hazardous_materials",
+      "category": "Hazardous Materials",
+      "assetPath": "./icons/hazardous_materials/napsg_radioactive.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "radioactive",
+        "nuclear",
+        "hazmat"
+      ]
+    },
+    {
+      "id": "ambulance_response_vehicle",
+      "label": "Ambulance",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/ambulance_response_vehicle.svg",
+      "markerSize": 44,
+      "paletteSize": 30,
+      "keywords": [
+        "ambulance",
+        "ems",
+        "medical",
+        "vehicle"
+      ]
+    },
+    {
+      "id": "ambulance_unit",
+      "label": "Ambulance Unit",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/ambulance_unit.svg",
+      "markerSize": 44,
+      "paletteSize": 30,
+      "keywords": [
+        "ambulance",
+        "unit",
+        "response",
+        "apparatus",
+        "vehicle",
+        "incident"
+      ]
+    },
+    {
+      "id": "napsg_command_post",
+      "label": "Command Post",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/napsg_command_post.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "command",
+        "post",
+        "incident"
+      ]
+    },
+    {
+      "id": "napsg_decon",
+      "label": "Decon",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/napsg_decon.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "decon",
+        "decontamination",
+        "incident"
+      ]
+    },
+    {
+      "id": "napsg_decon_ambulatory",
+      "label": "Decon Ambulatory",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/napsg_decon_ambulatory.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "decon",
+        "ambulatory",
+        "decontamination"
+      ]
+    },
+    {
+      "id": "napsg_decon_non_ambulatory",
+      "label": "Decon Non-Ambulatory",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/napsg_decon_non_ambulatory.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "decon",
+        "non-ambulatory",
+        "decontamination"
+      ]
+    },
+    {
+      "id": "engine_company",
+      "label": "Engine Company",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/engine_company.svg",
+      "markerSize": 44,
+      "paletteSize": 30,
+      "keywords": [
+        "engine",
+        "company",
+        "response",
+        "apparatus",
+        "vehicle",
+        "incident"
+      ]
+    },
+    {
+      "id": "fire_truck_ladder",
+      "label": "Fire Truck Ladder",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/fire_truck_ladder.svg",
+      "markerSize": 44,
+      "paletteSize": 30,
+      "keywords": [
+        "fire",
+        "truck",
+        "ladder",
+        "engine"
+      ]
+    },
+    {
+      "id": "foam_engine",
+      "label": "Foam Engine",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/foam_engine.svg",
+      "markerSize": 44,
+      "paletteSize": 30,
+      "keywords": [
+        "foam",
+        "engine",
+        "response",
+        "apparatus",
+        "vehicle",
+        "incident"
+      ]
+    },
+    {
+      "id": "napsg_incident_command_post",
+      "label": "Incident Command Post",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/napsg_incident_command_post.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "incident",
+        "command",
+        "post",
+        "icp"
+      ]
+    },
+    {
+      "id": "ladder_truck",
+      "label": "Ladder Truck",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/ladder_truck.svg",
+      "markerSize": 44,
+      "paletteSize": 30,
+      "keywords": [
+        "ladder",
+        "truck",
+        "response",
+        "apparatus",
+        "vehicle",
+        "incident"
+      ]
+    },
+    {
+      "id": "law_enforcement_unit",
+      "label": "Law Enforcement Unit",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/law_enforcement_unit.svg",
+      "markerSize": 44,
+      "paletteSize": 30,
+      "keywords": [
+        "law",
+        "enforcement",
+        "unit",
+        "response",
+        "apparatus",
+        "vehicle",
+        "incident"
+      ]
+    },
+    {
+      "id": "medical_unit",
+      "label": "Medical Unit",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/medical_unit.svg",
+      "markerSize": 44,
+      "paletteSize": 30,
+      "keywords": [
+        "medical",
+        "unit",
+        "response",
+        "apparatus",
+        "vehicle",
+        "incident"
+      ]
+    },
+    {
+      "id": "mobile_command_bus",
+      "label": "Mobile Command Bus",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/mobile_command_bus.svg",
+      "markerSize": 44,
+      "paletteSize": 30,
+      "keywords": [
+        "mobile",
+        "command",
+        "bus",
+        "response",
+        "apparatus",
+        "vehicle",
+        "incident"
+      ]
+    },
+    {
+      "id": "police_car",
+      "label": "Police Car",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/police_car.svg",
+      "markerSize": 42,
+      "paletteSize": 30,
+      "keywords": [
+        "police",
+        "law",
+        "enforcement",
+        "vehicle"
+      ]
+    },
+    {
+      "id": "napsg_staging",
+      "label": "Staging",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/napsg_staging.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "staging",
+        "incident",
+        "resources"
+      ]
+    },
+    {
+      "id": "napsg_aerial_ladder",
+      "label": "Aerial Ladder",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/napsg_aerial_ladder.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "aerial",
+        "ladder",
+        "fire",
+        "resource"
+      ]
+    },
+    {
+      "id": "air_monitor_trailer",
+      "label": "Air Monitor Trailer",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/air_monitor_trailer.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "air",
+        "monitor",
+        "trailer",
+        "resources"
+      ]
+    },
+    {
+      "id": "napsg_ambulance_ground",
+      "label": "Ambulance Ground",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/napsg_ambulance_ground.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "ambulance",
+        "ground",
+        "ems",
+        "resource"
+      ]
+    },
+    {
+      "id": "arrow_board_trailer",
+      "label": "Arrow Board Trailer",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/arrow_board_trailer.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "arrow",
+        "board",
+        "trailer",
+        "resources"
+      ]
+    },
+    {
+      "id": "bulldozer",
+      "label": "Bulldozer",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/bulldozer.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "bulldozer",
+        "resources"
+      ]
+    },
+    {
+      "id": "napsg_bulldozer",
+      "label": "Bulldozer",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/napsg_bulldozer.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "bulldozer",
+        "public",
+        "works",
+        "resource"
+      ]
+    },
+    {
+      "id": "catering_truck",
+      "label": "Catering Truck",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/catering_truck.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "catering",
+        "truck",
+        "resources"
+      ]
+    },
+    {
+      "id": "command_trailer",
+      "label": "Command Trailer",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/command_trailer.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "command",
+        "trailer",
+        "resources"
+      ]
+    },
+    {
+      "id": "containment_boom",
+      "label": "Containment Boom",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/containment_boom.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "containment",
+        "boom",
+        "resources"
+      ]
+    },
+    {
+      "id": "decon_tent",
+      "label": "Decon Tent",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/decon_tent.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "decon",
+        "tent",
+        "resources"
+      ]
+    },
+    {
+      "id": "drone_uav",
+      "label": "Drone Uav",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/drone_uav.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "drone",
+        "uav",
+        "resources"
+      ]
+    },
+    {
+      "id": "dump_truck",
+      "label": "Dump Truck",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/dump_truck.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "dump",
+        "truck",
+        "resources"
+      ]
+    },
+    {
+      "id": "napsg_dump_truck",
+      "label": "Dump Truck",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/napsg_dump_truck.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "dump",
+        "truck",
+        "public",
+        "works"
+      ]
+    },
+    {
+      "id": "napsg_engine_pumper",
+      "label": "Engine Pumper",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/napsg_engine_pumper.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "engine",
+        "pumper",
+        "fire",
+        "resource"
+      ]
+    },
+    {
+      "id": "excavator",
+      "label": "Excavator",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/excavator.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "excavator",
+        "resources"
+      ]
+    },
+    {
+      "id": "file",
+      "label": "File",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/file.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "file",
+        "resources"
+      ]
+    },
+    {
+      "id": "foam_trailer",
+      "label": "Foam Trailer",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/foam_trailer.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "foam",
+        "trailer",
+        "resources"
+      ]
+    },
+    {
+      "id": "frac_tank",
+      "label": "Frac Tank",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/frac_tank.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "frac",
+        "tank",
+        "resources"
+      ]
+    },
+    {
+      "id": "fuel_truck",
+      "label": "Fuel Truck",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/fuel_truck.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "fuel",
+        "truck",
+        "resources"
+      ]
+    },
+    {
+      "id": "generator_large",
+      "label": "Generator Large",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/generator_large.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "generator",
+        "large",
+        "resources"
+      ]
+    },
+    {
+      "id": "generator_small",
+      "label": "Generator Small",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/generator_small.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "generator",
+        "small",
+        "resources"
+      ]
+    },
+    {
+      "id": "hazmat_truck",
+      "label": "Hazmat Truck",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/hazmat_truck.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "hazmat",
+        "truck",
+        "resources"
+      ]
+    },
+    {
+      "id": "napsg_hazmat_unit",
+      "label": "HazMat Unit",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/napsg_hazmat_unit.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "hazmat",
+        "resource",
+        "team"
+      ]
+    },
+    {
+      "id": "hose_trailer",
+      "label": "Hose Trailer",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/hose_trailer.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "hose",
+        "trailer",
+        "resources"
+      ]
+    },
+    {
+      "id": "light_tower",
+      "label": "Light Tower",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/light_tower.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "light",
+        "tower",
+        "resources"
+      ]
+    },
+    {
+      "id": "lowboy_trailer",
+      "label": "Lowboy Trailer",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/lowboy_trailer.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "lowboy",
+        "trailer",
+        "resources"
+      ]
+    },
+    {
+      "id": "mini_excavator",
+      "label": "Mini Excavator",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/mini_excavator.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "mini",
+        "excavator",
+        "resources"
+      ]
+    },
+    {
+      "id": "napsg_mobile_communication_unit",
+      "label": "Mobile Communication Unit",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/napsg_mobile_communication_unit.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "mobile",
+        "communication",
+        "unit",
+        "resource"
+      ]
+    },
+    {
+      "id": "portable_flare_stack",
+      "label": "Portable Flare Stack",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/portable_flare_stack.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "portable",
+        "flare",
+        "stack",
+        "resources"
+      ]
+    },
+    {
+      "id": "portable_monitor",
+      "label": "Portable Monitor",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/portable_monitor.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "portable",
+        "monitor",
+        "resources"
+      ]
+    },
+    {
+      "id": "portable_restroom",
+      "label": "Portable Restroom",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/portable_restroom.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "portable",
+        "restroom",
+        "resources"
+      ]
+    },
+    {
+      "id": "pump_skid",
+      "label": "Pump Skid",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/pump_skid.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "pump",
+        "skid",
+        "resources"
+      ]
+    },
+    {
+      "id": "rehab_trailer",
+      "label": "Rehab Trailer",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/rehab_trailer.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "rehab",
+        "trailer",
+        "resources"
+      ]
+    },
+    {
+      "id": "repair_clamp",
+      "label": "Repair Clamp",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/repair_clamp.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "repair",
+        "clamp",
+        "resources"
+      ]
+    },
+    {
+      "id": "response_truck_generic",
+      "label": "Response Truck",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/response_truck_generic.svg",
+      "markerSize": 48,
+      "paletteSize": 34,
+      "keywords": [
+        "response",
+        "truck",
+        "resource",
+        "vehicle"
+      ]
+    },
+    {
+      "id": "rolloff_container",
+      "label": "Rolloff Container",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/rolloff_container.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "rolloff",
+        "container",
+        "resources"
+      ]
+    },
+    {
+      "id": "skid_steer",
+      "label": "Skid Steer",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/skid_steer.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "skid",
+        "steer",
+        "resources"
+      ]
+    },
+    {
+      "id": "staging_area",
+      "label": "Staging Area",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/staging_area.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "staging",
+        "area",
+        "resources"
+      ]
+    },
+    {
+      "id": "vacuum_truck",
+      "label": "Vacuum Truck",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/vacuum_truck.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "vacuum",
+        "truck",
+        "resources"
+      ]
+    },
+    {
+      "id": "water_tanker",
+      "label": "Water Tanker",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/water_tanker.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "water",
+        "tanker",
+        "resources"
+      ]
+    },
+    {
+      "id": "napsg_water_tender_tanker",
+      "label": "Water Tender Tanker",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/napsg_water_tender_tanker.svg",
+      "markerSize": 40,
+      "paletteSize": 30,
+      "keywords": [
+        "water",
+        "tender",
+        "tanker",
+        "resource"
+      ]
+    },
+    {
+      "id": "weather_station",
+      "label": "Weather Station",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/weather_station.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "weather",
+        "station",
+        "resources"
+      ]
+    },
+    {
+      "id": "wheel_loader",
+      "label": "Wheel Loader",
+      "categoryId": "resources",
+      "category": "Resources",
+      "assetPath": "./icons/resources/wheel_loader.svg",
+      "markerSize": 46,
+      "paletteSize": 32,
+      "keywords": [
+        "wheel",
+        "loader",
+        "resources"
+      ]
+    },
+    {
+      "id": "napsg_chemical_manufacturing",
+      "label": "Chemical Manufacturing",
+      "categoryId": "infrastructure",
+      "category": "Infrastructure",
+      "assetPath": "./icons/infrastructure/napsg_chemical_manufacturing.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "chemical",
+        "manufacturing",
+        "facility",
+        "infrastructure"
+      ]
+    },
+    {
+      "id": "napsg_explosives_manufacturing",
+      "label": "Explosives Manufacturing",
+      "categoryId": "infrastructure",
+      "category": "Infrastructure",
+      "assetPath": "./icons/infrastructure/napsg_explosives_manufacturing.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "explosives",
+        "manufacturing",
+        "facility",
+        "infrastructure"
+      ]
+    },
+    {
+      "id": "napsg_hazardous_manufacturing",
+      "label": "Hazardous Manufacturing",
+      "categoryId": "infrastructure",
+      "category": "Infrastructure",
+      "assetPath": "./icons/infrastructure/napsg_hazardous_manufacturing.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "hazardous",
+        "manufacturing",
+        "facility",
+        "infrastructure"
+      ]
+    },
+    {
+      "id": "napsg_solid_waste_landfill",
+      "label": "Solid Waste Landfill",
+      "categoryId": "infrastructure",
+      "category": "Infrastructure",
+      "assetPath": "./icons/infrastructure/napsg_solid_waste_landfill.svg",
+      "markerSize": 34,
+      "paletteSize": 28,
+      "keywords": [
+        "solid",
+        "waste",
+        "landfill",
+        "infrastructure"
+      ]
+    },
+    {
+      "id": "valve_site",
+      "label": "Valve Site",
+      "categoryId": "infrastructure",
+      "category": "Infrastructure",
+      "assetPath": "./icons/infrastructure/valve_site.svg",
+      "markerSize": 36,
+      "paletteSize": 28,
+      "keywords": [
+        "valve",
+        "site",
+        "infrastructure"
+      ]
+    }
+  ]
+}

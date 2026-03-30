@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="skid_steer">
+  <rect x="4" y="4" width="120" height="120" rx="14" fill="#0f172a"/>
+  <rect x="8" y="8" width="112" height="112" rx="10" fill="#1e293b" stroke="#93c5fd" stroke-width="2"/>
+  <circle cx="64" cy="44" r="18" fill="#f59e0b"/>
+  <rect x="40" y="70" width="48" height="18" rx="4" fill="#e2e8f0"/>
+</svg>
