@@ -1874,6 +1874,9 @@ body[data-theme="light"] #deleteObjectBtn {
   display: grid;
   gap: var(--space-4);
 }
+.address-incident-focus-modal-card {
+  width: min(560px, 100%);
+}
 .export-modal-card {
   width: min(460px, 100%);
 }

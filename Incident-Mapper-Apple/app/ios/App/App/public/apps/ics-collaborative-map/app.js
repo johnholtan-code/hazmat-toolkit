@@ -469,7 +469,12 @@
     importShapeBtn: document.getElementById("importShapeBtn"),
     routeFromStationBtn: document.getElementById("routeFromStationBtn"),
     setIncidentFocusBtn: document.getElementById("setIncidentFocusBtn"),
+    addressIncidentFocusBtn: document.getElementById("addressIncidentFocusBtn"),
     centerIncidentBtn: document.getElementById("centerIncidentBtn"),
+    addressIncidentFocusModal: document.getElementById("addressIncidentFocusModal"),
+    addressIncidentFocusInput: document.getElementById("addressIncidentFocusInput"),
+    submitAddressIncidentFocusBtn: document.getElementById("submitAddressIncidentFocusBtn"),
+    closeAddressIncidentFocusBtn: document.getElementById("closeAddressIncidentFocusBtn"),
     closeScenarioReviewBtn: document.getElementById("closeScenarioReviewBtn"),
     weatherLauncherBtn: document.getElementById("weatherLauncherBtn"),
     weatherPanel: document.getElementById("weatherPanel"),
@@ -1421,8 +1426,15 @@
     elements.ics202WorkspaceBtn.addEventListener("click", openIcs202Workspace);
     elements.commandStructureWorkspaceBtn?.addEventListener("click", openCommandStructureWorkspace);
     elements.setIncidentFocusBtn.addEventListener("click", onSetIncidentFocusAction);
+    elements.addressIncidentFocusBtn?.addEventListener("click", showAddressIncidentFocusModal);
     elements.centerIncidentBtn.addEventListener("click", onCenterIncidentAction);
     elements.closeScenarioReviewBtn.addEventListener("click", closeScenarioReview);
+    elements.closeAddressIncidentFocusBtn?.addEventListener("click", hideAddressIncidentFocusModal);
+    elements.submitAddressIncidentFocusBtn?.addEventListener("click", () => {
+      void submitAddressIncidentFocus();
+    });
+    elements.addressIncidentFocusModal?.addEventListener("click", onAddressIncidentFocusModalBackdropClick);
+    elements.addressIncidentFocusInput?.addEventListener("keydown", onAddressIncidentFocusInputKeyDown);
     elements.weatherLauncherBtn.addEventListener("click", toggleWeatherPanel);
     elements.refreshWeatherBtn.addEventListener("click", () => {
       void refreshWeatherForCurrentTarget({ force: true, silent: false });
@@ -2290,6 +2302,37 @@
     const lng = Number(match?.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       throw new Error("Unable to geocode that station address.");
+    }
+    return {
+      lat: roundCoord(lat),
+      lng: roundCoord(lng),
+      label: String(match?.display_name || query).trim()
+    };
+  }
+
+  async function geocodeIncidentFocusAddress(address) {
+    const query = String(address || "").trim();
+    if (!query) {
+      throw new Error("Enter an incident address first.");
+    }
+    const url = new URL(GEOCODE_API_BASE_URL);
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("limit", "1");
+    url.searchParams.set("q", query);
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json"
+      }
+    });
+    const payload = await parseJsonSafely(response);
+    if (!response.ok) {
+      throw new Error(`Incident address geocode failed (${response.status}).`);
+    }
+    const match = Array.isArray(payload) ? payload[0] : null;
+    const lat = Number(match?.lat);
+    const lng = Number(match?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw new Error("Unable to geocode that incident address.");
     }
     return {
       lat: roundCoord(lat),
@@ -3845,6 +3888,7 @@
     elements.attachImageBtn.classList.toggle("hidden", !(Boolean(state.activeSession) || isScenarioReviewMode()) || state.viewerMode);
     elements.isolationToolBtn.classList.toggle("hidden", !(Boolean(state.activeSession) || isScenarioReviewMode()) || state.viewerMode);
     elements.setIncidentFocusBtn.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode() || !isCommander() || Boolean(getIncidentFocusPoint()));
+    elements.addressIncidentFocusBtn?.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode() || !isCommander() || Boolean(getIncidentFocusPoint()));
     elements.centerIncidentBtn.classList.toggle("hidden", !(state.activeSession || isScenarioReviewMode()));
     const viewerQrAllowed = canShareViewerQr() && isViewerAccessEnabled();
     const viewerToggleVisible = canToggleViewerAccess();
@@ -3887,13 +3931,17 @@
     );
   }
 
-  function getIncidentFocusPoint() {
-    const hazardSource = Array.from(state.objects.values()).find((object) => (
+  function findIncidentFocusObject() {
+    return Array.from(state.objects.values()).find((object) => (
       object?.objectType === "HazardSource"
       && object?.geometryType === "point"
       && Number.isFinite(Number(object?.geometry?.lat))
       && Number.isFinite(Number(object?.geometry?.lng))
-    ));
+    )) || null;
+  }
+
+  function getIncidentFocusPoint() {
+    const hazardSource = findIncidentFocusObject();
     if (!hazardSource) return null;
     return {
       lat: Number(hazardSource.geometry.lat),
@@ -3932,6 +3980,9 @@
       elements.setIncidentFocusBtn.textContent = focusPlacementActive ? "Tap Map to Place Focus" : "Set Initial Focus";
       elements.setIncidentFocusBtn.classList.toggle("attention", focusLocked);
     }
+    if (elements.addressIncidentFocusBtn) {
+      elements.addressIncidentFocusBtn.disabled = !canCreateObjects();
+    }
     if (elements.sessionFocusPrompt) {
       const showPrompt = Boolean(state.activeSession) && !isScenarioReviewMode() && isCommander() && !focusSet;
       elements.sessionFocusPrompt.classList.toggle("hidden", !showPrompt);
@@ -3950,7 +4001,13 @@
     elements.shell?.classList.toggle("incident-focus-lock", locked);
     const interactive = elements.appView.querySelectorAll("button, input, select, textarea");
     interactive.forEach((control) => {
-      const allowControl = control.id === "setIncidentFocusBtn";
+      const allowControl = new Set([
+        "setIncidentFocusBtn",
+        "addressIncidentFocusBtn",
+        "closeAddressIncidentFocusBtn",
+        "submitAddressIncidentFocusBtn",
+        "addressIncidentFocusInput"
+      ]).has(control.id);
       if (locked && !allowControl) {
         if (!control.disabled) {
           control.disabled = true;
@@ -4186,6 +4243,95 @@
     }
     beginTemplatePlacement("HazardSource");
     setStatus("Set Initial Focus selected. Tap the map to place the Hazard Source.");
+  }
+
+  function showAddressIncidentFocusModal() {
+    if (!canCreateObjects()) {
+      setStatus("Only active editors can set the initial incident focus.");
+      return;
+    }
+    elements.addressIncidentFocusModal?.classList.remove("hidden");
+    window.setTimeout(() => {
+      elements.addressIncidentFocusInput?.focus();
+      elements.addressIncidentFocusInput?.select();
+    }, 0);
+  }
+
+  function hideAddressIncidentFocusModal() {
+    elements.addressIncidentFocusModal?.classList.add("hidden");
+  }
+
+  function onAddressIncidentFocusModalBackdropClick(event) {
+    if (event.target === elements.addressIncidentFocusModal) {
+      hideAddressIncidentFocusModal();
+    }
+  }
+
+  function onAddressIncidentFocusInputKeyDown(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void submitAddressIncidentFocus();
+      return;
+    }
+    if (event.key === "Escape") {
+      hideAddressIncidentFocusModal();
+    }
+  }
+
+  async function submitAddressIncidentFocus() {
+    if (!canCreateObjects()) {
+      setStatus("Only active editors can set the initial incident focus.");
+      return;
+    }
+    if (findIncidentFocusObject()) {
+      hideAddressIncidentFocusModal();
+      setStatus("Incident focus is already set.");
+      return;
+    }
+    const rawAddress = elements.addressIncidentFocusInput?.value.trim() || "";
+    if (!rawAddress) {
+      setStatus("Enter an incident address first.");
+      elements.addressIncidentFocusInput?.focus();
+      return;
+    }
+    const originalLabel = elements.submitAddressIncidentFocusBtn?.textContent || "Set Focus";
+    if (elements.submitAddressIncidentFocusBtn) elements.submitAddressIncidentFocusBtn.disabled = true;
+    if (elements.closeAddressIncidentFocusBtn) elements.closeAddressIncidentFocusBtn.disabled = true;
+    if (elements.addressIncidentFocusInput) elements.addressIncidentFocusInput.disabled = true;
+    if (elements.submitAddressIncidentFocusBtn) elements.submitAddressIncidentFocusBtn.textContent = "Finding Address...";
+    setStatus("Finding incident address...");
+    try {
+      const geocoded = await geocodeIncidentFocusAddress(rawAddress);
+      const created = await createObject(templateByType.HazardSource, {
+        lat: geocoded.lat,
+        lng: geocoded.lng
+      }, {
+        fieldOverrides: {
+          hazardType: "Incident Focus",
+          product: geocoded.label
+        },
+        silent: true
+      });
+      if (!created) {
+        return;
+      }
+      if (state.map) {
+        state.map.setView([geocoded.lat, geocoded.lng], 16);
+        scheduleMapResizeRefresh();
+      }
+      hideAddressIncidentFocusModal();
+      if (elements.addressIncidentFocusInput) elements.addressIncidentFocusInput.value = "";
+      setStatus(`Incident focus set from address: ${geocoded.label}.`);
+    } catch (error) {
+      setStatus(formatError(error));
+    } finally {
+      if (elements.submitAddressIncidentFocusBtn) {
+        elements.submitAddressIncidentFocusBtn.disabled = false;
+        elements.submitAddressIncidentFocusBtn.textContent = originalLabel;
+      }
+      if (elements.closeAddressIncidentFocusBtn) elements.closeAddressIncidentFocusBtn.disabled = false;
+      if (elements.addressIncidentFocusInput) elements.addressIncidentFocusInput.disabled = false;
+    }
   }
 
   function syncIncidentFocusState(options = {}) {
