@@ -2425,35 +2425,77 @@
   }
 
   async function fetchStationRoute(origin, destination) {
-    const url = new URL(`${ROUTE_API_BASE_URL}/${origin.lng},${origin.lat};${destination.lng},${destination.lat}`);
-    url.searchParams.set("overview", "full");
-    url.searchParams.set("geometries", "geojson");
-    const response = await fetch(url.toString(), {
-      headers: {
-        Accept: "application/json"
+    try {
+      const url = new URL(`${ROUTE_API_BASE_URL}/${origin.lng},${origin.lat};${destination.lng},${destination.lat}`);
+      url.searchParams.set("overview", "full");
+      url.searchParams.set("geometries", "geojson");
+      const response = await fetch(url.toString(), {
+        headers: {
+          Accept: "application/json"
+        }
+      });
+      const payload = await parseJsonSafely(response);
+      if (!response.ok) {
+        throw new Error(`Routing failed (${response.status}).`);
       }
-    });
-    const payload = await parseJsonSafely(response);
-    if (!response.ok) {
-      throw new Error(`Routing failed (${response.status}).`);
+      const route = Array.isArray(payload?.routes) ? payload.routes[0] : null;
+      const coords = Array.isArray(route?.geometry?.coordinates) ? route.geometry.coordinates : [];
+      const points = coords
+        .map((entry) => ({
+          lat: roundCoord(Number(entry?.[1])),
+          lng: roundCoord(Number(entry?.[0]))
+        }))
+        .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+      const distanceMeters = Number(route?.distance);
+      if (!points.length || !Number.isFinite(distanceMeters) || distanceMeters <= 0) {
+        throw new Error("Unable to build a drivable route from the station to the incident focus.");
+      }
+      return {
+        points,
+        distanceMeters: round2(distanceMeters),
+        distanceMiles: round2(distanceMeters / 1609.344),
+        isEstimated: false
+      };
+    } catch (error) {
+      console.warn("Station routing service unavailable, falling back to direct line.", error);
+      return buildDirectStationRoute(origin, destination);
     }
-    const route = Array.isArray(payload?.routes) ? payload.routes[0] : null;
-    const coords = Array.isArray(route?.geometry?.coordinates) ? route.geometry.coordinates : [];
-    const points = coords
-      .map((entry) => ({
-        lat: roundCoord(Number(entry?.[1])),
-        lng: roundCoord(Number(entry?.[0]))
-      }))
-      .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
-    const distanceMeters = Number(route?.distance);
-    if (!points.length || !Number.isFinite(distanceMeters) || distanceMeters <= 0) {
-      throw new Error("Unable to build a drivable route from the station to the incident focus.");
+  }
+
+  function buildDirectStationRoute(origin, destination) {
+    const distanceMeters = computeDistanceMeters(origin, destination);
+    if (!Number.isFinite(distanceMeters) || distanceMeters <= 0) {
+      throw new Error("Unable to estimate a route from the station to the incident focus.");
     }
     return {
-      points,
+      points: [
+        { lat: roundCoord(origin.lat), lng: roundCoord(origin.lng) },
+        { lat: roundCoord(destination.lat), lng: roundCoord(destination.lng) }
+      ],
       distanceMeters: round2(distanceMeters),
-      distanceMiles: round2(distanceMeters / 1609.344)
+      distanceMiles: round2(distanceMeters / 1609.344),
+      isEstimated: true
     };
+  }
+
+  function computeDistanceMeters(origin, destination) {
+    const startLat = Number(origin?.lat);
+    const startLng = Number(origin?.lng);
+    const endLat = Number(destination?.lat);
+    const endLng = Number(destination?.lng);
+    if (![startLat, startLng, endLat, endLng].every((value) => Number.isFinite(value))) {
+      return NaN;
+    }
+    const earthRadiusMeters = 6371000;
+    const latDelta = toRadians(endLat - startLat);
+    const lngDelta = toRadians(endLng - startLng);
+    const a = Math.sin(latDelta / 2) ** 2
+      + Math.cos(toRadians(startLat)) * Math.cos(toRadians(endLat)) * Math.sin(lngDelta / 2) ** 2;
+    return 2 * earthRadiusMeters * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function toRadians(value) {
+    return Number(value) * (Math.PI / 180);
   }
 
   function findDepartmentStationRouteObject() {
@@ -2489,6 +2531,7 @@
         { lat: incidentFocus.lat, lng: incidentFocus.lng }
       );
       const displayLabel = `${station.stationName} to ${incidentFocus.label || "Incident"} Mileage Route`;
+      const routeDescriptor = route.isEstimated ? "Direct line estimate" : "Road route";
       const nextFields = {
         ...(findDepartmentStationRouteObject()?.fields || {}),
         stationRouteTag: STATION_ROUTE_OBJECT_TAG,
@@ -2508,13 +2551,17 @@
         quantity: route.distanceMiles,
         costRate: station.defaultMileageRate,
         costCode: STATION_ROUTE_COST_CODE,
-        description: "Department station to incident mileage route",
+        description: route.isEstimated
+          ? "Department station to incident direct-line mileage estimate"
+          : "Department station to incident mileage route",
         manufacturer: "",
-        specification: "Road route",
+        specification: routeDescriptor,
         customResource: true,
         placedAt: new Date().toISOString(),
         demobilizedAt: "",
-        notes: `${station.stationAddress} to ${incidentFocus.label || "Incident Focus"}`
+        notes: route.isEstimated
+          ? `${station.stationAddress} to ${incidentFocus.label || "Incident Focus"} · routing service unavailable, showing direct line estimate`
+          : `${station.stationAddress} to ${incidentFocus.label || "Incident Focus"}`
       };
       const existingRoute = findDepartmentStationRouteObject();
       if (existingRoute) {
@@ -2544,7 +2591,9 @@
           }
         }, { points: route.points });
       }
-      setStatus(`${displayLabel} updated at ${route.distanceMiles.toFixed(2)} miles.`);
+      setStatus(route.isEstimated
+        ? `${displayLabel} added as a direct line estimate at ${route.distanceMiles.toFixed(2)} miles.`
+        : `${displayLabel} updated at ${route.distanceMiles.toFixed(2)} miles.`);
     } catch (error) {
       setStatus(formatError(error));
     }
