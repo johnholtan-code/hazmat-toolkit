@@ -3200,23 +3200,16 @@
       });
     } catch (error) {
       if (shouldRefreshCommanderSessions) {
-        try {
-          await refreshCommanderSessions();
-        } catch (_refreshError) {
-          // Ignore secondary refresh failures here.
-        }
+        setStatus("Left locally. Reloading your session owner dashboard…");
+        window.setTimeout(() => window.location.reload(), 80);
+        return;
       }
       setStatus(`Left locally. ${formatError(error)}`);
       return;
     }
     if (shouldRefreshCommanderSessions) {
-      try {
-        await refreshCommanderSessions();
-      } catch (error) {
-        setStatus(formatError(error));
-        return;
-      }
-      setStatus("Left the collaborative session.");
+      setStatus("Left the collaborative session. Reloading your session owner dashboard…");
+      window.setTimeout(() => window.location.reload(), 80);
       return;
     }
     setStatus("Left the collaborative session.");
