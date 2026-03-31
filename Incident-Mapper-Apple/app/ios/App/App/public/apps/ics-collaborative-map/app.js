@@ -3706,11 +3706,6 @@
     }
     if (sectionKey === "reviewSessions" && !state.collapsedLandingSections.has(sectionKey)) {
       renderCommanderSessions(state.commanderSessions);
-      renderLandingSectionCollapses({ highlightedSectionKey: sectionKey });
-      window.requestAnimationFrame(() => {
-        renderLandingSectionCollapses({ highlightedSectionKey: sectionKey });
-      });
-      return;
     }
     renderLandingSectionCollapses({ highlightedSectionKey: sectionKey });
   }
@@ -3730,6 +3725,23 @@
     if (!bodyElement || !toggleElement) return;
     const { immediate = false, highlightedSectionKey = "" } = options;
     const collapsed = state.collapsedLandingSections.has(sectionKey);
+    if (sectionKey === "reviewSessions") {
+      toggleElement.setAttribute("aria-expanded", String(!collapsed));
+      toggleElement.classList.toggle("landing-card-toggle-expanded", !collapsed);
+      bodyElement.classList.toggle("hidden", collapsed);
+      bodyElement.classList.toggle("landing-card-body-collapsed", collapsed);
+      bodyElement.classList.add("landing-card-body-no-motion");
+      bodyElement.setAttribute("aria-hidden", String(collapsed));
+      bodyElement.inert = collapsed;
+      if (highlightedSectionKey === sectionKey) {
+        pulseLandingSectionToggle(toggleElement, sectionKey);
+      }
+      const symbol = toggleElement.querySelector(".toggle-symbol");
+      if (symbol) {
+        symbol.textContent = collapsed ? "+" : "\u2212";
+      }
+      return;
+    }
     bodyElement.classList.remove("hidden");
     bodyElement.classList.remove("landing-card-body-collapsed");
     const expandedHeight = Math.max(bodyElement.scrollHeight, 1);
