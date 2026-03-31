@@ -3178,11 +3178,11 @@
       return;
     }
     const sessionId = state.activeSession.id;
-    const leavingAsCommander =
-      state.actor?.permissionTier === "commander" && Boolean(state.commanderAuth?.accessToken);
+    const hasCommanderDashboardAccess = Boolean(state.commanderAuth?.accessToken);
+    const leavingAsCommander = hasCommanderDashboardAccess && isCommander();
     const actorType = currentActorType();
-    const shouldRefreshCommanderSessions = leavingAsCommander && Boolean(state.commanderAuth?.accessToken);
-    const prompt = leavingAsCommander
+    const shouldRefreshCommanderSessions = hasCommanderDashboardAccess;
+    const prompt = hasCommanderDashboardAccess
       ? "Leave this session and return to your session owner dashboard?"
       : "Leave this session? You can rejoin later with the join code.";
     if (!window.confirm(prompt)) return;
