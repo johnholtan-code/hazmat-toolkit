@@ -3723,39 +3723,15 @@
 
   function syncLandingSectionCollapse(bodyElement, toggleElement, sectionKey, options = {}) {
     if (!bodyElement || !toggleElement) return;
-    const { immediate = false, highlightedSectionKey = "" } = options;
+    const { highlightedSectionKey = "" } = options;
     const collapsed = state.collapsedLandingSections.has(sectionKey);
-    if (sectionKey === "reviewSessions") {
-      toggleElement.setAttribute("aria-expanded", String(!collapsed));
-      toggleElement.classList.toggle("landing-card-toggle-expanded", !collapsed);
-      bodyElement.classList.toggle("hidden", collapsed);
-      bodyElement.classList.toggle("landing-card-body-collapsed", collapsed);
-      bodyElement.classList.add("landing-card-body-no-motion");
-      bodyElement.setAttribute("aria-hidden", String(collapsed));
-      bodyElement.inert = collapsed;
-      if (highlightedSectionKey === sectionKey) {
-        pulseLandingSectionToggle(toggleElement, sectionKey);
-      }
-      const symbol = toggleElement.querySelector(".toggle-symbol");
-      if (symbol) {
-        symbol.textContent = collapsed ? "+" : "\u2212";
-      }
-      return;
-    }
-    bodyElement.classList.remove("hidden");
-    bodyElement.classList.remove("landing-card-body-collapsed");
-    const expandedHeight = Math.max(bodyElement.scrollHeight, 1);
-    bodyElement.style.setProperty("--landing-section-max-height", `${expandedHeight}px`);
     toggleElement.setAttribute("aria-expanded", String(!collapsed));
     toggleElement.classList.toggle("landing-card-toggle-expanded", !collapsed);
+    bodyElement.classList.toggle("hidden", collapsed);
     bodyElement.classList.toggle("landing-card-body-collapsed", collapsed);
+    bodyElement.classList.add("landing-card-body-no-motion");
     bodyElement.setAttribute("aria-hidden", String(collapsed));
     bodyElement.inert = collapsed;
-    if (immediate) {
-      bodyElement.classList.add("landing-card-body-no-motion");
-    } else {
-      bodyElement.classList.remove("landing-card-body-no-motion");
-    }
     if (highlightedSectionKey === sectionKey) {
       pulseLandingSectionToggle(toggleElement, sectionKey);
     }
