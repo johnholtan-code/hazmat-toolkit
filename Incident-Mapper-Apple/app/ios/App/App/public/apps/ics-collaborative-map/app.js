@@ -423,10 +423,6 @@
     scenarioReviewPanelBody: document.getElementById("scenarioReviewPanelBody"),
     loadScenarioBtn: document.getElementById("loadScenarioBtn"),
     scenarioFileInput: document.getElementById("scenarioFileInput"),
-    activeSessionGalleryPanel: document.getElementById("activeSessionGalleryPanel"),
-    activeSessionGalleryPanelToggle: document.getElementById("activeSessionGalleryPanelToggle"),
-    activeSessionGalleryPanelBody: document.getElementById("activeSessionGalleryPanelBody"),
-    activeSessionGallery: document.getElementById("activeSessionGallery"),
     commanderRoleSelect: document.getElementById("commanderRoleSelect"),
     initialIncidentCommanderRoleInput: document.getElementById("initialIncidentCommanderRoleInput"),
     incidentNameInput: document.getElementById("incidentNameInput"),
@@ -445,8 +441,6 @@
     joinLockedNote: document.getElementById("joinLockedNote"),
     joinSessionPanelToggle: document.getElementById("joinSessionPanelToggle"),
     joinSessionPanelBody: document.getElementById("joinSessionPanelBody"),
-    whatHappensPanelToggle: document.getElementById("whatHappensPanelToggle"),
-    whatHappensPanelBody: document.getElementById("whatHappensPanelBody"),
     paletteSearchInput: document.getElementById("paletteSearchInput"),
     clearPaletteSearchBtn: document.getElementById("clearPaletteSearchBtn"),
     paletteContainer: document.getElementById("paletteContainer"),
@@ -821,7 +815,7 @@
     paletteSearchQuery: "",
     collapsedPanels: new Set(["session", "sessionPeriod", "incidentCommand", "participants", "palettes"]),
     collapsedModePanels: new Set(["quickFlow", "afterAction"]),
-    collapsedLandingSections: new Set(["departmentAdmin", "createSession", "joinSession", "whatHappens", "activeSessions", "reviewScenario"]),
+    collapsedLandingSections: new Set(["departmentAdmin", "createSession", "joinSession", "reviewScenario"]),
     landingSectionsInitialized: false,
     landingSectionHighlightTimers: new Map(),
     viewerMode: false,
@@ -1328,8 +1322,6 @@
     elements.sessionListPanelToggle.addEventListener("click", () => toggleLandingSection("reviewSessions"));
     elements.scenarioReviewPanelToggle.addEventListener("click", () => toggleLandingSection("reviewScenario"));
     elements.joinSessionPanelToggle.addEventListener("click", () => toggleLandingSection("joinSession"));
-    elements.whatHappensPanelToggle.addEventListener("click", () => toggleLandingSection("whatHappens"));
-    elements.activeSessionGalleryPanelToggle.addEventListener("click", () => toggleLandingSection("activeSessions"));
     elements.loadScenarioBtn.addEventListener("click", onLoadScenarioFile);
     elements.scenarioFileInput.addEventListener("change", onScenarioFileSelected);
     elements.paletteSearchInput.addEventListener("input", onPaletteSearchInput);
@@ -2159,15 +2151,10 @@
     } else {
       state.organizationSummary = null;
     }
-    const [sessions, activeSessions] = await Promise.all([
-      apiFetch("/v1/ics-collab/sessions", { actorType: "commander" }),
-      apiFetch("/v1/ics-collab/sessions/active", { actorType: "commander" })
-    ]);
+    const sessions = await apiFetch("/v1/ics-collab/sessions", { actorType: "commander" });
     renderCommanderSessions(Array.isArray(sessions) ? sessions : []);
-    renderActiveSessionGallery(Array.isArray(activeSessions) ? activeSessions : []);
     elements.createSessionPanel.classList.remove("hidden");
     elements.sessionListPanel.classList.remove("hidden");
-    elements.activeSessionGalleryPanel.classList.remove("hidden");
     elements.commanderSignOutBtn.classList.remove("hidden");
     renderCommanderAuthPanels();
   }
@@ -3107,7 +3094,6 @@
     persistJSON(STORAGE_KEYS.commanderAuth, null);
     elements.createSessionPanel.classList.add("hidden");
     elements.sessionListPanel.classList.add("hidden");
-    elements.activeSessionGalleryPanel.classList.add("hidden");
     elements.commanderSignOutBtn.classList.add("hidden");
     elements.sessionSignOutBtn.classList.add("hidden");
     state.ics202Open = false;
@@ -3725,8 +3711,6 @@
     syncLandingSectionCollapse(elements.sessionListPanelBody, elements.sessionListPanelToggle, "reviewSessions", { immediate, highlightedSectionKey });
     syncLandingSectionCollapse(elements.scenarioReviewPanelBody, elements.scenarioReviewPanelToggle, "reviewScenario", { immediate, highlightedSectionKey });
     syncLandingSectionCollapse(elements.joinSessionPanelBody, elements.joinSessionPanelToggle, "joinSession", { immediate, highlightedSectionKey });
-    syncLandingSectionCollapse(elements.whatHappensPanelBody, elements.whatHappensPanelToggle, "whatHappens", { immediate, highlightedSectionKey });
-    syncLandingSectionCollapse(elements.activeSessionGalleryPanelBody, elements.activeSessionGalleryPanelToggle, "activeSessions", { immediate, highlightedSectionKey });
     state.landingSectionsInitialized = true;
   }
 
@@ -3920,7 +3904,6 @@
     }
     elements.sessionListPanel.classList.toggle("hidden", !signedIn || !licensed);
     elements.scenarioReviewPanel.classList.toggle("hidden", !signedIn || !licensed);
-    elements.activeSessionGalleryPanel.classList.toggle("hidden", !signedIn || !licensed);
     elements.commanderSignOutBtn.classList.toggle("hidden", !signedIn);
     elements.sessionSignOutBtn.classList.toggle("hidden", !signedIn || (!state.activeSession && !isScenarioReviewMode()));
     elements.closeScenarioReviewBtn.classList.toggle("hidden", !isScenarioReviewMode());
@@ -6056,65 +6039,6 @@
       top.append(content, row);
       card.append(top);
       elements.commanderSessionList.appendChild(card);
-    });
-  }
-
-  function renderActiveSessionGallery(sessions) {
-    elements.activeSessionGallery.innerHTML = "";
-    if (!sessions.length) {
-      const empty = document.createElement("div");
-      empty.className = "muted";
-      empty.textContent = "No live incidents right now.";
-      elements.activeSessionGallery.appendChild(empty);
-      return;
-    }
-    sessions.forEach((session) => {
-      const card = document.createElement("div");
-      card.className = "session-card";
-      const visibleStatus = effectiveSessionStatus(session).toUpperCase();
-      const title = document.createElement("strong");
-      title.textContent = session.incidentName;
-      const meta = document.createElement("div");
-      meta.className = "muted";
-      meta.textContent = `Owner: ${session.ownerName} · ${session.organizationName || "Department"} · ${visibleStatus} · ${formatDateTime(session.operationalPeriodStart)} to ${formatDateTime(session.operationalPeriodEnd)}`;
-      const role = document.createElement("div");
-      role.className = "muted";
-      role.textContent = `Incident Commander: ${session.commanderName}`;
-      const row = document.createElement("div");
-      row.className = "row";
-      if (session.isOwner) {
-        const openBtn = document.createElement("button");
-        openBtn.className = "secondary";
-        openBtn.type = "button";
-        openBtn.textContent = "Open Session";
-        openBtn.addEventListener("click", async () => {
-          try {
-            const snapshot = await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(session.id)}/snapshot`, {
-              actorType: "commander"
-            });
-            state.actor = snapshot.actor;
-            state.qrPayload = JSON.stringify({ type: "ics_collab_join", joinCode: session.joinCode });
-            await openSession(snapshot.session, snapshot.actor, "commander", snapshot.snapshot);
-            setStatus(`Opened ${session.incidentName}.`);
-          } catch (error) {
-            setStatus(formatError(error));
-          }
-        });
-        row.append(openBtn);
-      } else {
-        const useCodeBtn = document.createElement("button");
-        useCodeBtn.className = "secondary";
-        useCodeBtn.type = "button";
-        useCodeBtn.textContent = "Use Code";
-        useCodeBtn.addEventListener("click", () => {
-          elements.joinCodeInput.value = session.joinCode;
-          elements.joinCodeInput.focus();
-          setStatus(`Loaded join code for ${session.incidentName}.`);
-        });
-        row.append(useCodeBtn);
-      }
-      card.append(title, meta, role, row);
-      elements.activeSessionGallery.appendChild(card);
     });
   }
 
