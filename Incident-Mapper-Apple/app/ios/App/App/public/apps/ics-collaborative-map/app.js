@@ -818,6 +818,7 @@
     collapsedLandingSections: new Set(["departmentAdmin", "createSession", "joinSession", "reviewScenario"]),
     landingSectionsInitialized: false,
     landingSectionHighlightTimers: new Map(),
+    commanderSessions: [],
     viewerMode: false,
     viewerJoinCode: null,
     scenarioReview: null,
@@ -2141,6 +2142,7 @@
     await loadSuperAdminContext();
     const orgContext = await loadOrganizationContext();
     if (!orgContext) {
+      state.commanderSessions = [];
       renderCommanderSessions([]);
       renderActiveSessionGallery([]);
       renderCommanderAuthPanels();
@@ -2152,7 +2154,8 @@
       state.organizationSummary = null;
     }
     const sessions = await apiFetch("/v1/ics-collab/sessions", { actorType: "commander" });
-    renderCommanderSessions(Array.isArray(sessions) ? sessions : []);
+    state.commanderSessions = Array.isArray(sessions) ? sessions : [];
+    renderCommanderSessions(state.commanderSessions);
     elements.createSessionPanel.classList.remove("hidden");
     elements.sessionListPanel.classList.remove("hidden");
     elements.commanderSignOutBtn.classList.remove("hidden");
@@ -3090,6 +3093,7 @@
     state.organizationContext = null;
     state.organizationRoster = [];
     state.organizationSummary = null;
+    state.commanderSessions = [];
     state.superAdminOpen = false;
     persistJSON(STORAGE_KEYS.commanderAuth, null);
     elements.createSessionPanel.classList.add("hidden");
@@ -3699,6 +3703,9 @@
       state.collapsedLandingSections.delete(sectionKey);
     } else {
       state.collapsedLandingSections.add(sectionKey);
+    }
+    if (sectionKey === "reviewSessions" && !state.collapsedLandingSections.has(sectionKey)) {
+      renderCommanderSessions(state.commanderSessions);
     }
     renderLandingSectionCollapses({ highlightedSectionKey: sectionKey });
   }
