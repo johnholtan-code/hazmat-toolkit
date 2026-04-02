@@ -10505,6 +10505,9 @@
     if (object.objectType === MAP_NOTE_OBJECT_TYPE) {
       return false;
     }
+    if (object.objectType === ICON_MARKER_OBJECT_TYPE && object.fields?.iconAssetPath) {
+      return false;
+    }
     return object.geometryType === "point" || object.geometryType === "line" || object.geometryType === "polygon";
   }
 
@@ -11254,7 +11257,7 @@
     };
   }
 
-  function buildIconMarkerIcon(object, template, color) {
+  function buildIconMarkerIcon(object, template) {
     if (isCostedResourceObject(object) && !object.fields?.iconAssetPath) {
       const category = String(object.fields?.resourceCategory || "").toUpperCase();
       const badge = category.startsWith("CON") ? "CON" : "EQ";
@@ -11279,20 +11282,15 @@
     const altLabel = isAttachmentObject(object)
       ? (object.fields?.attachmentName || object.fields?.iconLabel || template?.label || "Attached Image")
       : (object.fields?.iconLabel || template?.label || "Map icon");
-    const accent = escapeAttribute(color || template?.color || "#f3c613");
     return L.divIcon({
       className: "",
-      html: `
-        <div class="point-marker-icon-shell${isAttachmentObject(object) ? " attachment-pin-icon-shell" : ""}" style="--marker-accent:${accent};width:${safeSize}px;height:${safeSize}px">
-          ${buildIconImageMarkup({
-            className: `point-marker-icon${isAttachmentObject(object) ? " attachment-pin-icon" : ""}`,
-            assetPath: object.fields.iconAssetPath,
-            alt: altLabel,
-            size: safeSize,
-            fallbackAssetPath: getIconFallbackAssetPath(object)
-          })}
-        </div>
-      `,
+      html: buildIconImageMarkup({
+        className: `point-marker-icon${isAttachmentObject(object) ? " attachment-pin-icon" : ""}`,
+        assetPath: object.fields.iconAssetPath,
+        alt: altLabel,
+        size: safeSize,
+        fallbackAssetPath: getIconFallbackAssetPath(object)
+      }),
       iconSize: [safeSize, safeSize],
       iconAnchor: [safeSize / 2, safeSize / 2]
     });
@@ -11320,7 +11318,7 @@
       return buildMapNoteIcon(object);
     }
     if (object.objectType === ICON_MARKER_OBJECT_TYPE && object.fields?.iconAssetPath) {
-      return buildIconMarkerIcon(object, template, color);
+      return buildIconMarkerIcon(object, template);
     }
     return L.divIcon({
       className: "",
