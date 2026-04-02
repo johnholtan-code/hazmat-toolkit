@@ -427,10 +427,6 @@
     scenarioReviewPanelBody: document.getElementById("scenarioReviewPanelBody"),
     loadScenarioBtn: document.getElementById("loadScenarioBtn"),
     scenarioFileInput: document.getElementById("scenarioFileInput"),
-    activeSessionGalleryPanel: document.getElementById("activeSessionGalleryPanel"),
-    activeSessionGalleryPanelToggle: document.getElementById("activeSessionGalleryPanelToggle"),
-    activeSessionGalleryPanelBody: document.getElementById("activeSessionGalleryPanelBody"),
-    activeSessionGallery: document.getElementById("activeSessionGallery"),
     commanderRoleSelect: document.getElementById("commanderRoleSelect"),
     initialIncidentCommanderRoleInput: document.getElementById("initialIncidentCommanderRoleInput"),
     incidentNameInput: document.getElementById("incidentNameInput"),
@@ -449,8 +445,6 @@
     joinLockedNote: document.getElementById("joinLockedNote"),
     joinSessionPanelToggle: document.getElementById("joinSessionPanelToggle"),
     joinSessionPanelBody: document.getElementById("joinSessionPanelBody"),
-    whatHappensPanelToggle: document.getElementById("whatHappensPanelToggle"),
-    whatHappensPanelBody: document.getElementById("whatHappensPanelBody"),
     paletteSearchInput: document.getElementById("paletteSearchInput"),
     clearPaletteSearchBtn: document.getElementById("clearPaletteSearchBtn"),
     paletteContainer: document.getElementById("paletteContainer"),
@@ -473,7 +467,12 @@
     importShapeBtn: document.getElementById("importShapeBtn"),
     routeFromStationBtn: document.getElementById("routeFromStationBtn"),
     setIncidentFocusBtn: document.getElementById("setIncidentFocusBtn"),
+    addressIncidentFocusBtn: document.getElementById("addressIncidentFocusBtn"),
     centerIncidentBtn: document.getElementById("centerIncidentBtn"),
+    addressIncidentFocusModal: document.getElementById("addressIncidentFocusModal"),
+    addressIncidentFocusInput: document.getElementById("addressIncidentFocusInput"),
+    submitAddressIncidentFocusBtn: document.getElementById("submitAddressIncidentFocusBtn"),
+    closeAddressIncidentFocusBtn: document.getElementById("closeAddressIncidentFocusBtn"),
     closeScenarioReviewBtn: document.getElementById("closeScenarioReviewBtn"),
     weatherLauncherBtn: document.getElementById("weatherLauncherBtn"),
     weatherPanel: document.getElementById("weatherPanel"),
@@ -482,6 +481,7 @@
     weatherMeta: document.getElementById("weatherMeta"),
     weatherMetrics: document.getElementById("weatherMetrics"),
     refreshWeatherBtn: document.getElementById("refreshWeatherBtn"),
+    locateUserBtn: document.getElementById("locateUserBtn"),
     viewerCenterIncidentBtn: document.getElementById("viewerCenterIncidentBtn"),
     guidedSetupToggle: document.getElementById("guidedSetupToggle"),
     mapStyleLauncherBtn: document.getElementById("mapStyleLauncherBtn"),
@@ -819,9 +819,10 @@
     paletteSearchQuery: "",
     collapsedPanels: new Set(["session", "sessionPeriod", "incidentCommand", "participants", "palettes"]),
     collapsedModePanels: new Set(["quickFlow", "afterAction"]),
-    collapsedLandingSections: new Set(["departmentAdmin", "createSession", "joinSession", "whatHappens", "activeSessions", "reviewScenario"]),
+    collapsedLandingSections: new Set(["departmentAdmin", "createSession", "joinSession", "reviewScenario"]),
     landingSectionsInitialized: false,
     landingSectionHighlightTimers: new Map(),
+    commanderSessions: [],
     viewerMode: false,
     viewerJoinCode: null,
     scenarioReview: null,
@@ -1326,8 +1327,6 @@
     elements.sessionListPanelToggle.addEventListener("click", () => toggleLandingSection("reviewSessions"));
     elements.scenarioReviewPanelToggle.addEventListener("click", () => toggleLandingSection("reviewScenario"));
     elements.joinSessionPanelToggle.addEventListener("click", () => toggleLandingSection("joinSession"));
-    elements.whatHappensPanelToggle.addEventListener("click", () => toggleLandingSection("whatHappens"));
-    elements.activeSessionGalleryPanelToggle.addEventListener("click", () => toggleLandingSection("activeSessions"));
     elements.loadScenarioBtn.addEventListener("click", onLoadScenarioFile);
     elements.scenarioFileInput.addEventListener("change", onScenarioFileSelected);
     elements.paletteSearchInput.addEventListener("input", onPaletteSearchInput);
@@ -1425,8 +1424,16 @@
     elements.ics202WorkspaceBtn.addEventListener("click", openIcs202Workspace);
     elements.commandStructureWorkspaceBtn?.addEventListener("click", openCommandStructureWorkspace);
     elements.setIncidentFocusBtn.addEventListener("click", onSetIncidentFocusAction);
+    elements.addressIncidentFocusBtn?.addEventListener("click", showAddressIncidentFocusModal);
     elements.centerIncidentBtn.addEventListener("click", onCenterIncidentAction);
     elements.closeScenarioReviewBtn.addEventListener("click", closeScenarioReview);
+    elements.closeAddressIncidentFocusBtn?.addEventListener("click", hideAddressIncidentFocusModal);
+    elements.submitAddressIncidentFocusBtn?.addEventListener("click", () => {
+      void submitAddressIncidentFocus();
+    });
+    elements.addressIncidentFocusModal?.addEventListener("click", onAddressIncidentFocusModalBackdropClick);
+    elements.addressIncidentFocusInput?.addEventListener("keydown", onAddressIncidentFocusInputKeyDown);
+    elements.locateUserBtn?.addEventListener("click", onLocateUserClick);
     elements.weatherLauncherBtn.addEventListener("click", toggleWeatherPanel);
     elements.refreshWeatherBtn.addEventListener("click", () => {
       void refreshWeatherForCurrentTarget({ force: true, silent: false });
@@ -1608,10 +1615,10 @@
     });
     elements.superAdminCreateStandingAccessBtn?.addEventListener("click", onCreateStandingOrganizationAccess);
     elements.superAdminSessionDetailCloseBtn?.addEventListener("click", closeSuperAdminSessionDetails);
-    elements.superAdminSessionCopyIdBtn?.addEventListener("click", (event) => {
+    elements.superAdminSessionCopyIdBtn?.addEventListener("click", () => {
       const session = getSelectedSuperAdminSession();
       if (session) {
-        void copySuperAdminSessionId(session, event.currentTarget);
+        void copySuperAdminSessionId(session);
       }
     });
     elements.superAdminSessionDeleteBtn?.addEventListener("click", () => {
@@ -1734,7 +1741,13 @@
   }
 
   function requestCurrentLocation({ recenter = false, force = false } = {}) {
-    if (!navigator.geolocation || !state.map) return;
+    if (!state.map) return;
+    if (!navigator.geolocation) {
+      if (force) {
+        setStatus("Location is not available in this browser.");
+      }
+      return;
+    }
     navigator.geolocation.getCurrentPosition(
       (position) => {
         if (!state.map) return;
@@ -1760,7 +1773,17 @@
           setStatus("Centered map on your current location.");
         }
       },
-      () => {
+      (error) => {
+        if (force) {
+          const message = error?.code === 1
+            ? "Location access was denied."
+            : error?.code === 2
+              ? "Unable to determine your current location."
+              : error?.code === 3
+                ? "Location request timed out."
+                : "Unable to fetch your current location.";
+          setStatus(message);
+        }
         // Leave the default map extent in place when geolocation is unavailable or denied.
       },
       {
@@ -1787,6 +1810,10 @@
     })
       .bindTooltip(`Current location${accuracy ? ` (+/- ${Math.round(accuracy)} m)` : ""}`, { direction: "top" })
       .addTo(state.objectLayerGroup);
+  }
+
+  function onLocateUserClick() {
+    requestCurrentLocation({ recenter: true, force: true });
   }
 
   async function hydrateAuthUI() {
@@ -2119,6 +2146,7 @@
     await loadSuperAdminContext();
     const orgContext = await loadOrganizationContext();
     if (!orgContext) {
+      state.commanderSessions = [];
       renderCommanderSessions([]);
       renderActiveSessionGallery([]);
       renderCommanderAuthPanels();
@@ -2129,15 +2157,11 @@
     } else {
       state.organizationSummary = null;
     }
-    const [sessions, activeSessions] = await Promise.all([
-      apiFetch("/v1/ics-collab/sessions", { actorType: "commander" }),
-      apiFetch("/v1/ics-collab/sessions/active", { actorType: "commander" })
-    ]);
-    renderCommanderSessions(Array.isArray(sessions) ? sessions : []);
-    renderActiveSessionGallery(Array.isArray(activeSessions) ? activeSessions : []);
+    const sessions = await apiFetch("/v1/ics-collab/sessions", { actorType: "commander" });
+    state.commanderSessions = Array.isArray(sessions) ? sessions : [];
+    renderCommanderSessions(state.commanderSessions);
     elements.createSessionPanel.classList.remove("hidden");
     elements.sessionListPanel.classList.remove("hidden");
-    elements.activeSessionGalleryPanel.classList.remove("hidden");
     elements.commanderSignOutBtn.classList.remove("hidden");
     renderCommanderAuthPanels();
   }
@@ -2302,6 +2326,37 @@
     };
   }
 
+  async function geocodeIncidentFocusAddress(address) {
+    const query = String(address || "").trim();
+    if (!query) {
+      throw new Error("Enter an incident address first.");
+    }
+    const url = new URL(GEOCODE_API_BASE_URL);
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("limit", "1");
+    url.searchParams.set("q", query);
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json"
+      }
+    });
+    const payload = await parseJsonSafely(response);
+    if (!response.ok) {
+      throw new Error(`Incident address geocode failed (${response.status}).`);
+    }
+    const match = Array.isArray(payload) ? payload[0] : null;
+    const lat = Number(match?.lat);
+    const lng = Number(match?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw new Error("Unable to geocode that incident address.");
+    }
+    return {
+      lat: roundCoord(lat),
+      lng: roundCoord(lng),
+      label: String(match?.display_name || query).trim()
+    };
+  }
+
   async function buildStationPayload({ stationName, stationAddress, defaultMileageRate, fallbackStationName = "" }) {
     const normalizedName = String(stationName || "").trim() || String(fallbackStationName || "").trim();
     const normalizedAddress = String(stationAddress || "").trim();
@@ -2364,38 +2419,81 @@
   }
 
   async function fetchStationRoute(origin, destination) {
-    const url = new URL(`${ROUTE_API_BASE_URL}/${origin.lng},${origin.lat};${destination.lng},${destination.lat}`);
-    url.searchParams.set("overview", "full");
-    url.searchParams.set("geometries", "geojson");
-    const response = await fetch(url.toString(), {
-      headers: {
-        Accept: "application/json"
+    try {
+      const url = new URL(`${ROUTE_API_BASE_URL}/${origin.lng},${origin.lat};${destination.lng},${destination.lat}`);
+      url.searchParams.set("overview", "full");
+      url.searchParams.set("geometries", "geojson");
+      const response = await fetch(url.toString(), {
+        headers: {
+          Accept: "application/json"
+        }
+      });
+      const payload = await parseJsonSafely(response);
+      if (!response.ok) {
+        throw new Error(`Routing failed (${response.status}).`);
       }
-    });
-    const payload = await parseJsonSafely(response);
-    if (!response.ok) {
-      throw new Error(`Routing failed (${response.status}).`);
+      const route = Array.isArray(payload?.routes) ? payload.routes[0] : null;
+      const coords = Array.isArray(route?.geometry?.coordinates) ? route.geometry.coordinates : [];
+      const points = coords
+        .map((entry) => ({
+          lat: roundCoord(Number(entry?.[1])),
+          lng: roundCoord(Number(entry?.[0]))
+        }))
+        .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+      const distanceMeters = Number(route?.distance);
+      if (!points.length || !Number.isFinite(distanceMeters) || distanceMeters <= 0) {
+        throw new Error("Unable to build a drivable route from the station to the incident focus.");
+      }
+      return {
+        points,
+        distanceMeters: round2(distanceMeters),
+        distanceMiles: round2(distanceMeters / 1609.344),
+        durationSeconds: Number.isFinite(Number(route?.duration)) && Number(route?.duration) > 0 ? round2(Number(route.duration)) : 0,
+        durationMinutes: Number.isFinite(Number(route?.duration)) && Number(route?.duration) > 0 ? round2(Number(route.duration) / 60) : 0,
+        isEstimated: false
+      };
+    } catch (error) {
+      console.warn("Station routing service unavailable, falling back to direct line.", error);
+      return buildDirectStationRoute(origin, destination);
     }
-    const route = Array.isArray(payload?.routes) ? payload.routes[0] : null;
-    const coords = Array.isArray(route?.geometry?.coordinates) ? route.geometry.coordinates : [];
-    const points = coords
-      .map((entry) => ({
-        lat: roundCoord(Number(entry?.[1])),
-        lng: roundCoord(Number(entry?.[0]))
-      }))
-      .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
-    const distanceMeters = Number(route?.distance);
-    const durationSeconds = Number(route?.duration);
-    if (!points.length || !Number.isFinite(distanceMeters) || distanceMeters <= 0) {
-      throw new Error("Unable to build a drivable route from the station to the incident focus.");
+  }
+
+  function buildDirectStationRoute(origin, destination) {
+    const distanceMeters = computeDistanceMeters(origin, destination);
+    if (!Number.isFinite(distanceMeters) || distanceMeters <= 0) {
+      throw new Error("Unable to estimate a route from the station to the incident focus.");
     }
     return {
-      points,
+      points: [
+        { lat: roundCoord(origin.lat), lng: roundCoord(origin.lng) },
+        { lat: roundCoord(destination.lat), lng: roundCoord(destination.lng) }
+      ],
       distanceMeters: round2(distanceMeters),
       distanceMiles: round2(distanceMeters / 1609.344),
-      durationSeconds: Number.isFinite(durationSeconds) && durationSeconds > 0 ? round2(durationSeconds) : 0,
-      durationMinutes: Number.isFinite(durationSeconds) && durationSeconds > 0 ? round2(durationSeconds / 60) : 0
+      durationSeconds: 0,
+      durationMinutes: 0,
+      isEstimated: true
     };
+  }
+
+  function computeDistanceMeters(origin, destination) {
+    const startLat = Number(origin?.lat);
+    const startLng = Number(origin?.lng);
+    const endLat = Number(destination?.lat);
+    const endLng = Number(destination?.lng);
+    if (![startLat, startLng, endLat, endLng].every((value) => Number.isFinite(value))) {
+      return NaN;
+    }
+    const earthRadiusMeters = 6371000;
+    const latDelta = toRadians(endLat - startLat);
+    const lngDelta = toRadians(endLng - startLng);
+    const a = Math.sin(latDelta / 2) ** 2
+      + Math.cos(toRadians(startLat)) * Math.cos(toRadians(endLat)) * Math.sin(lngDelta / 2) ** 2;
+    return 2 * earthRadiusMeters * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function toRadians(value) {
+    return Number(value) * (Math.PI / 180);
   }
 
   function findDepartmentStationRouteObject() {
@@ -2435,6 +2533,7 @@
       const roundTripDurationSeconds = round2(route.durationSeconds * 2);
       const roundTripDurationMinutes = round2(route.durationMinutes * 2);
       const displayLabel = `${station.stationName} to ${incidentFocus.label || "Incident"} Mileage Route`;
+      const routeDescriptor = route.isEstimated ? "Direct line estimate" : "Road route";
       const nextFields = {
         ...(findDepartmentStationRouteObject()?.fields || {}),
         stationRouteTag: STATION_ROUTE_OBJECT_TAG,
@@ -2464,13 +2563,17 @@
         quantity: roundTripDistanceMiles,
         costRate: station.defaultMileageRate,
         costCode: STATION_ROUTE_COST_CODE,
-        description: "Department station to incident mileage route with return trip",
+        description: route.isEstimated
+          ? "Department station to incident direct-line mileage estimate with return trip"
+          : "Department station to incident mileage route with return trip",
         manufacturer: "",
-        specification: "Road route (round trip)",
+        specification: route.isEstimated ? "Direct line estimate (round trip)" : "Road route (round trip)",
         customResource: true,
         placedAt: new Date().toISOString(),
         demobilizedAt: "",
-        notes: `${station.stationAddress} to ${incidentFocus.label || "Incident Focus"} and back to station`
+        notes: route.isEstimated
+          ? `${station.stationAddress} to ${incidentFocus.label || "Incident Focus"} and back to station · routing service unavailable, showing direct line estimate`
+          : `${station.stationAddress} to ${incidentFocus.label || "Incident Focus"} and back to station`
       };
       const existingRoute = findDepartmentStationRouteObject();
       if (existingRoute) {
@@ -2500,7 +2603,11 @@
           }
         }, { points: route.points });
       }
-      setStatus(`${displayLabel} updated at ${roundTripDistanceMiles.toFixed(2)} round-trip miles and ${formatDurationMinutes(roundTripDurationMinutes)}.`);
+      if (route.isEstimated) {
+        setStatus(`${displayLabel} added as a round-trip direct line estimate at ${roundTripDistanceMiles.toFixed(2)} miles.`);
+      } else {
+        setStatus(`${displayLabel} updated at ${roundTripDistanceMiles.toFixed(2)} round-trip miles and ${formatDurationMinutes(roundTripDurationMinutes)}.`);
+      }
     } catch (error) {
       setStatus(formatError(error));
     }
@@ -3010,11 +3117,11 @@
     state.organizationContext = null;
     state.organizationRoster = [];
     state.organizationSummary = null;
+    state.commanderSessions = [];
     state.superAdminOpen = false;
     persistJSON(STORAGE_KEYS.commanderAuth, null);
     elements.createSessionPanel.classList.add("hidden");
     elements.sessionListPanel.classList.add("hidden");
-    elements.activeSessionGalleryPanel.classList.add("hidden");
     elements.commanderSignOutBtn.classList.add("hidden");
     elements.sessionSignOutBtn.classList.add("hidden");
     state.ics202Open = false;
@@ -3085,11 +3192,11 @@
       return;
     }
     const sessionId = state.activeSession.id;
-    const leavingAsCommander =
-      state.actor?.permissionTier === "commander" && Boolean(state.commanderAuth?.accessToken);
+    const hasCommanderDashboardAccess = Boolean(state.commanderAuth?.accessToken);
+    const leavingAsCommander = hasCommanderDashboardAccess && isCommander();
     const actorType = currentActorType();
-    const shouldRefreshCommanderSessions = leavingAsCommander && Boolean(state.commanderAuth?.accessToken);
-    const prompt = leavingAsCommander
+    const shouldRefreshCommanderSessions = hasCommanderDashboardAccess;
+    const prompt = hasCommanderDashboardAccess
       ? "Leave this session and return to your session owner dashboard?"
       : "Leave this session? You can rejoin later with the join code.";
     if (!window.confirm(prompt)) return;
@@ -3107,23 +3214,16 @@
       });
     } catch (error) {
       if (shouldRefreshCommanderSessions) {
-        try {
-          await refreshCommanderSessions();
-        } catch (_refreshError) {
-          // Ignore secondary refresh failures here.
-        }
+        setStatus("Left locally. Reloading your session owner dashboard…");
+        window.setTimeout(() => window.location.reload(), 80);
+        return;
       }
       setStatus(`Left locally. ${formatError(error)}`);
       return;
     }
     if (shouldRefreshCommanderSessions) {
-      try {
-        await refreshCommanderSessions();
-      } catch (error) {
-        setStatus(formatError(error));
-        return;
-      }
-      setStatus("Left the collaborative session.");
+      setStatus("Left the collaborative session. Reloading your session owner dashboard…");
+      window.setTimeout(() => window.location.reload(), 80);
       return;
     }
     setStatus("Left the collaborative session.");
@@ -3628,6 +3728,9 @@
     } else {
       state.collapsedLandingSections.add(sectionKey);
     }
+    if (sectionKey === "reviewSessions" && !state.collapsedLandingSections.has(sectionKey)) {
+      renderCommanderSessions(state.commanderSessions);
+    }
     renderLandingSectionCollapses({ highlightedSectionKey: sectionKey });
   }
 
@@ -3639,27 +3742,20 @@
     syncLandingSectionCollapse(elements.sessionListPanelBody, elements.sessionListPanelToggle, "reviewSessions", { immediate, highlightedSectionKey });
     syncLandingSectionCollapse(elements.scenarioReviewPanelBody, elements.scenarioReviewPanelToggle, "reviewScenario", { immediate, highlightedSectionKey });
     syncLandingSectionCollapse(elements.joinSessionPanelBody, elements.joinSessionPanelToggle, "joinSession", { immediate, highlightedSectionKey });
-    syncLandingSectionCollapse(elements.whatHappensPanelBody, elements.whatHappensPanelToggle, "whatHappens", { immediate, highlightedSectionKey });
-    syncLandingSectionCollapse(elements.activeSessionGalleryPanelBody, elements.activeSessionGalleryPanelToggle, "activeSessions", { immediate, highlightedSectionKey });
     state.landingSectionsInitialized = true;
   }
 
   function syncLandingSectionCollapse(bodyElement, toggleElement, sectionKey, options = {}) {
     if (!bodyElement || !toggleElement) return;
-    const { immediate = false, highlightedSectionKey = "" } = options;
+    const { highlightedSectionKey = "" } = options;
     const collapsed = state.collapsedLandingSections.has(sectionKey);
     toggleElement.setAttribute("aria-expanded", String(!collapsed));
     toggleElement.classList.toggle("landing-card-toggle-expanded", !collapsed);
-    bodyElement.classList.remove("hidden");
+    bodyElement.classList.toggle("hidden", collapsed);
     bodyElement.classList.toggle("landing-card-body-collapsed", collapsed);
+    bodyElement.classList.add("landing-card-body-no-motion");
     bodyElement.setAttribute("aria-hidden", String(collapsed));
     bodyElement.inert = collapsed;
-    bodyElement.style.setProperty("--landing-section-max-height", `${bodyElement.scrollHeight}px`);
-    if (immediate) {
-      bodyElement.classList.add("landing-card-body-no-motion");
-    } else {
-      bodyElement.classList.remove("landing-card-body-no-motion");
-    }
     if (highlightedSectionKey === sectionKey) {
       pulseLandingSectionToggle(toggleElement, sectionKey);
     }
@@ -3834,7 +3930,6 @@
     }
     elements.sessionListPanel.classList.toggle("hidden", !signedIn || !licensed);
     elements.scenarioReviewPanel.classList.toggle("hidden", !signedIn || !licensed);
-    elements.activeSessionGalleryPanel.classList.toggle("hidden", !signedIn || !licensed);
     elements.commanderSignOutBtn.classList.toggle("hidden", !signedIn);
     elements.sessionSignOutBtn.classList.toggle("hidden", !signedIn || (!state.activeSession && !isScenarioReviewMode()));
     elements.closeScenarioReviewBtn.classList.toggle("hidden", !isScenarioReviewMode());
@@ -3866,6 +3961,7 @@
     elements.attachImageBtn.classList.toggle("hidden", !(Boolean(state.activeSession) || isScenarioReviewMode()) || state.viewerMode);
     elements.isolationToolBtn.classList.toggle("hidden", !(Boolean(state.activeSession) || isScenarioReviewMode()) || state.viewerMode);
     elements.setIncidentFocusBtn.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode() || !isCommander() || Boolean(getIncidentFocusPoint()));
+    elements.addressIncidentFocusBtn?.classList.toggle("hidden", !state.activeSession || isScenarioReviewMode() || !isCommander() || Boolean(getIncidentFocusPoint()));
     elements.centerIncidentBtn.classList.toggle("hidden", !(state.activeSession || isScenarioReviewMode()));
     const viewerQrAllowed = canShareViewerQr() && isViewerAccessEnabled();
     const viewerToggleVisible = canToggleViewerAccess();
@@ -3908,13 +4004,17 @@
     );
   }
 
-  function getIncidentFocusPoint() {
-    const hazardSource = Array.from(state.objects.values()).find((object) => (
+  function findIncidentFocusObject() {
+    return Array.from(state.objects.values()).find((object) => (
       object?.objectType === "HazardSource"
       && object?.geometryType === "point"
       && Number.isFinite(Number(object?.geometry?.lat))
       && Number.isFinite(Number(object?.geometry?.lng))
-    ));
+    )) || null;
+  }
+
+  function getIncidentFocusPoint() {
+    const hazardSource = findIncidentFocusObject();
     if (!hazardSource) return null;
     return {
       lat: Number(hazardSource.geometry.lat),
@@ -3953,6 +4053,9 @@
       elements.setIncidentFocusBtn.textContent = focusPlacementActive ? "Tap Map to Place Focus" : "Set Initial Focus";
       elements.setIncidentFocusBtn.classList.toggle("attention", focusLocked);
     }
+    if (elements.addressIncidentFocusBtn) {
+      elements.addressIncidentFocusBtn.disabled = !canCreateObjects();
+    }
     if (elements.sessionFocusPrompt) {
       const showPrompt = Boolean(state.activeSession) && !isScenarioReviewMode() && isCommander() && !focusSet;
       elements.sessionFocusPrompt.classList.toggle("hidden", !showPrompt);
@@ -3971,7 +4074,13 @@
     elements.shell?.classList.toggle("incident-focus-lock", locked);
     const interactive = elements.appView.querySelectorAll("button, input, select, textarea");
     interactive.forEach((control) => {
-      const allowControl = control.id === "setIncidentFocusBtn";
+      const allowControl = new Set([
+        "setIncidentFocusBtn",
+        "addressIncidentFocusBtn",
+        "closeAddressIncidentFocusBtn",
+        "submitAddressIncidentFocusBtn",
+        "addressIncidentFocusInput"
+      ]).has(control.id);
       if (locked && !allowControl) {
         if (!control.disabled) {
           control.disabled = true;
@@ -4207,6 +4316,95 @@
     }
     beginTemplatePlacement("HazardSource");
     setStatus("Set Initial Focus selected. Tap the map to place the Hazard Source.");
+  }
+
+  function showAddressIncidentFocusModal() {
+    if (!canCreateObjects()) {
+      setStatus("Only active editors can set the initial incident focus.");
+      return;
+    }
+    elements.addressIncidentFocusModal?.classList.remove("hidden");
+    window.setTimeout(() => {
+      elements.addressIncidentFocusInput?.focus();
+      elements.addressIncidentFocusInput?.select();
+    }, 0);
+  }
+
+  function hideAddressIncidentFocusModal() {
+    elements.addressIncidentFocusModal?.classList.add("hidden");
+  }
+
+  function onAddressIncidentFocusModalBackdropClick(event) {
+    if (event.target === elements.addressIncidentFocusModal) {
+      hideAddressIncidentFocusModal();
+    }
+  }
+
+  function onAddressIncidentFocusInputKeyDown(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void submitAddressIncidentFocus();
+      return;
+    }
+    if (event.key === "Escape") {
+      hideAddressIncidentFocusModal();
+    }
+  }
+
+  async function submitAddressIncidentFocus() {
+    if (!canCreateObjects()) {
+      setStatus("Only active editors can set the initial incident focus.");
+      return;
+    }
+    if (findIncidentFocusObject()) {
+      hideAddressIncidentFocusModal();
+      setStatus("Incident focus is already set.");
+      return;
+    }
+    const rawAddress = elements.addressIncidentFocusInput?.value.trim() || "";
+    if (!rawAddress) {
+      setStatus("Enter an incident address first.");
+      elements.addressIncidentFocusInput?.focus();
+      return;
+    }
+    const originalLabel = elements.submitAddressIncidentFocusBtn?.textContent || "Set Focus";
+    if (elements.submitAddressIncidentFocusBtn) elements.submitAddressIncidentFocusBtn.disabled = true;
+    if (elements.closeAddressIncidentFocusBtn) elements.closeAddressIncidentFocusBtn.disabled = true;
+    if (elements.addressIncidentFocusInput) elements.addressIncidentFocusInput.disabled = true;
+    if (elements.submitAddressIncidentFocusBtn) elements.submitAddressIncidentFocusBtn.textContent = "Finding Address...";
+    setStatus("Finding incident address...");
+    try {
+      const geocoded = await geocodeIncidentFocusAddress(rawAddress);
+      const created = await createObject(templateByType.HazardSource, {
+        lat: geocoded.lat,
+        lng: geocoded.lng
+      }, {
+        fieldOverrides: {
+          hazardType: "Incident Focus",
+          product: geocoded.label
+        },
+        silent: true
+      });
+      if (!created) {
+        return;
+      }
+      if (state.map) {
+        state.map.setView([geocoded.lat, geocoded.lng], 16);
+        scheduleMapResizeRefresh();
+      }
+      hideAddressIncidentFocusModal();
+      if (elements.addressIncidentFocusInput) elements.addressIncidentFocusInput.value = "";
+      setStatus(`Incident focus set from address: ${geocoded.label}.`);
+    } catch (error) {
+      setStatus(formatError(error));
+    } finally {
+      if (elements.submitAddressIncidentFocusBtn) {
+        elements.submitAddressIncidentFocusBtn.disabled = false;
+        elements.submitAddressIncidentFocusBtn.textContent = originalLabel;
+      }
+      if (elements.closeAddressIncidentFocusBtn) elements.closeAddressIncidentFocusBtn.disabled = false;
+      if (elements.addressIncidentFocusInput) elements.addressIncidentFocusInput.disabled = false;
+    }
   }
 
   function syncIncidentFocusState(options = {}) {
@@ -5470,27 +5668,10 @@
     renderSuperAdminSessionDetailModal();
   }
 
-  function showCopyButtonConfirmation(button) {
-    if (!(button instanceof HTMLButtonElement)) return;
-    const originalText = button.dataset.originalLabel || button.textContent || "Copy Session ID";
-    button.dataset.originalLabel = originalText;
-    if (button.dataset.copyFeedbackTimer) {
-      clearTimeout(Number(button.dataset.copyFeedbackTimer));
-    }
-    button.textContent = "Copied";
-    const timer = window.setTimeout(() => {
-      button.textContent = button.dataset.originalLabel || "Copy Session ID";
-      delete button.dataset.copyFeedbackTimer;
-    }, 1800);
-    button.dataset.copyFeedbackTimer = String(timer);
-  }
-
-  async function copySuperAdminSessionId(session, sourceButton = null) {
+  async function copySuperAdminSessionId(session) {
     try {
-      const sessionId = String(session.sessionId || "").trim();
-      await writeToClipboard(sessionId);
-      showCopyButtonConfirmation(sourceButton);
-      setStatus(`Copied Session ID: ${sessionId || "Unavailable"}`);
+      await writeToClipboard(String(session.sessionId || ""));
+      setStatus(`Session ID copied for ${session.incidentName || "session"}.`);
     } catch (error) {
       setStatus(formatError(error));
     }
@@ -5635,7 +5816,7 @@
       copyBtn.type = "button";
       copyBtn.textContent = "Copy Session ID";
       copyBtn.addEventListener("click", () => {
-        void copySuperAdminSessionId(session, copyBtn);
+        void copySuperAdminSessionId(session);
       });
       const deleteBtn = document.createElement("button");
       deleteBtn.className = "danger";
@@ -5884,65 +6065,6 @@
       top.append(content, row);
       card.append(top);
       elements.commanderSessionList.appendChild(card);
-    });
-  }
-
-  function renderActiveSessionGallery(sessions) {
-    elements.activeSessionGallery.innerHTML = "";
-    if (!sessions.length) {
-      const empty = document.createElement("div");
-      empty.className = "muted";
-      empty.textContent = "No live incidents right now.";
-      elements.activeSessionGallery.appendChild(empty);
-      return;
-    }
-    sessions.forEach((session) => {
-      const card = document.createElement("div");
-      card.className = "session-card";
-      const visibleStatus = effectiveSessionStatus(session).toUpperCase();
-      const title = document.createElement("strong");
-      title.textContent = session.incidentName;
-      const meta = document.createElement("div");
-      meta.className = "muted";
-      meta.textContent = `Owner: ${session.ownerName} · ${session.organizationName || "Department"} · ${visibleStatus} · ${formatDateTime(session.operationalPeriodStart)} to ${formatDateTime(session.operationalPeriodEnd)}`;
-      const role = document.createElement("div");
-      role.className = "muted";
-      role.textContent = `Incident Commander: ${session.commanderName}`;
-      const row = document.createElement("div");
-      row.className = "row";
-      if (session.isOwner) {
-        const openBtn = document.createElement("button");
-        openBtn.className = "secondary";
-        openBtn.type = "button";
-        openBtn.textContent = "Open Session";
-        openBtn.addEventListener("click", async () => {
-          try {
-            const snapshot = await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(session.id)}/snapshot`, {
-              actorType: "commander"
-            });
-            state.actor = snapshot.actor;
-            state.qrPayload = JSON.stringify({ type: "ics_collab_join", joinCode: session.joinCode });
-            await openSession(snapshot.session, snapshot.actor, "commander", snapshot.snapshot);
-            setStatus(`Opened ${session.incidentName}.`);
-          } catch (error) {
-            setStatus(formatError(error));
-          }
-        });
-        row.append(openBtn);
-      } else {
-        const useCodeBtn = document.createElement("button");
-        useCodeBtn.className = "secondary";
-        useCodeBtn.type = "button";
-        useCodeBtn.textContent = "Use Code";
-        useCodeBtn.addEventListener("click", () => {
-          elements.joinCodeInput.value = session.joinCode;
-          elements.joinCodeInput.focus();
-          setStatus(`Loaded join code for ${session.incidentName}.`);
-        });
-        row.append(useCodeBtn);
-      }
-      card.append(title, meta, role, row);
-      elements.activeSessionGallery.appendChild(card);
     });
   }
 
@@ -10383,9 +10505,6 @@
     if (object.objectType === MAP_NOTE_OBJECT_TYPE) {
       return false;
     }
-    if (object.objectType === ICON_MARKER_OBJECT_TYPE && object.fields?.iconAssetPath) {
-      return false;
-    }
     return object.geometryType === "point" || object.geometryType === "line" || object.geometryType === "polygon";
   }
 
@@ -11135,7 +11254,7 @@
     };
   }
 
-  function buildIconMarkerIcon(object, template) {
+  function buildIconMarkerIcon(object, template, color) {
     if (isCostedResourceObject(object) && !object.fields?.iconAssetPath) {
       const category = String(object.fields?.resourceCategory || "").toUpperCase();
       const badge = category.startsWith("CON") ? "CON" : "EQ";
@@ -11160,15 +11279,20 @@
     const altLabel = isAttachmentObject(object)
       ? (object.fields?.attachmentName || object.fields?.iconLabel || template?.label || "Attached Image")
       : (object.fields?.iconLabel || template?.label || "Map icon");
+    const accent = escapeAttribute(color || template?.color || "#f3c613");
     return L.divIcon({
       className: "",
-      html: buildIconImageMarkup({
-        className: `point-marker-icon${isAttachmentObject(object) ? " attachment-pin-icon" : ""}`,
-        assetPath: object.fields.iconAssetPath,
-        alt: altLabel,
-        size: safeSize,
-        fallbackAssetPath: getIconFallbackAssetPath(object)
-      }),
+      html: `
+        <div class="point-marker-icon-shell${isAttachmentObject(object) ? " attachment-pin-icon-shell" : ""}" style="--marker-accent:${accent};width:${safeSize}px;height:${safeSize}px">
+          ${buildIconImageMarkup({
+            className: `point-marker-icon${isAttachmentObject(object) ? " attachment-pin-icon" : ""}`,
+            assetPath: object.fields.iconAssetPath,
+            alt: altLabel,
+            size: safeSize,
+            fallbackAssetPath: getIconFallbackAssetPath(object)
+          })}
+        </div>
+      `,
       iconSize: [safeSize, safeSize],
       iconAnchor: [safeSize / 2, safeSize / 2]
     });
@@ -11196,7 +11320,7 @@
       return buildMapNoteIcon(object);
     }
     if (object.objectType === ICON_MARKER_OBJECT_TYPE && object.fields?.iconAssetPath) {
-      return buildIconMarkerIcon(object, template);
+      return buildIconMarkerIcon(object, template, color);
     }
     return L.divIcon({
       className: "",
