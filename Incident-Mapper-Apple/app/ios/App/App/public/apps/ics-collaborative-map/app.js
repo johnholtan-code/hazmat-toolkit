@@ -100,6 +100,10 @@
       { value: "m", label: "Meters" }
     ] }
   ];
+  const DECON_CORRIDOR_FIELD_DEFS = [
+    { key: "styleColor", label: "Line Color", type: "color" }
+  ];
+  const STYLE_COLOR_FIELD_DEF = { key: "styleColor", label: "Color", type: "color" };
   const OBJECT_TEMPLATES = [
     { objectType: "IncidentCommand", label: "Incident Command Post", category: "Command", geometryType: "point", color: "#f3c613", defaults: { incidentName: "", ICName: "", channel: "" } },
     { objectType: "Staging", label: "Staging Area", category: "Command", geometryType: "point", color: "#0d6efd", defaults: { capacity: "", stagingManager: "", apparatusCount: "" } },
@@ -116,7 +120,7 @@
     { objectType: "ColdZone", label: "Cold Zone", category: "HazMat", geometryType: "polygon", color: "#1c7ed6", defaults: {} },
     { objectType: "HazardSource", label: "Hazard Source", category: "HazMat", geometryType: "point", color: "#c2255c", defaults: { hazardType: "", product: "" } },
     { objectType: "MonitoringPoint", label: "Air Monitoring Location", category: "HazMat", geometryType: "point", color: "#12b886", defaults: { sensorType: "", value: "", units: "" } },
-    { objectType: "DeconCorridor", label: "Decon Corridor", category: "HazMat", geometryType: "line", color: "#15aabf", defaults: {} },
+    { objectType: "DeconCorridor", label: "Decon Corridor", category: "HazMat", geometryType: "line", color: "#15aabf", defaults: { styleColor: "#15aabf" }, fieldDefs: DECON_CORRIDOR_FIELD_DEFS },
     { objectType: ISOLATION_ZONE_OBJECT_TYPE, label: "Initial Isolation Zone", category: "HazMat", geometryType: "polygon", color: "#9ca3af", defaults: {} },
     { objectType: PROTECTIVE_ACTION_ZONE_OBJECT_TYPE, label: "Protective Action Zone", category: "HazMat", geometryType: "polygon", color: "#6b7280", defaults: {} },
     { objectType: "CollapseZone", label: "Collapse Zone", category: "Safety", geometryType: "polygon", color: "#fa5252", defaults: {} },
@@ -9995,6 +9999,10 @@
       const parsed = Number(value);
       return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
     }
+    if (fieldType === "color") {
+      const normalized = String(value).trim();
+      return /^#[0-9a-f]{6}$/i.test(normalized) ? normalized : (previousValue || "#15aabf");
+    }
     if (fieldType === "datetime-local") {
       if (!value) return "";
       const iso = inputValueToISOString(value);
@@ -10445,11 +10453,19 @@
       return [];
     }
     const template = resolveTemplateForObject(object);
+    const includeStyleColor = supportsStyleColorEditing(object, template);
     if (template?.fieldDefs?.length) {
-      return template.fieldDefs.map((fieldDef) => ({
+      const fieldEntries = template.fieldDefs.map((fieldDef) => ({
         ...fieldDef,
         value: object.fields?.[fieldDef.key] ?? template.defaults?.[fieldDef.key] ?? ""
       }));
+      if (includeStyleColor && !fieldEntries.some((fieldDef) => fieldDef.key === STYLE_COLOR_FIELD_DEF.key)) {
+        fieldEntries.push({
+          ...STYLE_COLOR_FIELD_DEF,
+          value: getObjectStyleColor(object, template)
+        });
+      }
+      return fieldEntries;
     }
     const merged = { ...(template?.defaults || {}), ...(object.fields || {}) };
     if (object.objectType === ICON_MARKER_OBJECT_TYPE) {
@@ -10459,12 +10475,37 @@
       delete merged.iconAssetPath;
       delete merged.iconMarkerSize;
     }
-    return Object.entries(merged).map(([key, value]) => ({
+    if (!includeStyleColor) {
+      delete merged.styleColor;
+    }
+    const fieldEntries = Object.entries(merged).map(([key, value]) => ({
       key,
       label: key,
       type: "text",
       value: value ?? ""
     }));
+    if (includeStyleColor && !fieldEntries.some((fieldDef) => fieldDef.key === STYLE_COLOR_FIELD_DEF.key)) {
+      fieldEntries.push({
+        ...STYLE_COLOR_FIELD_DEF,
+        value: getObjectStyleColor(object, template)
+      });
+    }
+    return fieldEntries;
+  }
+
+  function getObjectStyleColor(object, template = resolveTemplateForObject(object)) {
+    return object?.fields?.styleColor || template?.color || "#f3c613";
+  }
+
+  function supportsStyleColorEditing(object, template = resolveTemplateForObject(object)) {
+    if (!object || !template) return false;
+    if (isCostedResourceObject(object) || isIsolationZoneObject(object) || isAttachmentObject(object) || isMeasurementObject(object)) {
+      return false;
+    }
+    if (object.objectType === MAP_NOTE_OBJECT_TYPE) {
+      return false;
+    }
+    return object.geometryType === "point" || object.geometryType === "line" || object.geometryType === "polygon";
   }
 
   function getEditableCostFieldValue(object, key) {
@@ -11213,7 +11254,7 @@
     };
   }
 
-  function buildIconMarkerIcon(object, template) {
+  function buildIconMarkerIcon(object, template, color) {
     if (isCostedResourceObject(object) && !object.fields?.iconAssetPath) {
       const category = String(object.fields?.resourceCategory || "").toUpperCase();
       const badge = category.startsWith("CON") ? "CON" : "EQ";
@@ -11238,15 +11279,20 @@
     const altLabel = isAttachmentObject(object)
       ? (object.fields?.attachmentName || object.fields?.iconLabel || template?.label || "Attached Image")
       : (object.fields?.iconLabel || template?.label || "Map icon");
+    const accent = escapeAttribute(color || template?.color || "#f3c613");
     return L.divIcon({
       className: "",
-      html: buildIconImageMarkup({
-        className: `point-marker-icon${isAttachmentObject(object) ? " attachment-pin-icon" : ""}`,
-        assetPath: object.fields.iconAssetPath,
-        alt: altLabel,
-        size: safeSize,
-        fallbackAssetPath: getIconFallbackAssetPath(object)
-      }),
+      html: `
+        <div class="point-marker-icon-shell${isAttachmentObject(object) ? " attachment-pin-icon-shell" : ""}" style="--marker-accent:${accent};width:${safeSize}px;height:${safeSize}px">
+          ${buildIconImageMarkup({
+            className: `point-marker-icon${isAttachmentObject(object) ? " attachment-pin-icon" : ""}`,
+            assetPath: object.fields.iconAssetPath,
+            alt: altLabel,
+            size: safeSize,
+            fallbackAssetPath: getIconFallbackAssetPath(object)
+          })}
+        </div>
+      `,
       iconSize: [safeSize, safeSize],
       iconAnchor: [safeSize / 2, safeSize / 2]
     });
@@ -11274,7 +11320,7 @@
       return buildMapNoteIcon(object);
     }
     if (object.objectType === ICON_MARKER_OBJECT_TYPE && object.fields?.iconAssetPath) {
-      return buildIconMarkerIcon(object, template);
+      return buildIconMarkerIcon(object, template, color);
     }
     return L.divIcon({
       className: "",
@@ -11314,7 +11360,12 @@
         assetPath: object.fields?.iconAssetPath || ""
       };
     }
-    return templateByType[object?.objectType];
+    const template = templateByType[object?.objectType];
+    if (!template) return null;
+    return {
+      ...template,
+      color: object?.fields?.styleColor || template.color
+    };
   }
 
   function getObjectDisplayLabel(object, template = resolveTemplateForObject(object)) {
