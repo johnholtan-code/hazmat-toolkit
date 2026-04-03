@@ -114,6 +114,21 @@
       ]
     },
     {
+      "id": "fire_option2_clean",
+      "label": "Fire",
+      "categoryId": "incident",
+      "category": "Incident",
+      "assetPath": "./icons/incident/fire_option2_clean.svg",
+      "markerSize": 40,
+      "paletteSize": 28,
+      "keywords": [
+        "fire",
+        "flame",
+        "burning",
+        "incident"
+      ]
+    },
+    {
       "id": "police_car",
       "label": "Police Car",
       "categoryId": "incident",
