@@ -1607,9 +1607,9 @@ body[data-theme="light"] .map-sidebar-toggle {
   font-weight: 700;
 }
 .map-weather-launcher {
-  min-width: 52px;
+  width: 52px;
   height: 52px;
-  padding: 0 var(--space-3);
+  padding: 0;
   border-radius: 18px;
   background: color-mix(in srgb, var(--panel) 88%, transparent);
   color: var(--success);
@@ -1619,8 +1619,8 @@ body[data-theme="light"] .map-sidebar-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  font-size: 17px;
+  gap: 0;
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
@@ -1695,9 +1695,9 @@ body[data-theme="light"] .map-sidebar-toggle {
   font-weight: 700;
 }
 .map-focus-launcher {
-  min-width: 52px;
+  width: 52px;
   height: 52px;
-  padding: 0 var(--space-4);
+  padding: 0;
   border-radius: 18px;
   background: color-mix(in srgb, var(--panel) 88%, transparent);
   color: var(--accent);
@@ -1707,7 +1707,6 @@ body[data-theme="light"] .map-sidebar-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
   font-size: 22px;
   font-weight: 700;
 }
