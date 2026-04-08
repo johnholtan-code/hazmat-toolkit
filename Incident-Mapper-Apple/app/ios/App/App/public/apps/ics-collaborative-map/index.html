@@ -340,8 +340,24 @@
           </div>
         </aside>
 
-        <section class="map-stage">
+        <section id="mapStage" class="map-stage">
           <div id="map"></div>
+          <section id="mapNoteEditor" class="map-note-editor hidden" role="dialog" aria-modal="false" aria-labelledby="mapNoteEditorTitle">
+            <div class="map-note-editor-card">
+              <div class="map-note-editor-header">
+                <div>
+                  <strong id="mapNoteEditorTitle">Map Note</strong>
+                  <div id="mapNoteEditorMeta" class="muted">Edit this note next to the marker.</div>
+                </div>
+                <button id="closeMapNoteEditorBtn" class="map-note-editor-close" type="button" aria-label="Close note editor">×</button>
+              </div>
+              <div id="mapNoteEditorFields" class="stack"></div>
+              <div id="mapNoteEditorActions" class="row">
+                <button id="saveMapNoteBtn" class="primary" type="button">Save Note</button>
+                <button id="deleteMapNoteBtn" class="danger" type="button">Delete</button>
+              </div>
+            </div>
+          </section>
           <div class="map-style-dock">
             <button id="weatherLauncherBtn" class="map-weather-launcher hidden" type="button" aria-expanded="false" aria-controls="weatherPanel" aria-label="Show incident weather">
               <span class="map-weather-launcher-icon">Wx</span>

@@ -445,6 +445,7 @@
     joinLockedNote: document.getElementById("joinLockedNote"),
     joinSessionPanelToggle: document.getElementById("joinSessionPanelToggle"),
     joinSessionPanelBody: document.getElementById("joinSessionPanelBody"),
+    mapStage: document.getElementById("mapStage"),
     paletteSearchInput: document.getElementById("paletteSearchInput"),
     clearPaletteSearchBtn: document.getElementById("clearPaletteSearchBtn"),
     paletteContainer: document.getElementById("paletteContainer"),
@@ -474,6 +475,13 @@
     submitAddressIncidentFocusBtn: document.getElementById("submitAddressIncidentFocusBtn"),
     closeAddressIncidentFocusBtn: document.getElementById("closeAddressIncidentFocusBtn"),
     closeScenarioReviewBtn: document.getElementById("closeScenarioReviewBtn"),
+    mapNoteEditor: document.getElementById("mapNoteEditor"),
+    mapNoteEditorMeta: document.getElementById("mapNoteEditorMeta"),
+    mapNoteEditorFields: document.getElementById("mapNoteEditorFields"),
+    mapNoteEditorActions: document.getElementById("mapNoteEditorActions"),
+    closeMapNoteEditorBtn: document.getElementById("closeMapNoteEditorBtn"),
+    saveMapNoteBtn: document.getElementById("saveMapNoteBtn"),
+    deleteMapNoteBtn: document.getElementById("deleteMapNoteBtn"),
     weatherLauncherBtn: document.getElementById("weatherLauncherBtn"),
     weatherPanel: document.getElementById("weatherPanel"),
     weatherSourceLabel: document.getElementById("weatherSourceLabel"),
@@ -1545,6 +1553,12 @@
     elements.saveFieldsBtn.addEventListener("click", saveSelectedObjectFields);
     elements.editGeometryBtn.addEventListener("click", startGeometryEdit);
     elements.deleteObjectBtn.addEventListener("click", deleteSelectedObject);
+    elements.closeMapNoteEditorBtn?.addEventListener("click", closeMapNoteEditor);
+    elements.saveMapNoteBtn?.addEventListener("click", saveSelectedObjectFields);
+    elements.deleteMapNoteBtn?.addEventListener("click", deleteSelectedObject);
+    elements.mapNoteEditor?.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
     elements.finishGeometryBtn.addEventListener("click", finishGeometryDraw);
     elements.cancelGeometryBtn.addEventListener("click", cancelGeometryDraw);
     elements.rightSidebarCollapseBtn.addEventListener("click", toggleRightSidebar);
@@ -1724,10 +1738,12 @@
       if (!state.map) return;
       state.map.invalidateSize(false);
       refreshActiveBaseLayer();
+      updateMapNoteEditorPosition();
       window.setTimeout(() => {
         if (!state.map) return;
         state.map.invalidateSize(false);
         refreshActiveBaseLayer();
+        updateMapNoteEditorPosition();
       }, 200);
     });
   }
@@ -4283,6 +4299,7 @@
   }
 
   function onMapMoveEnd() {
+    updateMapNoteEditorPosition();
     if (!state.activeSession || !state.weatherPanelOpen) return;
     const target = getWeatherTarget();
     if (target?.source === "map_center") {
@@ -8590,6 +8607,7 @@
   function renderSelectedObject() {
     const object = state.selectedObjectId ? state.objects.get(state.selectedObjectId) : null;
     if (!object) {
+      hideMapNoteEditor();
       elements.selectedObjectEmpty.classList.remove("hidden");
       elements.selectedObjectPanel.classList.add("hidden");
       return;
@@ -8677,47 +8695,7 @@
       appendMetaRow(elements.selectedObjectMeta, "Lock", "Editing by another participant");
     }
 
-    elements.selectedObjectFields.innerHTML = "";
-    const fields = collectFieldEntries(object);
-    if (!fields.length) {
-      const empty = document.createElement("div");
-      empty.className = "muted";
-      empty.textContent = "No extra fields for this object.";
-      elements.selectedObjectFields.appendChild(empty);
-    } else {
-      fields.forEach((field) => {
-        const label = document.createElement("label");
-        label.className = field.type === "textarea" ? "field-block field-block-textarea" : "field-block";
-        label.textContent = field.label || field.key;
-        const input = field.type === "textarea"
-          ? document.createElement("textarea")
-          : field.type === "select"
-            ? document.createElement("select")
-            : document.createElement("input");
-        if (field.type === "select") {
-          (field.options || []).forEach((option) => {
-            const optionEl = document.createElement("option");
-            optionEl.value = option.value;
-            optionEl.textContent = option.label;
-            input.appendChild(optionEl);
-          });
-          input.value = field.value ?? "";
-        } else if (field.type === "textarea") {
-          input.value = field.value ?? "";
-          input.rows = 3;
-        } else {
-          input.type = field.type || "text";
-          input.value = field.value ?? "";
-          if (field.min != null) input.min = field.min;
-          if (field.step != null) input.step = field.step;
-        }
-        input.dataset.fieldKey = field.key;
-        input.dataset.fieldType = field.type || "text";
-        input.disabled = !canEditObject(object);
-        label.appendChild(input);
-        elements.selectedObjectFields.appendChild(label);
-      });
-    }
+    renderObjectFields(elements.selectedObjectFields, object);
 
     const editable = canEditObject(object);
     const attachmentObject = isAttachmentObject(object);
@@ -8732,6 +8710,132 @@
     elements.editGeometryBtn.classList.toggle("hidden", object.geometryType === "point" || isIsolationZoneObject(object));
     elements.deleteObjectBtn.disabled = !editable;
     elements.selectedObjectActions.classList.toggle("hidden", state.viewerMode || !editable);
+    const usingMapNoteEditor = object.objectType === MAP_NOTE_OBJECT_TYPE;
+    elements.selectedObjectFields.classList.toggle("hidden", usingMapNoteEditor);
+    elements.selectedObjectActions.classList.toggle("hidden", usingMapNoteEditor || state.viewerMode || !editable);
+    if (usingMapNoteEditor) {
+      showMapNoteEditor(object, editable);
+    } else {
+      hideMapNoteEditor();
+    }
+  }
+
+  function renderObjectFields(container, object) {
+    container.innerHTML = "";
+    const fields = collectFieldEntries(object);
+    if (!fields.length) {
+      const empty = document.createElement("div");
+      empty.className = "muted";
+      empty.textContent = "No extra fields for this object.";
+      container.appendChild(empty);
+      return;
+    }
+    fields.forEach((field) => {
+      const label = document.createElement("label");
+      label.className = field.type === "textarea" ? "field-block field-block-textarea" : "field-block";
+      label.textContent = field.label || field.key;
+      const input = field.type === "textarea"
+        ? document.createElement("textarea")
+        : field.type === "select"
+          ? document.createElement("select")
+          : document.createElement("input");
+      if (field.type === "select") {
+        (field.options || []).forEach((option) => {
+          const optionEl = document.createElement("option");
+          optionEl.value = option.value;
+          optionEl.textContent = option.label;
+          input.appendChild(optionEl);
+        });
+        input.value = field.value ?? "";
+      } else if (field.type === "textarea") {
+        input.value = field.value ?? "";
+        input.rows = 3;
+      } else {
+        input.type = field.type || "text";
+        input.value = field.value ?? "";
+        if (field.min != null) input.min = field.min;
+        if (field.step != null) input.step = field.step;
+      }
+      input.dataset.fieldKey = field.key;
+      input.dataset.fieldType = field.type || "text";
+      input.disabled = !canEditObject(object);
+      label.appendChild(input);
+      container.appendChild(label);
+    });
+  }
+
+  function getActiveEditorFieldContainer(object) {
+    if (object?.objectType === MAP_NOTE_OBJECT_TYPE && !elements.mapNoteEditor?.classList.contains("hidden")) {
+      return elements.mapNoteEditorFields;
+    }
+    return elements.selectedObjectFields;
+  }
+
+  function updateObjectFieldsFromInputs(object, container) {
+    const nextFields = { ...(object.fields || {}) };
+    const inputs = container.querySelectorAll("[data-field-key]");
+    inputs.forEach((input) => {
+      const fieldKey = input.dataset.fieldKey;
+      const fieldType = input.dataset.fieldType || "text";
+      if (!fieldKey) return;
+      nextFields[fieldKey] = parseEditorFieldValue(fieldType, input.value, nextFields[fieldKey]);
+      if (fieldKey === "demobilizedAt" && !nextFields[fieldKey]) {
+        nextFields[fieldKey] = "";
+      }
+    });
+    return nextFields;
+  }
+
+  function showMapNoteEditor(object, editable) {
+    if (!elements.mapNoteEditor || !elements.mapNoteEditorFields) return;
+    renderObjectFields(elements.mapNoteEditorFields, object);
+    elements.mapNoteEditorMeta.textContent = editable
+      ? "Edit this note beside the marker."
+      : "This note is read-only right now.";
+    elements.mapNoteEditor.classList.remove("hidden");
+    elements.saveMapNoteBtn.disabled = !editable;
+    elements.deleteMapNoteBtn.disabled = !editable;
+    elements.mapNoteEditorActions.classList.toggle("hidden", !editable || state.viewerMode);
+    updateMapNoteEditorPosition();
+  }
+
+  function hideMapNoteEditor() {
+    if (!elements.mapNoteEditor || !elements.mapNoteEditorFields) return;
+    elements.mapNoteEditor.classList.add("hidden");
+    elements.mapNoteEditor.removeAttribute("style");
+    elements.mapNoteEditorFields.innerHTML = "";
+  }
+
+  function closeMapNoteEditor() {
+    state.selectedObjectId = null;
+    renderSelectedObject();
+  }
+
+  function updateMapNoteEditorPosition() {
+    if (!state.map || !elements.mapNoteEditor || elements.mapNoteEditor.classList.contains("hidden")) return;
+    const object = state.selectedObjectId ? state.objects.get(state.selectedObjectId) : null;
+    if (!object || object.objectType !== MAP_NOTE_OBJECT_TYPE || object.geometryType !== "point") {
+      hideMapNoteEditor();
+      return;
+    }
+    const point = state.map.latLngToContainerPoint([object.geometry.lat, object.geometry.lng]);
+    const editorWidth = elements.mapNoteEditor.offsetWidth || 320;
+    const editorHeight = elements.mapNoteEditor.offsetHeight || 240;
+    const stageWidth = elements.mapStage?.clientWidth || state.map.getSize().x;
+    const stageHeight = elements.mapStage?.clientHeight || state.map.getSize().y;
+    const gap = 18;
+    let left = point.x + gap;
+    if (left + editorWidth > stageWidth - 12) {
+      left = point.x - editorWidth - gap;
+    }
+    left = Math.max(12, Math.min(left, stageWidth - editorWidth - 12));
+    let top = point.y - Math.min(40, editorHeight * 0.2);
+    if (top + editorHeight > stageHeight - 12) {
+      top = stageHeight - editorHeight - 12;
+    }
+    top = Math.max(12, top);
+    elements.mapNoteEditor.style.left = `${left}px`;
+    elements.mapNoteEditor.style.top = `${top}px`;
   }
 
   function selectTemplate(objectType) {
@@ -9971,17 +10075,7 @@
       setStatus("This session is now read-only.");
       return;
     }
-    const inputs = elements.selectedObjectFields.querySelectorAll("[data-field-key]");
-    const nextFields = { ...(object.fields || {}) };
-    inputs.forEach((input) => {
-      const fieldKey = input.dataset.fieldKey;
-      const fieldType = input.dataset.fieldType || "text";
-      if (!fieldKey) return;
-      nextFields[fieldKey] = parseEditorFieldValue(fieldType, input.value, nextFields[fieldKey]);
-      if (fieldKey === "demobilizedAt" && !nextFields[fieldKey]) {
-        nextFields[fieldKey] = "";
-      }
-    });
+    const nextFields = updateObjectFieldsFromInputs(object, getActiveEditorFieldContainer(object));
     await queueUpdateMutation({
       objectId: object.id,
       mutationType: "update",
