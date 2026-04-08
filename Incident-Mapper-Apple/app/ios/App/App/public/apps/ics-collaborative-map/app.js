@@ -890,7 +890,8 @@
     superAdminStandingSourceFilter: "",
     superAdminStandingTargetFilters: [],
     importShapeOpen: false,
-    ics202ObjectiveDragIndex: -1
+    ics202ObjectiveDragIndex: -1,
+    expandedMapNoteId: ""
   };
 
   const guideState = {
@@ -8606,6 +8607,11 @@
 
   function renderSelectedObject() {
     const object = state.selectedObjectId ? state.objects.get(state.selectedObjectId) : null;
+    const nextExpandedMapNoteId = object?.objectType === MAP_NOTE_OBJECT_TYPE ? String(object.id) : "";
+    if (state.expandedMapNoteId !== nextExpandedMapNoteId) {
+      state.expandedMapNoteId = nextExpandedMapNoteId;
+      syncMapObjects();
+    }
     if (!object) {
       hideMapNoteEditor();
       elements.selectedObjectEmpty.classList.remove("hidden");
@@ -10084,6 +10090,9 @@
       fields: nextFields,
       baseVersion: object.version
     }, true);
+    if (object.objectType === MAP_NOTE_OBJECT_TYPE) {
+      closeMapNoteEditor();
+    }
     setStatus("Changes saved.");
   }
 
@@ -11393,17 +11402,25 @@
   function buildMapNoteIcon(object) {
     const priority = normalizeMapNotePriority(object?.fields?.priority);
     const noteLabel = object?.fields?.title ? escapeHtml(String(object.fields.title).trim().slice(0, 18)) : "Note";
+    const isSelected = String(state.selectedObjectId || "") === String(object?.id || "");
     return L.divIcon({
       className: "",
       html: `
-        <div class="map-note-marker map-note-${escapeAttribute(priority)}">
+        <div class="map-note-marker map-note-${escapeAttribute(priority)}${isSelected ? " is-selected" : ""}">
           <div class="map-note-marker-corner"></div>
-          <div class="map-note-marker-glyph">N</div>
+          <div class="map-note-marker-glyph" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M7 3.5h7.8L19.5 8v12a.5.5 0 0 1-.5.5H7a2.5 2.5 0 0 1-2.5-2.5V6A2.5 2.5 0 0 1 7 3.5Z"></path>
+              <path d="M14.5 3.5V8h5"></path>
+              <path d="M8.5 11.5h7"></path>
+              <path d="M8.5 14.5h7"></path>
+            </svg>
+          </div>
           <div class="map-note-marker-label">${noteLabel}</div>
         </div>
       `,
-      iconSize: [86, 52],
-      iconAnchor: [18, 26]
+      iconSize: isSelected ? [92, 54] : [34, 34],
+      iconAnchor: isSelected ? [18, 27] : [17, 17]
     });
   }
 
