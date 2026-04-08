@@ -9274,6 +9274,9 @@
         updatedAt: new Date().toISOString()
       };
       state.objects.set(objectId, object);
+      if (template.objectType === MAP_NOTE_OBJECT_TYPE) {
+        state.selectedObjectId = objectId;
+      }
       syncMapObjects();
       syncIncidentFocusState({ notify: true });
       renderAll();
@@ -9297,6 +9300,10 @@
       }
     });
     applyMutationResponse(result);
+    if (template.objectType === MAP_NOTE_OBJECT_TYPE) {
+      state.selectedObjectId = objectId;
+      renderSelectedObject();
+    }
     if (!options.silent) {
       setStatus(`${template.label} placed.`);
     }
