@@ -9,6 +9,11 @@ type MemberBody = {
   password?: string;
 };
 
+type ResetPasswordBody = {
+  email?: string;
+  password?: string;
+};
+
 export const adminRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: { organizationId: string } }>('/v1/admin/organizations/:organizationId/members', async (request, reply) => {
     try {
@@ -123,4 +128,81 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(403).send({ error: 'FORBIDDEN', message: 'Organization admin access is required.' });
     }
   });
+
+  app.post<{ Params: { organizationId: string }; Body: ResetPasswordBody }>(
+    '/v1/admin/organizations/:organizationId/members/reset-password',
+    async (request, reply) => {
+      const email = normalizeEmailLike(request.body?.email);
+      const password = request.body?.password?.trim() ?? '';
+
+      if (!email || password.length < 8) {
+        return reply.code(400).send({
+          error: 'BAD_REQUEST',
+          message: 'email and password (8+ chars) are required.'
+        });
+      }
+
+      try {
+        const actor = await requireOrgAdmin(app, request.headers, request.params.organizationId);
+        const client = await app.pg.connect();
+
+        try {
+          await client.query('begin');
+
+          const trainer = await client.query<{ id: string }>(
+            `
+              select t.id::text as id
+              from organization_memberships m
+              join trainers t on t.id = m.trainer_id
+              where m.organization_id = $1::uuid
+                and lower(t.email) = $2
+              limit 1
+            `,
+            [request.params.organizationId, email]
+          );
+
+          const trainerId = trainer.rows[0]?.id;
+          if (!trainerId) {
+            await client.query('rollback');
+            return reply.code(404).send({
+              error: 'NOT_FOUND',
+              message: 'No trainer with that email was found in this organization.'
+            });
+          }
+
+          await client.query(
+            `
+              update trainers
+              set password_hash = $2,
+                  updated_at = now()
+              where id = $1::uuid
+            `,
+            [trainerId, hashPassword(password)]
+          );
+
+          await client.query(
+            `
+              insert into audit_logs (organization_id, actor_trainer_id, actor_ref, action, entity_type, entity_id, payload_json)
+              values ($1::uuid, $2::uuid, $3, 'organization.member.reset_password', 'trainer', $4::text, jsonb_build_object('email', $5))
+            `,
+            [request.params.organizationId, actor.trainerId, actor.trainerRef, trainerId, email]
+          );
+
+          await client.query('commit');
+          return reply.send({
+            message: 'Password reset completed.',
+            email
+          });
+        } catch (error) {
+          await client.query('rollback');
+          throw error;
+        } finally {
+          client.release();
+        }
+      } catch (error) {
+        request.log.error({ err: error }, 'reset org member password failed');
+        return reply.code(403).send({ error: 'FORBIDDEN', message: 'Organization admin access is required.' });
+      }
+    }
+  );
 };
