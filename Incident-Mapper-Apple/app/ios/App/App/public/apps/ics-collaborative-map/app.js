@@ -1258,13 +1258,6 @@
   }
 
   function beginAttachmentFlow() {
-    const selected = state.selectedObjectId ? state.objects.get(state.selectedObjectId) : null;
-    if (selected && isAttachmentObject(selected) && attachmentObjectIsEditable(selected) && elements.attachmentImageAppendInput) {
-      elements.attachmentImageAppendInput.value = "";
-      elements.attachmentImageAppendInput.dataset.objectId = selected.id;
-      openNativeFilePicker(elements.attachmentImageAppendInput, "Unable to open image picker.");
-      return;
-    }
     if (!canCreateObjects()) {
       setStatus("This session is read-only or you do not have edit access.");
       return;
