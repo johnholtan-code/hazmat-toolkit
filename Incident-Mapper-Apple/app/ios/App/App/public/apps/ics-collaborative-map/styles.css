@@ -2383,6 +2383,47 @@ body[data-theme="light"] .attachment-preview-img {
   gap: var(--space-2);
   flex-wrap: wrap;
 }
+.icon-marker-shell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+.attachment-pin-shell {
+  filter: drop-shadow(0 7px 16px rgba(15, 23, 42, 0.22));
+}
+.attachment-pin-direction {
+  position: absolute;
+  inset: -8px;
+  pointer-events: none;
+  transform: rotate(var(--attachment-direction, 0deg));
+}
+.attachment-pin-direction::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -1px;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 11px solid color-mix(in srgb, var(--accent-strong) 88%, white 12%);
+  filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.26));
+}
+.attachment-pin-direction::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-strong) 92%, white 8%);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
+}
 #attachmentDeleteBtn {
   background: linear-gradient(180deg, #7f1d1d, #991b1b);
   border-color: #b91c1c;

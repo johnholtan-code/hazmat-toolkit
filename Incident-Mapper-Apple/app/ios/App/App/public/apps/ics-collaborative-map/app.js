@@ -615,6 +615,7 @@
     attachmentPrevBtn: document.getElementById("attachmentPrevBtn"),
     attachmentNextBtn: document.getElementById("attachmentNextBtn"),
     attachmentAddBtn: document.getElementById("attachmentAddBtn"),
+    attachmentDirectionBtn: document.getElementById("attachmentDirectionBtn"),
     attachmentRenameBtn: document.getElementById("attachmentRenameBtn"),
     attachmentDeleteBtn: document.getElementById("attachmentDeleteBtn"),
     closeAttachmentPreviewBtn: document.getElementById("closeAttachmentPreviewBtn"),
@@ -1082,6 +1083,63 @@
     return entry?.publicUrl || entry?.url || entry?.dataUrl || "";
   }
 
+  function normalizeAttachmentDirection(value) {
+    if (value === "" || value == null) return null;
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return null;
+    return ((Math.round(numeric) % 360) + 360) % 360;
+  }
+
+  function parseAttachmentDirectionInput(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return null;
+    const normalized = normalizeAttachmentDirection(raw);
+    if (normalized != null) return normalized;
+    const token = raw.toLowerCase().replace(/[^a-z]/g, "");
+    const cardinalMap = {
+      n: 0,
+      north: 0,
+      ne: 45,
+      northeast: 45,
+      e: 90,
+      east: 90,
+      se: 135,
+      southeast: 135,
+      s: 180,
+      south: 180,
+      sw: 225,
+      southwest: 225,
+      w: 270,
+      west: 270,
+      nw: 315,
+      northwest: 315
+    };
+    return Object.prototype.hasOwnProperty.call(cardinalMap, token) ? cardinalMap[token] : null;
+  }
+
+  function formatAttachmentDirection(value) {
+    const normalized = normalizeAttachmentDirection(value);
+    if (normalized == null) return "Not set";
+    return `${directionToCardinal(normalized)} · ${Math.round(normalized)}°`;
+  }
+
+  function promptAttachmentDirection(initialValue = null) {
+    const initialDirection = normalizeAttachmentDirection(initialValue);
+    const response = window.prompt(
+      "Optional photo direction. Enter degrees (0-359) or a compass direction like N, NE, E, or SW. Leave blank to skip.",
+      initialDirection == null ? "" : String(Math.round(initialDirection))
+    );
+    if (response == null) return undefined;
+    const trimmed = response.trim();
+    if (!trimmed) return null;
+    const parsed = parseAttachmentDirectionInput(trimmed);
+    if (parsed == null) {
+      window.alert("Enter a direction like 90, 225, N, NE, E, or SW.");
+      return promptAttachmentDirection(initialDirection);
+    }
+    return parsed;
+  }
+
   function normalizeAttachmentFields(fields) {
     const working = { ...(fields || {}) };
     const images = getAttachmentImages({ fields: working });
@@ -1118,6 +1176,12 @@
     working.iconCategory = ATTACHMENT_CATEGORY;
     working.iconAssetPath = ATTACHMENT_PIN_SRC;
     working.iconMarkerSize = 42;
+    const normalizedDirection = normalizeAttachmentDirection(working.cameraDirectionDeg);
+    if (normalizedDirection == null) {
+      delete working.cameraDirectionDeg;
+    } else {
+      working.cameraDirectionDeg = normalizedDirection;
+    }
     return working;
   }
 
@@ -1161,11 +1225,13 @@
     }
     void prepareAttachmentPayload(file)
       .then((payload) => {
+        const promptedDirection = promptAttachmentDirection(null);
+        payload.cameraDirectionDeg = promptedDirection == null ? null : promptedDirection;
         state.pendingAttachmentPayload = payload;
         state.drawState = null;
         redrawPreviewLayer();
         updateDrawControls();
-        setStatus("Attachment armed: click map to place image pin.");
+        setStatus(`Attachment armed${payload.cameraDirectionDeg == null ? "" : ` (${formatAttachmentDirection(payload.cameraDirectionDeg)})`}: click map to place image pin.`);
       })
       .catch((error) => {
         setStatus(formatError(error));
@@ -1513,6 +1579,7 @@
       elements.attachmentImageAppendInput.dataset.objectId = object.id;
       openNativeFilePicker(elements.attachmentImageAppendInput, "Unable to open image picker.");
     });
+    elements.attachmentDirectionBtn?.addEventListener("click", updateAttachmentDirection);
     elements.attachmentRenameBtn?.addEventListener("click", renameCurrentAttachment);
     elements.attachmentDeleteBtn?.addEventListener("click", deleteCurrentAttachment);
     elements.closeAttachmentPreviewBtn?.addEventListener("click", closeAttachmentPreviewModal);
@@ -8613,6 +8680,7 @@
       appendMetaRow(elements.selectedObjectMeta, "Category", object.fields?.iconCategory || "Legacy Icons");
       if (isAttachmentObject(object)) {
         appendMetaRow(elements.selectedObjectMeta, "Images", String(getAttachmentImages(object).length));
+        appendMetaRow(elements.selectedObjectMeta, "Photo Direction", formatAttachmentDirection(object.fields?.cameraDirectionDeg));
       }
     }
     appendMetaRow(elements.selectedObjectMeta, "Author", author ? `${author.displayName} · ${author.icsRole}` : object.createdByParticipantId);
@@ -9285,6 +9353,7 @@
       iconLabel: label,
       iconAssetPath: ATTACHMENT_PIN_SRC,
       iconMarkerSize: 42,
+      cameraDirectionDeg: payload?.cameraDirectionDeg,
       attachmentName: payload?.fileName || "Attached Image",
       attachmentFiles: [attachmentEntry]
     });
@@ -9443,13 +9512,15 @@
     state.attachmentPreview.index = index;
     elements.attachmentPreviewTitle.textContent = resolvedObject?.fields?.attachmentName || resolvedObject?.fields?.iconLabel || "Attached Image";
     elements.attachmentPreviewImage.src = getAttachmentImageSource(active);
+    const directionLabel = formatAttachmentDirection(resolvedObject?.fields?.cameraDirectionDeg);
     elements.attachmentPreviewMeta.textContent = active
-      ? `${active.name || "Attached Image"} (${index + 1}/${images.length})`
+      ? `${active.name || "Attached Image"} (${index + 1}/${images.length})${directionLabel === "Not set" ? "" : ` · Facing ${directionLabel}`}`
       : "No images attached";
     const canEdit = attachmentObjectIsEditable(resolvedObject);
     elements.attachmentPrevBtn.disabled = !active || images.length <= 1;
     elements.attachmentNextBtn.disabled = !active || images.length <= 1;
     elements.attachmentAddBtn.disabled = !canEdit;
+    if (elements.attachmentDirectionBtn) elements.attachmentDirectionBtn.disabled = !canEdit;
     elements.attachmentRenameBtn.disabled = !active || !canEdit;
     elements.attachmentDeleteBtn.disabled = !active || !canEdit;
     elements.attachmentPreviewModal.classList.remove("hidden");
@@ -9508,6 +9579,45 @@
         }, true);
       }
       setStatus("Attachment renamed.");
+      openAttachmentPreview(state.objects.get(object.id) || { ...object, fields: nextFields });
+    } catch (error) {
+      setStatus(formatError(error));
+    }
+  }
+
+  async function updateAttachmentDirection() {
+    const { object } = getAttachmentPreviewContext();
+    if (!object || !attachmentObjectIsEditable(object)) return;
+    const nextDirection = promptAttachmentDirection(object.fields?.cameraDirectionDeg);
+    if (nextDirection === undefined) return;
+    const draftFields = { ...(object.fields || {}) };
+    if (nextDirection == null) {
+      delete draftFields.cameraDirectionDeg;
+    } else {
+      draftFields.cameraDirectionDeg = nextDirection;
+    }
+    const nextFields = normalizeAttachmentFields(draftFields);
+    try {
+      if (isScenarioReviewMode()) {
+        state.objects.set(object.id, {
+          ...object,
+          fields: nextFields,
+          updatedAt: new Date().toISOString()
+        });
+        syncMapObjects();
+        renderSelectedObject();
+        renderAll();
+      } else {
+        await queueUpdateMutation({
+          objectId: object.id,
+          mutationType: "update",
+          geometryType: object.geometryType,
+          geometry: object.geometry,
+          fields: nextFields,
+          baseVersion: object.version
+        }, true);
+      }
+      setStatus(nextDirection == null ? "Photo direction cleared." : `Photo direction set to ${formatAttachmentDirection(nextDirection)}.`);
       openAttachmentPreview(state.objects.get(object.id) || { ...object, fields: nextFields });
     } catch (error) {
       setStatus(formatError(error));
@@ -11324,6 +11434,7 @@
     const altLabel = isAttachmentObject(object)
       ? (object.fields?.attachmentName || object.fields?.iconLabel || template?.label || "Attached Image")
       : (object.fields?.iconLabel || template?.label || "Map icon");
+    const directionDeg = isAttachmentObject(object) ? normalizeAttachmentDirection(object.fields?.cameraDirectionDeg) : null;
     return L.divIcon({
       className: "",
       html: buildIconImageMarkup({
@@ -11331,7 +11442,8 @@
         assetPath: object.fields.iconAssetPath,
         alt: altLabel,
         size: safeSize,
-        fallbackAssetPath: getIconFallbackAssetPath(object)
+        fallbackAssetPath: getIconFallbackAssetPath(object),
+        directionDeg
       }),
       iconSize: [safeSize, safeSize],
       iconAnchor: [safeSize / 2, safeSize / 2]
@@ -11488,7 +11600,7 @@
     return DEFAULT_ICON_FALLBACK_ASSET;
   }
 
-  function buildIconImageMarkup({ className = "", assetPath = "", alt = "", size = 30, fallbackAssetPath = "" } = {}) {
+  function buildIconImageMarkup({ className = "", assetPath = "", alt = "", size = 30, fallbackAssetPath = "", directionDeg = null } = {}) {
     const resolvedSrc = resolveAssetPath(assetPath);
     const resolvedFallback = resolveAssetPath(fallbackAssetPath || DEFAULT_ICON_FALLBACK_ASSET);
     const safeSize = escapeAttribute(String(size));
@@ -11496,7 +11608,15 @@
     const imageAlt = escapeAttribute(alt);
     const imageSrc = escapeAttribute(resolvedSrc);
     const fallbackSrc = escapeAttribute(resolvedFallback);
-    return `<img class="${imageClass}" src="${imageSrc}" alt="${imageAlt}" data-fallback-src="${fallbackSrc}" onerror="if (!this.dataset.fallbackApplied && this.dataset.fallbackSrc) { this.dataset.fallbackApplied='1'; this.src=this.dataset.fallbackSrc; }" style="width:${safeSize}px;height:${safeSize}px" />`;
+    const pointerMarkup = directionDeg == null
+      ? ""
+      : `<span class="attachment-pin-direction" aria-hidden="true" style="--attachment-direction:${escapeAttribute(String(directionDeg))}deg"></span>`;
+    return `
+      <span class="icon-marker-shell${directionDeg == null ? "" : " attachment-pin-shell"}" style="width:${safeSize}px;height:${safeSize}px">
+        <img class="${imageClass}" src="${imageSrc}" alt="${imageAlt}" data-fallback-src="${fallbackSrc}" onerror="if (!this.dataset.fallbackApplied && this.dataset.fallbackSrc) { this.dataset.fallbackApplied='1'; this.src=this.dataset.fallbackSrc; }" style="width:${safeSize}px;height:${safeSize}px" />
+        ${pointerMarkup}
+      </span>
+    `;
   }
 
   function toLeafletLatLngs(points) {
