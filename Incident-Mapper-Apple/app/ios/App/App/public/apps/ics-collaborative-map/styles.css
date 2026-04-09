@@ -2395,7 +2395,7 @@ body[data-theme="light"] .attachment-preview-img {
 }
 .attachment-pin-direction {
   position: absolute;
-  inset: -14px;
+  inset: -8px;
   pointer-events: none;
   transform: rotate(var(--attachment-direction, 0deg));
 }
@@ -2403,10 +2403,10 @@ body[data-theme="light"] .attachment-preview-img {
   content: "";
   position: absolute;
   left: 50%;
-  top: -13px;
+  top: -5px;
   transform: translateX(-50%);
-  width: 4px;
-  height: 24px;
+  width: 3px;
+  height: 15px;
   border-radius: 999px;
   background: rgba(17, 24, 39, 0.9);
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
@@ -2415,13 +2415,13 @@ body[data-theme="light"] .attachment-preview-img {
   content: "";
   position: absolute;
   left: 50%;
-  top: -18px;
+  top: -10px;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 12px solid rgba(17, 24, 39, 0.94);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 9px solid rgba(17, 24, 39, 0.94);
   filter: drop-shadow(0 0 0 2px rgba(255, 255, 255, 0.95));
 }
 #attachmentDeleteBtn {
