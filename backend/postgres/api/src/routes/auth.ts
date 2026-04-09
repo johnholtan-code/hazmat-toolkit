@@ -51,7 +51,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const organization = await client.query<{ id: string }>(
         `
           insert into organizations (slug, organization_name, billing_email, license_status, seat_limit, app_distribution)
-          values ($1, $2, $3, 'trial', 10, 'public_app_store')
+          values ($1, $2, $3, 'active', 10, 'public_app_store')
           returning id::text as id
         `,
         [createOrganizationSlug(email), organizationName, email]
