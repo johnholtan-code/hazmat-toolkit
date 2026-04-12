@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Owner-led, browser-friendly operational map for shared incident command." />
+  <meta name="theme-color" content="#1a2235" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#eef2f8" media="(prefers-color-scheme: light)" />
   <title>ICS Collaborative Map</title>
   <link rel="stylesheet" href="./vendor/leaflet-1.9.4.css" />
   <link rel="stylesheet" href="./styles.css" />
@@ -90,27 +93,27 @@
                 <div id="commanderSummaryEmail" class="muted"></div>
               </div>
 
-              <div id="authFields" class="stack auth-grid">
-                <input id="commanderNameInput" type="text" placeholder="Session owner display name" />
-                <input id="commanderEmailInput" type="email" placeholder="Session owner email" />
-                <input id="commanderPasswordInput" type="password" placeholder="Password" />
+              <form id="authFields" class="stack auth-grid" autocomplete="on">
+                <input id="commanderNameInput" type="text" placeholder="Session owner display name" autocomplete="name" />
+                <input id="commanderEmailInput" type="email" placeholder="Session owner email" autocomplete="email" />
+                <input id="commanderPasswordInput" type="password" placeholder="Password" autocomplete="current-password" />
                 <div id="forgotPasswordRow" class="auth-inline-actions">
                   <button id="forgotPasswordBtn" class="secondary auth-link-btn" type="button">Forgot Password?</button>
                 </div>
-              </div>
+              </form>
 
-              <div id="recoveryAuthPanel" class="stack auth-grid hidden">
+              <form id="recoveryAuthPanel" class="stack auth-grid hidden" autocomplete="on">
                 <div class="auth-recovery-copy">
                   <strong>Finish Password Reset</strong>
                   <div id="recoveryAuthMeta" class="muted">Set a new password for your session owner account.</div>
                 </div>
-                <input id="recoveryPasswordInput" type="password" placeholder="New password" />
-                <input id="recoveryPasswordConfirmInput" type="password" placeholder="Confirm new password" />
+                <input id="recoveryPasswordInput" type="password" placeholder="New password" autocomplete="new-password" />
+                <input id="recoveryPasswordConfirmInput" type="password" placeholder="Confirm new password" autocomplete="new-password" />
                 <div class="auth-inline-actions auth-inline-actions-spread">
                   <button id="cancelRecoveryBtn" class="secondary" type="button">Cancel</button>
                   <button id="completeRecoveryBtn" class="primary" type="button">Update Password</button>
                 </div>
-              </div>
+              </form>
 
             </div>
 
@@ -245,11 +248,11 @@
                 <span>Join Session</span>
                 <span class="toggle-symbol">+</span>
               </button>
-              <div id="joinSessionPanelBody" class="landing-card-body hidden">
+              <form id="joinSessionPanelBody" class="landing-card-body hidden" autocomplete="on">
                 <p id="joinLockedNote" class="inline-note">Sign in with an account first, then join with the session code.</p>
                 <div class="join-grid">
                 <input id="joinCodeInput" type="text" placeholder="Join code" disabled />
-                <input id="joinDisplayNameInput" type="text" placeholder="Display name" disabled />
+                <input id="joinDisplayNameInput" type="text" placeholder="Display name" autocomplete="name" disabled />
                 <select id="joinPermissionSelect" disabled>
                   <option value="operator">Operator</option>
                   <option value="observer">Observer</option>
@@ -257,7 +260,7 @@
                 <select id="joinRoleSelect" disabled></select>
                 </div>
                 <button id="joinSessionBtn" class="primary" type="button" disabled>Join Session</button>
-              </div>
+              </form>
             </div>
 
           </div>
@@ -345,7 +348,7 @@
 
         <section id="mapStage" class="map-stage">
           <div id="map"></div>
-          <section id="mapNoteEditor" class="map-note-editor hidden" role="dialog" aria-modal="false" aria-labelledby="mapNoteEditorTitle">
+          <section id="mapNoteEditor" class="map-note-editor hidden" role="region" aria-labelledby="mapNoteEditorTitle">
             <div class="map-note-editor-card">
               <div class="map-note-editor-header">
                 <div>
@@ -642,7 +645,7 @@
                   </select>
                 </label>
               </div>
-              <div class="row" style="justify-content:space-between;align-items:center;">
+              <div class="row row--space-between">
                 <div id="superAdminSessionsResultCount" class="muted">0 sessions</div>
                 <button id="superAdminSessionsResetBtn" class="secondary" type="button">Reset Filters</button>
               </div>
@@ -684,10 +687,10 @@
             <h2 id="superAdminSessionDetailTitle">Session Details</h2>
             <div id="superAdminSessionDetailSubtitle" class="muted">Collaborative session metadata</div>
           </div>
-          <button id="superAdminSessionDetailCloseBtn" class="secondary" type="button">Close</button>
+          <button id="superAdminSessionDetailCloseBtn" class="secondary" type="button" aria-label="Close session details">Close</button>
         </div>
         <div id="superAdminSessionDetailMeta" class="super-admin-session-detail-grid"></div>
-        <div class="row" style="justify-content:flex-end;">
+        <div class="row row--end">
           <button id="superAdminSessionCopyIdBtn" class="secondary" type="button">Copy Session ID</button>
           <button id="superAdminSessionDeleteBtn" class="danger" type="button">Delete Session</button>
         </div>
@@ -899,7 +902,7 @@
                   </div>
                   <div class="command-structure-role-header-actions">
                     <span id="commandStructureRoleStatus" class="command-structure-status-badge">Empty</span>
-                    <button id="commandStructureClosePanelBtn" class="secondary" type="button">Close</button>
+                    <button id="commandStructureClosePanelBtn" class="secondary" type="button" aria-label="Close role editor">Close</button>
                   </div>
                 </div>
 
@@ -932,7 +935,7 @@
     <div class="modal-card export-modal-card">
       <div class="modal-header">
         <h2 id="printExportTitle">Print / Export</h2>
-        <button id="closePrintExportBtn" class="secondary" type="button">Close</button>
+        <button id="closePrintExportBtn" class="secondary" type="button" aria-label="Close print and export">Close</button>
       </div>
       <p class="muted">Choose how you want to output the current map or cost summary.</p>
       <div class="export-option-group">
@@ -957,7 +960,7 @@
     <div class="modal-card ics207-preview-modal-card">
       <div class="modal-header">
         <h2 id="ics207PreviewTitle">ICS 207 Preview</h2>
-        <button id="closeIcs207PreviewBtn" class="secondary" type="button">Close</button>
+        <button id="closeIcs207PreviewBtn" class="secondary" type="button" aria-label="Close ICS 207 preview">Close</button>
       </div>
       <div class="ics207-preview-layout">
         <section class="ics207-preview-controls">
@@ -1006,7 +1009,7 @@
     <div class="modal-card isolation-modal-card">
       <div class="modal-header">
         <h2 id="isolationToolTitle">Initial Isolation / Evacuation Tool</h2>
-        <button id="closeIsolationToolBtn" class="secondary" type="button">Close</button>
+        <button id="closeIsolationToolBtn" class="secondary" type="button" aria-label="Close isolation tool">Close</button>
       </div>
       <label class="isolation-field">
         <span class="isolation-label">Chemical / Material</span>
@@ -1091,7 +1094,7 @@
     <div class="modal-card">
       <div class="modal-header">
         <h2 id="viewerQrTitle">Viewer QR</h2>
-        <button id="closeViewerQrBtn" class="secondary" type="button">Close</button>
+        <button id="closeViewerQrBtn" class="secondary" type="button" aria-label="Close viewer QR">Close</button>
       </div>
       <p class="muted">This QR opens a read-only map view. People can see the map and tap items to inspect their properties.</p>
       <img id="viewerQrImage" class="qr-image" alt="Viewer QR code" />
@@ -1107,14 +1110,14 @@
     <div class="modal-card address-incident-focus-modal-card">
       <div class="modal-header">
         <h2 id="addressIncidentFocusTitle">Set Incident Focus by Address</h2>
-        <button id="closeAddressIncidentFocusBtn" class="secondary" type="button">Close</button>
+        <button id="closeAddressIncidentFocusBtn" class="secondary" type="button" aria-label="Close address focus">Close</button>
       </div>
       <p class="muted">Enter the dispatch or incident address and the map will set the initial hazard focus there.</p>
       <label class="field-block">
         Incident Address
         <input id="addressIncidentFocusInput" type="text" placeholder="123 Main St, Tulsa, OK" autocomplete="street-address" />
       </label>
-      <div class="row" style="justify-content:flex-end;">
+      <div class="row row--end">
         <button id="submitAddressIncidentFocusBtn" class="primary" type="button">Set Focus</button>
       </div>
     </div>
@@ -1128,7 +1131,7 @@
     <div class="modal-card attachment-modal-card">
       <div class="modal-header">
         <h2 id="attachmentPreviewTitle">Attached Image</h2>
-        <button id="closeAttachmentPreviewBtn" class="secondary" type="button">Close</button>
+        <button id="closeAttachmentPreviewBtn" class="secondary" type="button" aria-label="Close image preview">Close</button>
       </div>
       <img id="attachmentPreviewImage" class="attachment-preview-img" alt="Attached incident image preview" />
       <div id="attachmentPreviewMeta" class="muted"></div>
@@ -1147,7 +1150,7 @@
     <div class="modal-card attachment-direction-card">
       <div class="modal-header">
         <h2 id="attachmentDirectionTitle">Photo Direction</h2>
-        <button id="closeAttachmentDirectionBtn" class="secondary" type="button">Close</button>
+        <button id="closeAttachmentDirectionBtn" class="secondary" type="button" aria-label="Close photo direction">Close</button>
       </div>
       <p class="muted attachment-direction-copy">Tap the compass to show which direction the camera was facing when the photo was taken.</p>
       <div class="attachment-direction-layout">
@@ -1179,7 +1182,7 @@
     <div class="modal-card add-to-cost-modal-card">
       <div class="modal-header">
         <h2 id="addToCostTitle">Add Item to Cost</h2>
-        <button id="closeAddToCostBtn" class="secondary" type="button">Close</button>
+        <button id="closeAddToCostBtn" class="secondary" type="button" aria-label="Close add to cost">Close</button>
       </div>
       <div id="addToCostMeta" class="muted"></div>
       <div class="add-to-cost-grid">
@@ -1246,7 +1249,7 @@
           <textarea id="addToCostNotesInput" rows="3"></textarea>
         </label>
       </div>
-      <div class="row" style="justify-content:flex-end;">
+      <div class="row row--end">
         <button id="cancelAddToCostBtn" class="secondary" type="button">Cancel</button>
         <button id="saveAddToCostBtn" class="primary" type="button">Add to Cost</button>
       </div>
@@ -1278,7 +1281,7 @@
         </label>
       </div>
       <div id="importShapeSummary" class="muted">No file parsed yet.</div>
-      <div class="row" style="justify-content:flex-end;">
+      <div class="row row--end">
         <button id="cancelImportShapeBtn" class="secondary" type="button">Cancel</button>
         <button id="confirmImportShapeBtn" class="primary" type="button" disabled>Import</button>
       </div>
@@ -1290,21 +1293,21 @@
     <div id="guideBody" class="body"></div>
     <div id="guideMeta" class="meta"></div>
     <div class="controls">
-      <button id="guideClose" class="secondary" type="button">Close</button>
+      <button id="guideClose" class="secondary" type="button" aria-label="Close walkthrough guide">Close</button>
       <button id="guideBack" class="secondary" type="button">Back</button>
       <button id="guideNext" class="primary" type="button">Next</button>
     </div>
   </div>
 
-  <script src="./vendor/leaflet-1.9.4.js"></script>
-  <script src="./config.js"></script>
-  <script src="./vendor/html2canvas-1.4.1.min.js"></script>
-  <script src="./vendor/jspdf-2.5.1.umd.min.js"></script>
-  <script src="./vendor/jspdf-autotable-3.8.2.min.js"></script>
-  <script src="./exportPdfHelper.js"></script>
-  <script src="./staging_rates.js"></script>
-  <script src="./icon-manifest.js"></script>
-  <script src="./erg-isolation-data.js"></script>
-  <script src="./app.js"></script>
+  <script defer src="./vendor/leaflet-1.9.4.js"></script>
+  <script defer src="./config.js"></script>
+  <script defer src="./vendor/html2canvas-1.4.1.min.js"></script>
+  <script defer src="./vendor/jspdf-2.5.1.umd.min.js"></script>
+  <script defer src="./vendor/jspdf-autotable-3.8.2.min.js"></script>
+  <script defer src="./exportPdfHelper.js"></script>
+  <script defer src="./staging_rates.js"></script>
+  <script defer src="./icon-manifest.js"></script>
+  <script defer src="./erg-isolation-data.js"></script>
+  <script defer src="./app.js"></script>
 </body>
 </html>

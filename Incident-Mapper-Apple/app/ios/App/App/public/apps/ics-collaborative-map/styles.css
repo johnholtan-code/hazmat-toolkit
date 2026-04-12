@@ -1874,6 +1874,8 @@ body[data-theme="light"] .map-sidebar-toggle {
 .muted { color: var(--muted); }
 .stack { display: grid; gap: 6px; }
 .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.row--end { justify-content: flex-end; }
+.row--space-between { justify-content: space-between; align-items: center; }
 
 input, select, button, textarea {
   font: inherit;
