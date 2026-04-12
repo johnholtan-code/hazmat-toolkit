@@ -1498,7 +1498,9 @@ body[data-theme="light"] .map-sidebar-toggle {
   100% { box-shadow: 0 0 0 2px rgba(243,198,19,0.95), 0 0 0 10px rgba(243,198,19,0.0); }
 }
 .map-stage.focus-placement-active #map,
-.map-stage.focus-placement-active .leaflet-container {
+.map-stage.focus-placement-active .leaflet-container,
+.map-stage.focus-placement-active .leaflet-container *,
+.map-stage.focus-placement-active .leaflet-interactive {
   cursor: crosshair !important;
 }
 .app {
