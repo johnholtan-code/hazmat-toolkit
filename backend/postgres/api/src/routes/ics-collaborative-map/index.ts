@@ -385,10 +385,10 @@ type CollabObjectRow = {
 type CollabMutationRow = {
   id: string;
   session_id: string;
-  object_id: string;
+  object_id: string | null;
   version: string;
   participant_id: string;
-  mutation_type: 'create' | 'update' | 'delete';
+  mutation_type: 'create' | 'update' | 'delete' | 'session';
   base_version: string;
   payload_json: unknown;
   created_at: string;
@@ -1485,14 +1485,17 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.patch<{ Params: { sessionId: string }; Body: UpdateOperationalPeriodBody }>('/v1/ics-collab/sessions/:sessionId/operational-period', async (request, reply) => {
+    const operationalPeriodStart = parseRequiredDate(request.body?.operationalPeriodStart, 'operationalPeriodStart');
+    const operationalPeriodEnd = parseRequiredDate(request.body?.operationalPeriodEnd, 'operationalPeriodEnd');
+    if (!operationalPeriodStart || !operationalPeriodEnd || operationalPeriodEnd <= operationalPeriodStart) {
+      return reply.code(400).send({ error: 'BAD_REQUEST', message: 'Valid operationalPeriodStart and operationalPeriodEnd are required.' });
+    }
+    const client = await app.pg.connect();
     try {
-      const actor = await resolveSessionActor(app, request.params.sessionId, request.headers.authorization, { requireCommander: true });
-      const operationalPeriodStart = parseRequiredDate(request.body?.operationalPeriodStart, 'operationalPeriodStart');
-      const operationalPeriodEnd = parseRequiredDate(request.body?.operationalPeriodEnd, 'operationalPeriodEnd');
-      if (!operationalPeriodStart || !operationalPeriodEnd || operationalPeriodEnd <= operationalPeriodStart) {
-        return reply.code(400).send({ error: 'BAD_REQUEST', message: 'Valid operationalPeriodStart and operationalPeriodEnd are required.' });
-      }
-      await app.pg.query<CollabSessionRow>(
+      await client.query('BEGIN');
+      const actor = await resolveSessionActorWithClient(client, app, request.params.sessionId, request.headers.authorization, { requireCommander: true });
+      const previousSession = (await fetchSessionByID(client, actor.session.id)) ?? actor.session;
+      await client.query<CollabSessionRow>(
         `
           update collab_map_sessions
           set
@@ -1504,21 +1507,35 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         `,
         [actor.session.id, operationalPeriodStart.toISOString(), operationalPeriodEnd.toISOString()]
       );
-      const refreshed = await fetchSessionByID(app.pg, actor.session.id);
-      return reply.send(mapSession(refreshed ?? actor.session, app.config.icsCollabPublicBaseUrl ?? request.headers.origin));
+      const refreshed = await recordSessionMutation(client, app.config, {
+        sessionID: actor.session.id,
+        participantID: actor.participant.id,
+        previousSession,
+        sessionChangeType: 'operational_period_updated',
+        historyLabel: 'Updated operational period'
+      });
+      await touchParticipant(client, actor.participant.id);
+      await client.query('COMMIT');
+      return reply.send(mapSession(refreshed, app.config.icsCollabPublicBaseUrl ?? request.headers.origin));
     } catch (error) {
+      await client.query('ROLLBACK');
       return sendRouteError(reply, request, error, 'Failed to update operational period.');
+    } finally {
+      client.release();
     }
   });
 
   app.patch<{ Params: { sessionId: string }; Body: UpdateIncidentCommandBody }>('/v1/ics-collab/sessions/:sessionId/incident-command', async (request, reply) => {
+    const commanderName = normalizeRequiredText(request.body?.commanderName, 'commanderName');
+    if (!commanderName) {
+      return reply.code(400).send({ error: 'BAD_REQUEST', message: 'commanderName is required.' });
+    }
+    const client = await app.pg.connect();
     try {
-      const actor = await resolveSessionActor(app, request.params.sessionId, request.headers.authorization, { requireCommander: true });
-      const commanderName = normalizeRequiredText(request.body?.commanderName, 'commanderName');
-      if (!commanderName) {
-        return reply.code(400).send({ error: 'BAD_REQUEST', message: 'commanderName is required.' });
-      }
-      await app.pg.query<CollabSessionRow>(
+      await client.query('BEGIN');
+      const actor = await resolveSessionActorWithClient(client, app, request.params.sessionId, request.headers.authorization, { requireCommander: true });
+      const previousSession = (await fetchSessionByID(client, actor.session.id)) ?? actor.session;
+      await client.query<CollabSessionRow>(
         `
           update collab_map_sessions
           set
@@ -1528,10 +1545,21 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         `,
         [actor.session.id, commanderName]
       );
-      const refreshed = await fetchSessionByID(app.pg, actor.session.id);
-      return reply.send(mapSession(refreshed ?? actor.session, app.config.icsCollabPublicBaseUrl ?? request.headers.origin));
+      const refreshed = await recordSessionMutation(client, app.config, {
+        sessionID: actor.session.id,
+        participantID: actor.participant.id,
+        previousSession,
+        sessionChangeType: 'incident_command_updated',
+        historyLabel: 'Updated incident command'
+      });
+      await touchParticipant(client, actor.participant.id);
+      await client.query('COMMIT');
+      return reply.send(mapSession(refreshed, app.config.icsCollabPublicBaseUrl ?? request.headers.origin));
     } catch (error) {
+      await client.query('ROLLBACK');
       return sendRouteError(reply, request, error, 'Failed to update Incident Commander assignment.');
+    } finally {
+      client.release();
     }
   });
 
@@ -1551,10 +1579,13 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.put<{ Params: { sessionId: string }; Body: UpdateCommandStructureBody }>('/v1/ics-collab/sessions/:sessionId/command-structure', async (request, reply) => {
+    const client = await app.pg.connect();
     try {
-      const actor = await resolveSessionActor(app, request.params.sessionId, request.headers.authorization);
+      await client.query('BEGIN');
+      const actor = await resolveSessionActorWithClient(client, app, request.params.sessionId, request.headers.authorization);
       const commandStructure = sanitizeCommandStructureDocument(request.body, actor.session.id);
-      const result = await app.pg.query<{ command_structure_json: unknown }>(
+      const previousSession = (await fetchSessionByID(client, actor.session.id)) ?? actor.session;
+      const result = await client.query<{ command_structure_json: unknown }>(
         `
           update collab_map_sessions
           set command_structure_json = $2::jsonb
@@ -1563,23 +1594,39 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         `,
         [actor.session.id, JSON.stringify(commandStructure)]
       );
+      const refreshed = await recordSessionMutation(client, app.config, {
+        sessionID: actor.session.id,
+        participantID: actor.participant.id,
+        previousSession,
+        sessionChangeType: 'command_structure_saved',
+        historyLabel: 'Saved command structure'
+      });
+      await touchParticipant(client, actor.participant.id);
+      await client.query('COMMIT');
       return reply.send({
         hasSavedCommandStructure: true,
-        commandStructure: sanitizeCommandStructureDocument(result.rows[0]?.command_structure_json, actor.session.id)
+        commandStructure: sanitizeCommandStructureDocument(result.rows[0]?.command_structure_json, actor.session.id),
+        session: mapSession(refreshed, app.config.icsCollabPublicBaseUrl ?? request.headers.origin)
       });
     } catch (error) {
+      await client.query('ROLLBACK');
       return sendRouteError(reply, request, error, 'Failed to save command structure.');
+    } finally {
+      client.release();
     }
   });
 
   app.post<{ Params: { sessionId: string }; Body: SaveIcs207ExportBody }>('/v1/ics-collab/sessions/:sessionId/ics207-export', async (request, reply) => {
+    const snapshot = sanitizeIcs207ExportSnapshot(request.body?.snapshot);
+    if (!snapshot) {
+      return reply.code(400).send({ error: 'BAD_REQUEST', message: 'snapshot object is required.' });
+    }
+    const client = await app.pg.connect();
     try {
-      const actor = await resolveSessionActor(app, request.params.sessionId, request.headers.authorization);
-      const snapshot = sanitizeIcs207ExportSnapshot(request.body?.snapshot);
-      if (!snapshot) {
-        return reply.code(400).send({ error: 'BAD_REQUEST', message: 'snapshot object is required.' });
-      }
-      const result = await app.pg.query<{ ics207_export_json: unknown }>(
+      await client.query('BEGIN');
+      const actor = await resolveSessionActorWithClient(client, app, request.params.sessionId, request.headers.authorization);
+      const previousSession = (await fetchSessionByID(client, actor.session.id)) ?? actor.session;
+      const result = await client.query<{ ics207_export_json: unknown }>(
         `
           update collab_map_sessions
           set ics207_export_json = $2::jsonb
@@ -1588,21 +1635,37 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         `,
         [actor.session.id, JSON.stringify(snapshot)]
       );
+      const refreshed = await recordSessionMutation(client, app.config, {
+        sessionID: actor.session.id,
+        participantID: actor.participant.id,
+        previousSession,
+        sessionChangeType: 'ics207_export_saved',
+        historyLabel: 'Saved ICS 207 export'
+      });
+      await touchParticipant(client, actor.participant.id);
+      await client.query('COMMIT');
       return reply.send({
-        snapshot: sanitizeIcs207ExportSnapshot(result.rows[0]?.ics207_export_json)
+        snapshot: sanitizeIcs207ExportSnapshot(result.rows[0]?.ics207_export_json),
+        session: mapSession(refreshed, app.config.icsCollabPublicBaseUrl ?? request.headers.origin)
       });
     } catch (error) {
+      await client.query('ROLLBACK');
       return sendRouteError(reply, request, error, 'Failed to save ICS 207 export snapshot.');
+    } finally {
+      client.release();
     }
   });
 
   app.patch<{ Params: { sessionId: string }; Body: UpdateViewerAccessBody }>('/v1/ics-collab/sessions/:sessionId/viewer-access', async (request, reply) => {
+    if (typeof request.body?.enabled !== 'boolean') {
+      return reply.code(400).send({ error: 'BAD_REQUEST', message: 'enabled boolean is required.' });
+    }
+    const client = await app.pg.connect();
     try {
-      const actor = await resolveSessionActor(app, request.params.sessionId, request.headers.authorization, { requireCommander: true });
-      if (typeof request.body?.enabled !== 'boolean') {
-        return reply.code(400).send({ error: 'BAD_REQUEST', message: 'enabled boolean is required.' });
-      }
-      const result = await app.pg.query<CollabSessionRow>(
+      await client.query('BEGIN');
+      const actor = await resolveSessionActorWithClient(client, app, request.params.sessionId, request.headers.authorization, { requireCommander: true });
+      const previousSession = (await fetchSessionByID(client, actor.session.id)) ?? actor.session;
+      await client.query<CollabSessionRow>(
         `
           update collab_map_sessions
           set viewer_access_enabled = $2
@@ -1610,10 +1673,21 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         `,
         [actor.session.id, request.body.enabled]
       );
-      const refreshed = await fetchSessionByID(app.pg, actor.session.id);
-      return reply.send(mapSession(refreshed ?? actor.session, app.config.icsCollabPublicBaseUrl ?? request.headers.origin));
+      const refreshed = await recordSessionMutation(client, app.config, {
+        sessionID: actor.session.id,
+        participantID: actor.participant.id,
+        previousSession,
+        sessionChangeType: request.body.enabled ? 'viewer_access_enabled' : 'viewer_access_disabled',
+        historyLabel: request.body.enabled ? 'Enabled viewer access' : 'Disabled viewer access'
+      });
+      await touchParticipant(client, actor.participant.id);
+      await client.query('COMMIT');
+      return reply.send(mapSession(refreshed, app.config.icsCollabPublicBaseUrl ?? request.headers.origin));
     } catch (error) {
+      await client.query('ROLLBACK');
       return sendRouteError(reply, request, error, 'Failed to update viewer access.');
+    } finally {
+      client.release();
     }
   });
 
@@ -1867,9 +1941,12 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Params: { sessionId: string } }>('/v1/ics-collab/sessions/:sessionId/end', async (request, reply) => {
+    const client = await app.pg.connect();
     try {
-      const actor = await resolveSessionActor(app, request.params.sessionId, request.headers.authorization, { requireCommander: true });
-      const result = await app.pg.query<CollabSessionRow>(
+      await client.query('BEGIN');
+      const actor = await resolveSessionActorWithClient(client, app, request.params.sessionId, request.headers.authorization, { requireCommander: true });
+      const previousSession = (await fetchSessionByID(client, actor.session.id)) ?? actor.session;
+      await client.query<CollabSessionRow>(
         `
           update collab_map_sessions
           set
@@ -1895,9 +1972,21 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
         `,
         [actor.session.id]
       );
-      return reply.send(mapSession(result.rows[0], app.config.icsCollabPublicBaseUrl ?? request.headers.origin));
+      const refreshed = await recordSessionMutation(client, app.config, {
+        sessionID: actor.session.id,
+        participantID: actor.participant.id,
+        previousSession,
+        sessionChangeType: 'session_ended',
+        historyLabel: 'Ended session'
+      });
+      await touchParticipant(client, actor.participant.id);
+      await client.query('COMMIT');
+      return reply.send(mapSession(refreshed, app.config.icsCollabPublicBaseUrl ?? request.headers.origin));
     } catch (error) {
+      await client.query('ROLLBACK');
       return sendRouteError(reply, request, error, 'Failed to end collaborative session.');
+    } finally {
+      client.release();
     }
   });
 };
@@ -2538,10 +2627,10 @@ async function insertMutationRecord(
   pool: { query: PoolClient['query'] },
   params: {
     sessionID: string;
-    objectID: string;
+    objectID: string | null;
     participantID: string;
     version: number;
-    mutationType: 'create' | 'update' | 'delete';
+    mutationType: 'create' | 'update' | 'delete' | 'session';
     baseVersion: number;
     payload: unknown;
   }
@@ -2561,6 +2650,41 @@ async function insertMutationRecord(
     `,
     [params.sessionID, params.objectID, params.version, params.participantID, params.mutationType, params.baseVersion, JSON.stringify(params.payload ?? {})]
   );
+}
+
+async function recordSessionMutation(
+  pool: { query: PoolClient['query'] },
+  appConfig: AppConfig,
+  params: {
+    sessionID: string;
+    participantID: string;
+    previousSession: CollabSessionRow;
+    sessionChangeType: string;
+    historyLabel: string;
+    details?: unknown;
+  }
+) {
+  const version = await nextSessionVersion(pool, params.sessionID);
+  const refreshed = await fetchSessionByID(pool, params.sessionID);
+  if (!refreshed) {
+    throw new TrainerTargetNotFoundError('Collaborative session not found.');
+  }
+  await insertMutationRecord(pool, {
+    sessionID: params.sessionID,
+    objectID: null,
+    participantID: params.participantID,
+    version,
+    mutationType: 'session',
+    baseVersion: Math.max(0, version - 1),
+    payload: {
+      sessionChangeType: params.sessionChangeType,
+      historyLabel: params.historyLabel,
+      previousSession: mapSession(params.previousSession, appConfig.icsCollabPublicBaseUrl ?? undefined),
+      session: mapSession(refreshed, appConfig.icsCollabPublicBaseUrl ?? undefined),
+      details: params.details ?? null
+    }
+  });
+  return refreshed;
 }
 
 async function touchParticipant(pool: { query: PoolClient['query'] }, participantID: string) {

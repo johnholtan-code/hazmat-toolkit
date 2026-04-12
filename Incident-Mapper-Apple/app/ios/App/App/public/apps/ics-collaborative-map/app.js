@@ -6608,7 +6608,7 @@
             { actorType: currentActorType() }
           );
           state.playbackHistory = Array.isArray(response.mutations) ? response.mutations : [];
-          state.playbackEntries = buildPlaybackEntries(state.playbackHistory);
+          state.playbackEntries = buildPlaybackEntries(state.playbackHistory, response.session || state.activeSession);
           state.playbackSessionId = state.activeSession.id;
           if (response.session) {
             state.activeSession = response.session;
@@ -6648,6 +6648,7 @@
     state.selectedTemplateType = null;
     if (!state.playbackSavedSnapshot) {
       state.playbackSavedSnapshot = {
+        session: deepClone(state.activeSession),
         participants: deepClone(state.participants),
         objects: Array.from(state.objects.values()).map((object) => deepClone(object))
       };
@@ -6664,6 +6665,7 @@
     state.playbackMode = false;
     state.playbackIndex = 0;
     if (state.playbackSavedSnapshot) {
+      state.activeSession = deepClone(state.playbackSavedSnapshot.session || state.activeSession);
       applySnapshot(state.playbackSavedSnapshot);
       state.playbackSavedSnapshot = null;
     }
@@ -6671,13 +6673,17 @@
     setStatus("Returned to live incident view.");
   }
 
-  function buildPlaybackEntries(mutations) {
+  function buildPlaybackEntries(mutations, fallbackSession = state.activeSession) {
     const ordered = (Array.isArray(mutations) ? mutations : [])
       .slice()
       .sort((left, right) => Number(left.version || 0) - Number(right.version || 0));
     const workingObjects = new Map();
+    let workingSession = deepClone(resolvePlaybackInitialSession(ordered, fallbackSession));
     return ordered.map((mutation) => {
       const payload = mutation?.payload && typeof mutation.payload === "object" ? mutation.payload : {};
+      if (mutation.mutationType === "session" && payload.session) {
+        workingSession = deepClone(payload.session);
+      }
       const objectId = String(mutation.objectId || payload?.object?.id || "");
       const beforeObject = objectId ? deepClone(workingObjects.get(objectId)) : null;
       let object = beforeObject ? deepClone(beforeObject) : null;
@@ -6704,6 +6710,7 @@
       }
 
       const displayObject = object || beforeObject;
+      const isSessionMutation = mutation.mutationType === "session";
       const costChangeSummary = mutation.mutationType === "update"
         ? buildPlaybackCostChangeSummary(beforeObject, object)
         : "";
@@ -6714,13 +6721,48 @@
         objectId,
         participantId: mutation.participantId || "",
         createdAt: mutation.createdAt || new Date().toISOString(),
+        session: workingSession ? deepClone(workingSession) : null,
         object: displayObject ? deepClone(displayObject) : null,
-        label: displayObject ? getObjectDisplayLabel(displayObject, resolveTemplateForObject(displayObject)) : "Map Object",
-        category: getPlaybackCategory(displayObject),
+        label: isSessionMutation
+          ? getPlaybackSessionLabel(payload)
+          : (displayObject ? getObjectDisplayLabel(displayObject, resolveTemplateForObject(displayObject)) : "Map Object"),
+        category: isSessionMutation ? "Session" : getPlaybackCategory(displayObject),
         focusPoint: getObjectFocusPoint(displayObject),
         costChangeSummary
       };
     });
+  }
+
+  function resolvePlaybackInitialSession(mutations, fallbackSession) {
+    const firstSessionMutation = (Array.isArray(mutations) ? mutations : [])
+      .find((mutation) => mutation?.mutationType === "session");
+    const payload = firstSessionMutation?.payload && typeof firstSessionMutation.payload === "object"
+      ? firstSessionMutation.payload
+      : null;
+    return deepClone(payload?.previousSession || payload?.session || fallbackSession || null);
+  }
+
+  function getPlaybackSessionLabel(payload) {
+    const historyLabel = typeof payload?.historyLabel === "string" ? payload.historyLabel.trim() : "";
+    if (historyLabel) return historyLabel;
+    switch (payload?.sessionChangeType) {
+      case "operational_period_updated":
+        return "Operational period updated";
+      case "incident_command_updated":
+        return "Incident command updated";
+      case "viewer_access_enabled":
+        return "Viewer access enabled";
+      case "viewer_access_disabled":
+        return "Viewer access disabled";
+      case "command_structure_saved":
+        return "Command structure saved";
+      case "ics207_export_saved":
+        return "ICS 207 export saved";
+      case "session_ended":
+        return "Session ended";
+      default:
+        return "Session updated";
+    }
   }
 
   function buildPlaybackCostChangeSummary(beforeObject, afterObject) {
@@ -6824,7 +6866,7 @@
   }
 
   function applyPlaybackEntry(entry, objectMap) {
-    if (!entry?.objectId) return;
+    if (!entry?.objectId || entry?.mutationType === "session") return;
     if (entry.mutationType === "delete") {
       objectMap.delete(entry.objectId);
       return;
@@ -6845,6 +6887,12 @@
       applyPlaybackEntry(state.playbackEntries[cursor], objectMap);
     }
     state.objects = objectMap;
+    const frame = state.playbackEntries[boundedIndex];
+    if (frame?.session) {
+      state.activeSession = deepClone(frame.session);
+    } else if (state.playbackSavedSnapshot?.session) {
+      state.activeSession = deepClone(state.playbackSavedSnapshot.session);
+    }
     state.selectedObjectId = null;
     syncMapObjects();
     syncIncidentFocusState({ notify: false });
@@ -6854,14 +6902,15 @@
     renderSelectedObject();
     renderAfterActionControls();
 
-    const frame = state.playbackEntries[boundedIndex];
     const actor = state.participants.find((participant) => participant.id === frame.participantId);
     const actorLabel = actor?.displayName || "Participant";
     const actionLabel = frame.mutationType === "create"
       ? "Placed"
       : frame.mutationType === "delete"
         ? "Removed"
-        : "Updated";
+        : frame.mutationType === "session"
+          ? "Changed"
+          : "Updated";
     const detailLabel = frame.costChangeSummary ? ` • ${frame.costChangeSummary}` : "";
     elements.playbackMeta.textContent = `${boundedIndex + 1}/${state.playbackEntries.length} • ${formatDateTime(frame.createdAt)} • ${actionLabel} ${frame.label}${detailLabel} • ${actorLabel}`;
 
