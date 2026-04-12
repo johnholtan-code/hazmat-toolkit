@@ -169,18 +169,18 @@ body {
   position: relative;
 }
 .topbar-settings-btn {
-  min-width: 38px;
-  min-height: 38px;
+  min-width: 44px;
+  min-height: 44px;
   padding-inline: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
 }
 .topbar-icon-btn {
-  min-width: 38px;
-  min-height: 38px;
+  min-width: 44px;
+  min-height: 44px;
   padding-inline: 0;
   display: inline-flex;
   align-items: center;
@@ -1957,7 +1957,7 @@ button.topbar-alert-btn {
 }
 .topbar .topbar-icon-btn,
 .topbar .topbar-settings-btn {
-  width: 38px;
+  width: 44px;
 }
 button.topbar-alert-btn:hover {
   background: linear-gradient(180deg, color-mix(in srgb, var(--danger) 74%, #ffffff 26%) 0%, color-mix(in srgb, var(--danger) 92%, #7f1d1d 8%) 100%);
