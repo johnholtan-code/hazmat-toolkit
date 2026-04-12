@@ -12339,8 +12339,13 @@
       const canvas = await window.html2canvas(elements.map, {
         backgroundColor: "#ffffff",
         useCORS: true,
+        allowTaint: true,
         scale: Math.min(window.devicePixelRatio || 1, 2),
-        logging: false
+        logging: false,
+        onclone: (_doc, el) => {
+          el.style.borderRadius = "0";
+          el.style.overflow = "visible";
+        }
       });
       return {
         imageDataUrl: canvas.toDataURL("image/png"),
@@ -12350,7 +12355,8 @@
       };
     } catch (error) {
       console.error("Unable to capture map export.", error);
-      setStatus("Map capture failed.");
+      const detail = error?.message ? ` (${error.message})` : "";
+      setStatus(`Map capture failed${detail}.`);
       return null;
     } finally {
       state.mapStyleTrayOpen = previousMapStyleTrayOpen;
