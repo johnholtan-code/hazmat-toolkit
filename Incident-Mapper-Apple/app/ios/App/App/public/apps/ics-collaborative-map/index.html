@@ -366,7 +366,12 @@
           </section>
           <div class="map-style-dock">
             <button id="weatherLauncherBtn" class="map-weather-launcher hidden" type="button" aria-expanded="false" aria-controls="weatherPanel" aria-label="Show incident weather" title="Show Incident Weather">
-              <span class="map-weather-launcher-icon">Wx</span>
+              <svg class="map-weather-launcher-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <!-- Wind direction arrow pointing up, rotates to show direction -->
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
+                <path d="M12 4 L15 10 L12 8 L9 10 Z" fill="currentColor"/>
+                <line x1="12" y1="8" x2="12" y2="18" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
             </button>
             <section id="weatherPanel" class="weather-panel hidden" aria-live="polite">
               <div class="weather-panel-header">

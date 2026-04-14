@@ -4348,7 +4348,13 @@
     elements.weatherPanel.classList.toggle("hidden", !visible || !state.weatherPanelOpen);
     elements.weatherLauncherBtn.setAttribute("aria-expanded", String(visible && state.weatherPanelOpen));
     elements.weatherLauncherBtn.title = state.weatherPanelOpen ? "Hide Incident Weather" : "Show Incident Weather";
-    if (!visible) return;
+    if (!visible) {
+      const iconElement = elements.weatherLauncherBtn.querySelector(".map-weather-launcher-icon");
+      if (iconElement) {
+        iconElement.style.removeProperty("--weather-wind-direction");
+      }
+      return;
+    }
 
     elements.weatherSourceLabel.textContent = target
       ? `${target.sourceLabel} · ${target.label}`
@@ -4359,6 +4365,10 @@
       elements.weatherSummary.textContent = "Loading weather…";
       elements.weatherMeta.textContent = "Pulling current conditions for the active incident area.";
       elements.weatherMetrics.innerHTML = "";
+      const iconElement = elements.weatherLauncherBtn.querySelector(".map-weather-launcher-icon");
+      if (iconElement) {
+        iconElement.style.removeProperty("--weather-wind-direction");
+      }
       return;
     }
 
@@ -4366,6 +4376,10 @@
       elements.weatherSummary.textContent = "Weather unavailable";
       elements.weatherMeta.textContent = state.weatherError;
       elements.weatherMetrics.innerHTML = "";
+      const iconElement = elements.weatherLauncherBtn.querySelector(".map-weather-launcher-icon");
+      if (iconElement) {
+        iconElement.style.removeProperty("--weather-wind-direction");
+      }
       return;
     }
 
@@ -4373,6 +4387,10 @@
       elements.weatherSummary.textContent = "No weather loaded yet";
       elements.weatherMeta.textContent = "Open this panel after location is available to pull current conditions.";
       elements.weatherMetrics.innerHTML = "";
+      const iconElement = elements.weatherLauncherBtn.querySelector(".map-weather-launcher-icon");
+      if (iconElement) {
+        iconElement.style.removeProperty("--weather-wind-direction");
+      }
       return;
     }
 
@@ -4385,6 +4403,12 @@
       createWeatherMetricMarkup("Feels Like", formatTemperature(apparentTemperatureF)),
       createWeatherMetricMarkup("Source", sourceLabel)
     ].join("");
+
+    // Update weather icon rotation to show live wind direction
+    const iconElement = elements.weatherLauncherBtn.querySelector(".map-weather-launcher-icon");
+    if (iconElement && Number.isFinite(Number(windDirection))) {
+      iconElement.style.setProperty("--weather-wind-direction", `${windDirection}deg`);
+    }
   }
 
   function createWeatherMetricMarkup(label, value) {

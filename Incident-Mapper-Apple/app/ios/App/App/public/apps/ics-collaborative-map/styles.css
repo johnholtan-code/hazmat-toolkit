@@ -1637,7 +1637,12 @@ body[data-theme="light"] .map-sidebar-toggle {
   letter-spacing: 0.02em;
 }
 .map-weather-launcher-icon {
+  width: 28px;
+  height: 28px;
+  display: block;
   line-height: 1;
+  transform: rotate(var(--weather-wind-direction, 0deg));
+  transition: transform 0.3s ease;
 }
 .weather-panel {
   width: min(290px, calc(100vw - 72px));
