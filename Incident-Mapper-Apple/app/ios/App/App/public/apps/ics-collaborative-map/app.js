@@ -279,25 +279,33 @@
     COST: { label: "Cost Unit Ldr.", roleLabel: "Cost Unit Ldr.", x: 646, y: 436, w: 130, h: 38 }
   };
   const ICS207_CONNECTOR_PATHS = [
+    // IC to Direct Reports
     "M 393 70 V 194",
-    "M 388 117 H 393",
-    "M 388 165 H 393",
-    "M 393 117 H 460",
+    "M 315 138 H 393",
+    "M 315 186 H 393",
+    "M 393 138 H 533",
+    // Command Section Horizontal Line
     "M 87 194 H 708",
     "M 87 194 V 202",
     "M 287 194 V 202",
     "M 509 194 V 202",
     "M 708 194 V 202",
+    // Operations Section - Main Vertical
     "M 87 246 V 305",
     "M 87 305 H 120",
-    "M 108 246 V 336",
-    "M 108 336 H 186",
-    "M 108 336 V 382",
-    "M 108 382 H 191",
-    "M 108 418 V 515",
-    "M 108 443 H 76",
-    "M 108 479 H 76",
-    "M 108 515 H 76",
+    // Branches and Air Ops Branch
+    "M 87 246 H 134",
+    "M 134 246 V 314",
+    "M 83 314 H 186",
+    "M 134 314 V 382",
+    // Divisions and Groups
+    "M 95 382 H 191",
+    // Strike Teams, Task Forces, Single Resources
+    "M 152 418 V 443",
+    "M 152 443 H 76",
+    "M 152 479 H 76",
+    "M 152 515 H 76",
+    // Planning Section Hierarchy
     "M 287 246 V 305",
     "M 288 305 H 386",
     "M 288 305 V 286",
@@ -306,6 +314,7 @@
     "M 288 355 H 386",
     "M 288 355 V 336",
     "M 386 355 V 336",
+    // Logistics Section Hierarchy
     "M 509 246 V 305",
     "M 475 305 H 581",
     "M 475 305 V 286",
@@ -318,11 +327,12 @@
     "M 581 355 H 532",
     "M 581 405 H 532",
     "M 581 455 H 532",
+    // Finance Section Hierarchy
     "M 708 246 V 474",
-    "M 708 305 H 711",
-    "M 708 355 H 646",
-    "M 708 405 H 646",
-    "M 708 455 H 646"
+    "M 711 305 H 711",
+    "M 711 355 H 646",
+    "M 711 405 H 646",
+    "M 711 455 H 646"
   ];
   const ICS207_SAMPLE_COMMAND_STRUCTURE = {
     incidentId: "sample-incident",
