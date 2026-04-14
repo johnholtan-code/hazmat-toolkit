@@ -21,7 +21,12 @@
   const FREEHAND_MIN_POINT_DISTANCE_PX = 6;
   const WEATHER_REFRESH_MS = 5 * 60 * 1000;
   const WEATHER_API_BASE_URL = (config.weatherApiBaseUrl || "https://api.open-meteo.com/v1/forecast").replace(/\/$/, "");
-  const GEOCODE_API_BASE_URL = (config.geocodeApiBaseUrl || "https://nominatim.openstreetmap.org/search").replace(/\/$/, "");
+  const GEOCODE_PROVIDER = config.geocodeProvider || "opencage";
+  const OPENCAGE_API_KEY = config.opencageApiKey || "";
+  const GOOGLE_MAPS_API_KEY = config.googleMapsApiKey || "";
+  const NOMINATIM_BASE_URL = "https://nominatim.openstreetmap.org/search";
+  const OPENCAGE_BASE_URL = "https://api.opencagedata.com/geocode/v1/json";
+  const GOOGLE_MAPS_GEOCODE_URL = "https://maps.googleapis.com/maps/api/geocode/json";
   const ROUTE_API_BASE_URL = (config.routeApiBaseUrl || "https://router.project-osrm.org/route/v1/driving").replace(/\/$/, "");
   const ICON_MANIFEST_URL = "./icon-manifest.json";
   const themeMediaQuery = window.matchMedia
@@ -2458,29 +2463,40 @@
     }
   }
 
-  async function geocodeStationAddress(stationAddress) {
-    const query = String(stationAddress || "").trim();
+  async function geocodeAddress(query) {
     if (!query) {
-      throw new Error("Enter a station address first.");
+      throw new Error("Enter an address first.");
     }
-    const url = new URL(GEOCODE_API_BASE_URL);
+
+    if (GEOCODE_PROVIDER === "opencage") {
+      return geocodeWithOpenCage(query);
+    } else if (GEOCODE_PROVIDER === "google") {
+      return geocodeWithGoogle(query);
+    } else {
+      return geocodeWithNominatim(query);
+    }
+  }
+
+  async function geocodeWithNominatim(query) {
+    const url = new URL(NOMINATIM_BASE_URL);
     url.searchParams.set("format", "jsonv2");
     url.searchParams.set("limit", "1");
     url.searchParams.set("q", query);
     const response = await fetch(url.toString(), {
-      headers: {
-        Accept: "application/json"
-      }
+      headers: { Accept: "application/json" }
     });
     const payload = await parseJsonSafely(response);
     if (!response.ok) {
-      throw new Error(`Station geocode failed (${response.status}).`);
+      throw new Error(`Geocoding failed (${response.status}).`);
     }
     const match = Array.isArray(payload) ? payload[0] : null;
+    if (!match) {
+      throw new Error(`Unable to geocode "${query}". Try a different address format or use OpenCage for better rural coverage.`);
+    }
     const lat = Number(match?.lat);
     const lng = Number(match?.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      throw new Error("Unable to geocode that station address.");
+      throw new Error(`Unable to geocode "${query}". Try a different address format or use OpenCage for better rural coverage.`);
     }
     return {
       lat: roundCoord(lat),
@@ -2489,35 +2505,83 @@
     };
   }
 
+  async function geocodeWithOpenCage(query) {
+    if (!OPENCAGE_API_KEY) {
+      throw new Error("OpenCage API key not configured. Get a free key at https://opencagedata.com/sign-up and add it to config.opencageApiKey");
+    }
+    const url = new URL(OPENCAGE_BASE_URL);
+    url.searchParams.set("q", query);
+    url.searchParams.set("key", OPENCAGE_API_KEY);
+    url.searchParams.set("limit", "1");
+    url.searchParams.set("countrycode", "us");
+    const response = await fetch(url.toString(), {
+      headers: { Accept: "application/json" }
+    });
+    const payload = await parseJsonSafely(response);
+    if (!response.ok) {
+      throw new Error(`Geocoding failed (${response.status}).`);
+    }
+    const results = payload?.results || [];
+    if (results.length === 0) {
+      throw new Error(`Unable to geocode "${query}". Please verify the address and try again.`);
+    }
+    const match = results[0];
+    const lat = Number(match?.geometry?.lat);
+    const lng = Number(match?.geometry?.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw new Error(`Unable to geocode "${query}". Please verify the address and try again.`);
+    }
+    return {
+      lat: roundCoord(lat),
+      lng: roundCoord(lng),
+      label: String(match?.formatted || query).trim()
+    };
+  }
+
+  async function geocodeWithGoogle(query) {
+    if (!GOOGLE_MAPS_API_KEY) {
+      throw new Error("Google Maps API key not configured. Add your API key to config.googleMapsApiKey");
+    }
+    const url = new URL(GOOGLE_MAPS_GEOCODE_URL);
+    url.searchParams.set("address", query);
+    url.searchParams.set("key", GOOGLE_MAPS_API_KEY);
+    const response = await fetch(url.toString(), {
+      headers: { Accept: "application/json" }
+    });
+    const payload = await parseJsonSafely(response);
+    if (!response.ok) {
+      throw new Error(`Geocoding failed (${response.status}).`);
+    }
+    if (payload?.status !== "OK" || !Array.isArray(payload?.results) || payload.results.length === 0) {
+      throw new Error(`Unable to geocode "${query}". Please verify the address and try again.`);
+    }
+    const match = payload.results[0];
+    const lat = Number(match?.geometry?.location?.lat);
+    const lng = Number(match?.geometry?.location?.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw new Error(`Unable to geocode "${query}". Please verify the address and try again.`);
+    }
+    return {
+      lat: roundCoord(lat),
+      lng: roundCoord(lng),
+      label: String(match?.formatted_address || query).trim()
+    };
+  }
+
+  async function geocodeStationAddress(stationAddress) {
+    const query = String(stationAddress || "").trim();
+    if (!query) {
+      throw new Error("Enter a station address first.");
+    }
+    return geocodeAddress(query);
+  }
+
   async function geocodeIncidentFocusAddress(address) {
     const query = String(address || "").trim();
     if (!query) {
       throw new Error("Enter an incident address first.");
     }
-    const url = new URL(GEOCODE_API_BASE_URL);
-    url.searchParams.set("format", "jsonv2");
-    url.searchParams.set("limit", "1");
-    url.searchParams.set("q", query);
-    const response = await fetch(url.toString(), {
-      headers: {
-        Accept: "application/json"
-      }
-    });
-    const payload = await parseJsonSafely(response);
-    if (!response.ok) {
-      throw new Error(`Incident address geocode failed (${response.status}).`);
-    }
-    const match = Array.isArray(payload) ? payload[0] : null;
-    const lat = Number(match?.lat);
-    const lng = Number(match?.lon);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      throw new Error("Unable to geocode that incident address.");
-    }
-    return {
-      lat: roundCoord(lat),
-      lng: roundCoord(lng),
-      label: String(match?.display_name || query).trim()
-    };
+    return geocodeAddress(query);
   }
 
   async function buildStationPayload({ stationName, stationAddress, defaultMileageRate, fallbackStationName = "" }) {
