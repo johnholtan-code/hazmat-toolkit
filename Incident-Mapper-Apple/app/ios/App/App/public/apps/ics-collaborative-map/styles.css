@@ -189,9 +189,9 @@ body {
   font-weight: 700;
 }
 .topbar-settings-dropdown {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
+  position: fixed;
+  top: calc(var(--safe-top) + 58px);
+  right: calc(var(--safe-right) + 14px);
   min-width: 260px;
   display: grid;
   gap: 10px;
@@ -201,7 +201,7 @@ body {
   background: color-mix(in srgb, var(--panel) 86%, transparent);
   box-shadow: var(--shadow);
   backdrop-filter: blur(22px) saturate(150%);
-  z-index: 2400;
+  z-index: 3500;
 }
 .topbar-settings-dropdown button {
   width: 100%;
@@ -2209,6 +2209,36 @@ button.topbar-alert-btn:hover {
 }
 .isolation-field.hidden {
   display: none;
+}
+.isolation-scenario-guidance {
+  background-color: var(--surface-secondary);
+  border-left: 3px solid var(--accent);
+  padding: var(--space-2) var(--space-3);
+  margin: var(--space-2) 0;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.isolation-scenario-guidance.hidden {
+  display: none;
+}
+.isolation-scenario-item {
+  margin-bottom: var(--space-2);
+}
+.isolation-scenario-item:last-child {
+  margin-bottom: 0;
+}
+.isolation-scenario-condition {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.isolation-scenario-detail {
+  margin-left: var(--space-2);
+  color: var(--text-secondary);
+}
+.isolation-scenario-detail strong {
+  color: var(--text-primary);
 }
 @media (max-width: 720px) {
   .isolation-grid {

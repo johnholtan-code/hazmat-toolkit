@@ -4851,6 +4851,41 @@
     renderIsolationErgControls({ autofill: true });
   }
 
+  function renderIsolationScenarioGuidance(material, spillSize) {
+    const guidanceEl = document.getElementById("isolationScenarioGuidance");
+    if (!guidanceEl) return;
+
+    if (!material || spillSize !== "large" || !Array.isArray(material.largeSpillOptions)) {
+      guidanceEl.classList.add("hidden");
+      return;
+    }
+
+    const scenarios = material.largeSpillOptions.filter((opt) => opt.condition && !opt.transportContainer);
+    if (!scenarios.length) {
+      guidanceEl.classList.add("hidden");
+      return;
+    }
+
+    guidanceEl.innerHTML = scenarios
+      .map((scenario) => {
+        let html = `<div class="isolation-scenario-item"><div class="isolation-scenario-condition">${escapeHtml(scenario.condition)}</div>`;
+        if (scenario.note) {
+          html += `<div class="isolation-scenario-detail">${escapeHtml(scenario.note)}</div>`;
+        }
+        if (scenario.evacuation) {
+          html += `<div class="isolation-scenario-detail"><strong>Evacuation:</strong> ${escapeHtml(scenario.evacuation)}</div>`;
+        }
+        if (scenario.hazard) {
+          html += `<div class="isolation-scenario-detail"><strong>Hazard:</strong> ${escapeHtml(scenario.hazard)}</div>`;
+        }
+        html += "</div>";
+        return html;
+      })
+      .join("");
+
+    guidanceEl.classList.remove("hidden");
+  }
+
   function renderIsolationErgSuggestions(query = elements.isolationErgMaterialInput?.value || "") {
     if (!elements.isolationErgSuggestions) return;
     const matches = findErgMaterialMatches(query);
@@ -4902,16 +4937,18 @@
     const selectedContainer = String(options.transportContainer || "").trim();
     const windBucketMode = options.windBucketMode || "auto";
     if (spillSize === "small") {
-      if (!material.smallSpill?.initialIsolationMeters || !material.smallSpill?.protectiveAction?.[`${timeOfDay}Meters`]) {
+      if (!material.smallSpill?.initialIsolationMeters) {
         return { mode: "erg", material, error: "This ERG entry does not include small-spill distances." };
       }
+      const hasProtectiveAction = material.smallSpill?.protectiveAction?.[`${timeOfDay}Meters`];
       return {
         mode: "erg",
         material,
         spillSize,
         timeOfDay,
         initialMeters: Number(material.smallSpill.initialIsolationMeters),
-        evacMeters: Number(material.smallSpill.protectiveAction[`${timeOfDay}Meters`]),
+        evacMeters: hasProtectiveAction ? Number(material.smallSpill.protectiveAction[`${timeOfDay}Meters`]) : null,
+        hasProtectiveAction: Boolean(hasProtectiveAction),
         windBucket: "",
         transportContainer: "",
         windBucketMode
@@ -4933,6 +4970,7 @@
           error: "Select a wind bucket for this large-spill ERG entry."
         };
       }
+      const hasProtectiveAction = option.protectiveAction?.[timeOfDay]?.[`${windBucket}Meters`];
       return {
         mode: "erg",
         material,
@@ -4942,12 +4980,14 @@
         windBucket,
         windBucketMode,
         initialMeters: Number(option.initialIsolationMeters),
-        evacMeters: Number(option.protectiveAction?.[timeOfDay]?.[`${windBucket}Meters`])
+        evacMeters: hasProtectiveAction ? Number(option.protectiveAction[timeOfDay][`${windBucket}Meters`]) : null,
+        hasProtectiveAction: Boolean(hasProtectiveAction)
       };
     }
-    if (!material.largeSpill?.initialIsolationMeters || !material.largeSpill?.protectiveAction?.[`${timeOfDay}Meters`]) {
+    if (!material.largeSpill?.initialIsolationMeters) {
       return { mode: "erg", material, spillSize, timeOfDay, error: "This ERG entry does not include large-spill distances." };
     }
+    const hasProtectiveAction = material.largeSpill?.protectiveAction?.[`${timeOfDay}Meters`];
     return {
       mode: "erg",
       material,
@@ -4957,7 +4997,8 @@
       windBucket: "",
       windBucketMode,
       initialMeters: Number(material.largeSpill.initialIsolationMeters),
-      evacMeters: Number(material.largeSpill.protectiveAction[`${timeOfDay}Meters`])
+      evacMeters: hasProtectiveAction ? Number(material.largeSpill.protectiveAction[`${timeOfDay}Meters`]) : null,
+      hasProtectiveAction: Boolean(hasProtectiveAction)
     };
   }
 
@@ -5065,8 +5106,12 @@
       windBucketMode,
       weatherMph
     });
-    if (autofill && resolved.initialMeters > 0 && resolved.evacMeters > 0) {
-      setIsolationDistanceInputs(resolved.initialMeters, resolved.evacMeters, getCurrentIsolationUnit());
+    if (autofill && resolved.initialMeters > 0) {
+      if (resolved.hasProtectiveAction && resolved.evacMeters > 0) {
+        setIsolationDistanceInputs(resolved.initialMeters, resolved.evacMeters, getCurrentIsolationUnit());
+      } else if (resolved.hasProtectiveAction === false) {
+        setIsolationDistanceInputs(resolved.initialMeters, resolved.initialMeters, getCurrentIsolationUnit());
+      }
     }
     if (!elements.isolationErgHint) return;
     if (!material) {
@@ -5083,13 +5128,24 @@
     if (spillSize === "large" && resolved.transportContainer) {
       bits.push(resolved.transportContainer);
     }
-    bits.push(`${timeOfDay === "night" ? "Night" : "Day"} distances`);
+    if (resolved.hasProtectiveAction) {
+      bits.push(`${timeOfDay === "night" ? "Night" : "Day"} distances`);
+    }
     bits.push(`Isolation ${formatErgDistance(resolved.initialMeters, getCurrentIsolationUnit())}`);
-    bits.push(`Protective ${formatErgDistance(resolved.evacMeters, getCurrentIsolationUnit())}`);
+    if (resolved.hasProtectiveAction) {
+      bits.push(`Protective ${formatErgDistance(resolved.evacMeters, getCurrentIsolationUnit())}`);
+    } else {
+      bits.push("No fixed protective action distance — use monitoring & conditions");
+      if (spillSize === "large" && material.largeSpillOptions?.length) {
+        bits.push("See scenarios for fire/tank guidance");
+      }
+    }
     if (spillSize === "large" && resolved.windBucket) {
       bits.push(`Wind ${formatErgWindBucketLabel(resolved.windBucket)}${weatherMph != null && windBucketMode === "auto" ? ` (${Math.round(weatherMph)} mph)` : ""}`);
     }
     elements.isolationErgHint.textContent = bits.join(" · ");
+
+    renderIsolationScenarioGuidance(material, spillSize);
   }
 
   function renderIsolationWindControls() {
