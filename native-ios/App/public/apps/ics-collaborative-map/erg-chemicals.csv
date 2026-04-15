@@ -1,0 +1,11 @@
+un_number,guide_number,display_name,material_names,small_isolation_m,small_day_m,small_night_m,large_isolation_m,large_day_m,large_night_m
+1203,128,Gasoline,Gasoline|Petrol,30,100,100,100,300,800
+1098,154,Allyl alcohol,Allyl alcohol|3-Hydroxy-1-propene,60,200,200,200,800,2000
+1143,128,Allyl formate,Allyl formate,30,100,100,60,300,800
+1162,128,Dimethylamine aqueous solution,Dimethylamine aqueous solution,30,100,100,100,800,1300
+1165,128,1 4-Dioxane,1 4-Dioxane|Dioxane,30,100,100,100,800,1300
+1184,128,Ethylene glycol monoethyl ether,Ethylene glycol monoethyl ether,30,100,100,100,300,800
+1239,131,Methyl isocyanate,Methyl isocyanate,30,200,200,100,800,2000
+1250,155,Methyltrichlorosilane,Methyltrichlorosilane|TSE,30,100,100,60,300,700
+1300,131,Turpentine,Turpentine|Oil of turpentine,30,100,100,100,300,800
+1361,128,White phosphorus,White phosphorus|Yellow phosphorus,30,200,200,100,800,1200
