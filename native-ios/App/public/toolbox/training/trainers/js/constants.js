@@ -93,8 +93,6 @@ export const CLASS_SIZE_OPTIONS = ["Small Group", "Mid-Size Group", "Large Group
 
 export const CUSTOM_CURRICULUM_OPTIONS = ["Yes", "No", "Pre-Built Only", "Fully Customizable"];
 
-export const PRICE_RANGE_OPTIONS = ["Budget", "Mid-Range", "Premium"];
-
 export const AVAILABILITY_OPTIONS = ["Available This Month", "1 to 3 Months Out", "3+ Months Out"];
 
 export const STATE_OPTIONS = [
@@ -121,7 +119,6 @@ export const SINGLE_FILTER_FIELDS = [
   "experienceLevel",
   "classSize",
   "customCurriculum",
-  "priceRange",
   "availability"
 ];
 
@@ -170,7 +167,6 @@ export const REQUIRED_COLUMNS = {
   trainingType: [],
   classSize: "",
   customCurriculum: "",
-  priceRange: "",
   availability: "",
   recordStatus: "pending",
   submittedAt: "",

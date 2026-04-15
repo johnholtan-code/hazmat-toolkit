@@ -9,7 +9,6 @@ import {
   EXPERIENCE_LEVEL_OPTIONS,
   HAZMAT_SPECIALTY_OPTIONS,
   INDUSTRY_EXPERIENCE_OPTIONS,
-  PRICE_RANGE_OPTIONS,
   REGION_OPTIONS,
   STATE_OPTIONS,
   TABLE_NAME,
@@ -73,7 +72,6 @@ const filterDefs = {
   trainingType: { options: TRAINING_TYPE_OPTIONS, type: "multi" },
   classSize: { options: CLASS_SIZE_OPTIONS, type: "single" },
   customCurriculum: { options: CUSTOM_CURRICULUM_OPTIONS, type: "single" },
-  priceRange: { options: PRICE_RANGE_OPTIONS, type: "single" },
   availability: { options: AVAILABILITY_OPTIONS, type: "single" }
 };
 
@@ -111,7 +109,6 @@ function popupHtml(trainer) {
     trainer.trainingType.length ? `<div class="kv"><span>Training Type:</span> ${escapeHtml(trainer.trainingType.join(", "))}</div>` : "",
     trainer.classSize ? `<div class="kv"><span>Class Size:</span> ${escapeHtml(trainer.classSize)}</div>` : "",
     trainer.customCurriculum ? `<div class="kv"><span>Custom Curriculum:</span> ${escapeHtml(trainer.customCurriculum)}</div>` : "",
-    trainer.priceRange ? `<div class="kv"><span>Price Range:</span> ${escapeHtml(trainer.priceRange)}</div>` : "",
     trainer.submitterType ? `<div class="kv"><span>Submitter Type:</span> ${escapeHtml(trainer.submitterType)}</div>` : ""
   ].filter(Boolean);
 
@@ -219,7 +216,6 @@ function getFilterState() {
     experienceLevel: "",
     classSize: "",
     customCurriculum: "",
-    priceRange: "",
     availability: ""
   };
 
@@ -273,7 +269,6 @@ function buildFilterControls() {
     experienceLevel: el("filterExperience"),
     classSize: el("filterClassSize"),
     customCurriculum: el("filterCurriculum"),
-    priceRange: el("filterPrice"),
     availability: el("filterAvailability")
   };
 

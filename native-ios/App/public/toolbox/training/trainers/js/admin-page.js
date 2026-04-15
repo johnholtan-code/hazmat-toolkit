@@ -8,7 +8,6 @@ import {
   EXPERIENCE_LEVEL_OPTIONS,
   HAZMAT_SPECIALTY_OPTIONS,
   INDUSTRY_EXPERIENCE_OPTIONS,
-  PRICE_RANGE_OPTIONS,
   REGION_OPTIONS,
   STATE_OPTIONS,
   TABLE_NAME,
@@ -72,7 +71,6 @@ function buildEditOptions() {
     editExperienceLevel: EXPERIENCE_LEVEL_OPTIONS,
     editClassSize: CLASS_SIZE_OPTIONS,
     editCustomCurriculum: CUSTOM_CURRICULUM_OPTIONS,
-    editPriceRange: PRICE_RANGE_OPTIONS,
     editAvailability: AVAILABILITY_OPTIONS,
     editRecordStatus: ["pending", "approved", "rejected"]
   };
@@ -221,7 +219,6 @@ function openEditor(trainerId) {
   el("editExperienceLevel").value = trainer.experienceLevel;
   el("editClassSize").value = trainer.classSize;
   el("editCustomCurriculum").value = trainer.customCurriculum;
-  el("editPriceRange").value = trainer.priceRange;
   el("editAvailability").value = trainer.availability;
   el("editRecordStatus").value = trainer.recordStatus;
   el("editRejectionReason").value = trainer.rejectionReason;
@@ -261,7 +258,6 @@ function getEditPayload() {
     trainingType: checkedValues("edit-trainingType"),
     classSize: el("editClassSize").value,
     customCurriculum: el("editCustomCurriculum").value,
-    priceRange: el("editPriceRange").value,
     availability: el("editAvailability").value,
     recordStatus: el("editRecordStatus").value,
     rejectionReason: el("editRejectionReason").value,

@@ -8,7 +8,6 @@ import {
   EXPERIENCE_LEVEL_OPTIONS,
   HAZMAT_SPECIALTY_OPTIONS,
   INDUSTRY_EXPERIENCE_OPTIONS,
-  PRICE_RANGE_OPTIONS,
   REGION_OPTIONS,
   STATE_OPTIONS,
   SUBMITTER_TYPE,
@@ -69,7 +68,6 @@ function buildFieldOptions() {
     experienceLevel: [el("experienceLevel"), EXPERIENCE_LEVEL_OPTIONS],
     classSize: [el("classSize"), CLASS_SIZE_OPTIONS],
     customCurriculum: [el("customCurriculum"), CUSTOM_CURRICULUM_OPTIONS],
-    priceRange: [el("priceRange"), PRICE_RANGE_OPTIONS],
     availability: [el("availability"), AVAILABILITY_OPTIONS],
     submitterType: [el("submitterType"), SUBMITTER_TYPE]
   };
@@ -212,7 +210,6 @@ function formPayload() {
     trainingType: getChecked("trainingType"),
     classSize: el("classSize").value,
     customCurriculum: el("customCurriculum").value,
-    priceRange: el("priceRange").value,
     availability: el("availability").value,
     recordStatus: "pending",
     submitterType: el("submitterType").value || "self-submitted",
