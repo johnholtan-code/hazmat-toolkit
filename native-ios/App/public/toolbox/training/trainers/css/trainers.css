@@ -52,7 +52,7 @@ body{
 .conference-hero h1{
   margin: 0;
   font-family: "Bebas Neue", "Segoe UI", sans-serif;
-  font-size: clamp(2.2rem, 6vw, 3.5rem);
+  font-size: 1.25rem;
   letter-spacing: 0.03em;
 }
 
