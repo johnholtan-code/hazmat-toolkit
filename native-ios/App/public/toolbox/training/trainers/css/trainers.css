@@ -27,8 +27,8 @@ body{
 }
 
 .conference-shell{
-  width: min(1100px, 94vw);
-  margin: 0 auto;
+  width: min(1640px, 98vw);
+  margin: 0 auto 0 0;
   padding: 2rem 0 3rem;
 }
 
@@ -108,7 +108,7 @@ body{
   }
 }
 
-.wrap{ max-width: 1320px; margin: 0 auto; padding: 14px 16px; }
+.wrap{ max-width: none; width: 100%; margin: 0; padding: 14px 16px; }
 main .wrap{ padding-top: 14px; padding-bottom: 28px; }
 
 .grid{ display:grid; grid-template-columns: 440px 18px 1fr; gap:0; align-items:start; transition: grid-template-columns .18s ease; }

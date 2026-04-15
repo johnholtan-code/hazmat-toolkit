@@ -1,8 +1,10 @@
 # macOS
 .DS_Store
+._*
 
 # Codex / local tooling
 .codex/
+.claude/
 
 # Environment / secrets
 .env
