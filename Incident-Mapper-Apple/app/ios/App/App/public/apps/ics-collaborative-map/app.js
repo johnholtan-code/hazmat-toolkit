@@ -6383,6 +6383,68 @@
     });
   }
 
+  function renderActiveSessionGallery(sessions) {
+    if (!elements.activeSessionGallery) {
+      return;
+    }
+    elements.activeSessionGallery.innerHTML = "";
+    if (!Array.isArray(sessions) || !sessions.length) {
+      const empty = document.createElement("div");
+      empty.className = "muted";
+      empty.textContent = "No live incidents right now.";
+      elements.activeSessionGallery.appendChild(empty);
+      return;
+    }
+    sessions.forEach((session) => {
+      const card = document.createElement("div");
+      card.className = "session-card";
+      const visibleStatus = effectiveSessionStatus(session).toUpperCase();
+      const title = document.createElement("strong");
+      title.textContent = session.incidentName;
+      const meta = document.createElement("div");
+      meta.className = "muted";
+      meta.textContent = `Owner: ${session.ownerName} · ${session.organizationName || "Department"} · ${visibleStatus} · ${formatDateTime(session.operationalPeriodStart)} to ${formatDateTime(session.operationalPeriodEnd)}`;
+      const role = document.createElement("div");
+      role.className = "muted";
+      role.textContent = `Incident Commander: ${session.commanderName}`;
+      const row = document.createElement("div");
+      row.className = "row";
+      if (session.isOwner) {
+        const openBtn = document.createElement("button");
+        openBtn.className = "secondary";
+        openBtn.type = "button";
+        openBtn.textContent = "Open Session";
+        openBtn.addEventListener("click", async () => {
+          try {
+            const snapshot = await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(session.id)}/snapshot`, {
+              actorType: "commander"
+            });
+            state.actor = snapshot.actor;
+            state.qrPayload = JSON.stringify({ type: "ics_collab_join", joinCode: session.joinCode });
+            await openSession(snapshot.session, snapshot.actor, "commander", snapshot.snapshot);
+            setStatus(`Opened ${session.incidentName}.`);
+          } catch (error) {
+            setStatus(formatError(error));
+          }
+        });
+        row.append(openBtn);
+      } else {
+        const useCodeBtn = document.createElement("button");
+        useCodeBtn.className = "secondary";
+        useCodeBtn.type = "button";
+        useCodeBtn.textContent = "Use Code";
+        useCodeBtn.addEventListener("click", () => {
+          elements.joinCodeInput.value = session.joinCode;
+          elements.joinCodeInput.focus();
+          setStatus(`Loaded join code for ${session.incidentName}.`);
+        });
+        row.append(useCodeBtn);
+      }
+      card.append(title, meta, role, row);
+      elements.activeSessionGallery.appendChild(card);
+    });
+  }
+
   function renderSessionMeta() {
     elements.sessionMeta.innerHTML = "";
     const session = getWorkspaceSession();
