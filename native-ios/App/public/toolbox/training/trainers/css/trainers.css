@@ -165,6 +165,41 @@ button{ cursor:pointer; border:none; padding: 9px 11px; border-radius: 10px; fon
 
 .filters .group{ margin-bottom: 12px; padding: 10px; border: 1px solid rgba(255,209,0,.1); border-radius: 12px; background: rgba(9,12,15,.35); }
 .filters .group h4{ margin: 0 0 8px; font-size: 11px; color: rgba(255,209,0,.95); text-transform: uppercase; letter-spacing: .28px; }
+.filters .group.is-collapsible{
+  padding: 0;
+}
+.filters .groupToggle{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  padding: 10px;
+  background: transparent;
+  color: rgba(255,209,0,.95);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .28px;
+  border: none;
+  border-radius: 12px;
+}
+.filters .groupToggle:hover{
+  background: rgba(255,209,0,.07);
+}
+.filters .groupToggle:focus-visible{
+  outline: 1px solid rgba(255,209,0,.5);
+  outline-offset: 1px;
+}
+.filters .groupToggleLabel{
+  font-weight: 800;
+}
+.filters .groupToggleChevron{
+  font-size: 13px;
+  line-height: 1;
+}
+.filters .groupBody{
+  padding: 0 10px 10px;
+}
 .checkGrid{ display:grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 @media (max-width: 540px){ .checkGrid{ grid-template-columns: 1fr; } }
 .checkItem{ display:flex; align-items:flex-start; gap:6px; font-size:11px; color: var(--text); margin:0; }

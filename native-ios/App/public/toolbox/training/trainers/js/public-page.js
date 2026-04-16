@@ -97,6 +97,13 @@ const STATE_OPTIONS = [
   "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "DC"
 ];
 
+const COLLAPSIBLE_FILTER_GROUPS = new Set([
+  "training classification",
+  "geography / travel",
+  "credentials / experience",
+  "delivery / budget / availability"
+]);
+
 const ARRAY_FIELDS = [
   "discipline",
   "hazmatSpecialties",
@@ -608,6 +615,59 @@ function buildFilterControls() {
   });
 }
 
+function setupCollapsibleFilterGroups() {
+  const groups = Array.from(ui.filtersForm?.querySelectorAll(".group") || []);
+  groups.forEach((group, index) => {
+    const heading = group.querySelector("h4");
+    if (!heading) {
+      return;
+    }
+
+    const headingText = asTrimmedString(heading.textContent).toLowerCase();
+    if (!COLLAPSIBLE_FILTER_GROUPS.has(headingText)) {
+      return;
+    }
+
+    const content = document.createElement("div");
+    content.className = "groupBody";
+    content.id = `filter-group-body-${index}`;
+
+    const nodesToMove = [];
+    let node = heading.nextSibling;
+    while (node) {
+      const next = node.nextSibling;
+      nodesToMove.push(node);
+      node = next;
+    }
+    nodesToMove.forEach((child) => content.appendChild(child));
+    group.appendChild(content);
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "groupToggle";
+    toggle.setAttribute("aria-expanded", "true");
+    toggle.setAttribute("aria-controls", content.id);
+    toggle.innerHTML = `
+      <span class="groupToggleLabel">${escapeHtml(asTrimmedString(heading.textContent))}</span>
+      <span class="groupToggleChevron" aria-hidden="true">v</span>
+    `;
+
+    heading.replaceWith(toggle);
+    group.classList.add("is-collapsible");
+
+    toggle.addEventListener("click", () => {
+      const isCollapsed = group.classList.toggle("is-collapsed");
+      const isExpanded = !isCollapsed;
+      content.hidden = !isExpanded;
+      toggle.setAttribute("aria-expanded", String(isExpanded));
+      const chevron = toggle.querySelector(".groupToggleChevron");
+      if (chevron) {
+        chevron.textContent = isExpanded ? "v" : ">";
+      }
+    });
+  });
+}
+
 function bindEvents() {
   map.on("popupopen", (event) => {
     const root = event.popup?.getElement();
@@ -709,6 +769,7 @@ async function loadApprovedTrainers() {
 
 function init() {
   buildFilterControls();
+  setupCollapsibleFilterGroups();
   bindEvents();
   loadApprovedTrainers();
 }
