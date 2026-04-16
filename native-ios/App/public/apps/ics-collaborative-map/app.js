@@ -951,26 +951,20 @@
     initMap();
     const url = new URL(window.location.href);
     const joinCode = url.searchParams.get("join");
-    const explicitViewerMode = url.searchParams.get("view") === "1";
-    const implicitViewerMode = Boolean(joinCode && !explicitViewerMode);
-    state.viewerMode = explicitViewerMode || implicitViewerMode;
-    state.viewerJoinCode = state.viewerMode && joinCode ? joinCode.toUpperCase() : null;
+    state.viewerMode = Boolean(joinCode);
+    state.viewerJoinCode = joinCode ? joinCode.toUpperCase() : null;
     if (joinCode) {
       elements.joinCodeInput.value = joinCode.toUpperCase();
       setStatus(state.viewerMode ? "Viewer link loaded." : "Join code loaded from share link.");
     }
     setDefaultOperationalPeriodInputs();
-    if (state.viewerMode && state.viewerJoinCode) {
+    if (state.viewerJoinCode) {
       const opened = await openViewerSession(state.viewerJoinCode);
       if (opened) {
         return;
       }
-      if (explicitViewerMode) {
-        renderAll();
-        return;
-      }
-      state.viewerMode = false;
-      state.viewerJoinCode = null;
+      renderAll();
+      return;
     }
     await restorePersistedSession();
     renderAll();
