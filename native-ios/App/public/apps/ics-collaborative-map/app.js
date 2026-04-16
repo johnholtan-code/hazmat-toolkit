@@ -951,7 +951,10 @@
     initMap();
     const url = new URL(window.location.href);
     const joinCode = url.searchParams.get("join");
-    state.viewerMode = url.searchParams.get("view") === "1";
+    const explicitViewerMode = url.searchParams.get("view") === "1";
+    const hasStoredAuth = Boolean(state.commanderAuth?.accessToken || state.participantAuth?.accessToken);
+    const implicitViewerMode = Boolean(joinCode && !explicitViewerMode && !hasStoredAuth);
+    state.viewerMode = explicitViewerMode || implicitViewerMode;
     state.viewerJoinCode = state.viewerMode && joinCode ? joinCode.toUpperCase() : null;
     if (joinCode) {
       elements.joinCodeInput.value = joinCode.toUpperCase();
@@ -959,8 +962,12 @@
     }
     setDefaultOperationalPeriodInputs();
     if (state.viewerMode && state.viewerJoinCode) {
-      await openViewerSession(state.viewerJoinCode);
-      return;
+      const opened = await openViewerSession(state.viewerJoinCode);
+      if (opened) {
+        return;
+      }
+      state.viewerMode = false;
+      state.viewerJoinCode = null;
     }
     await restorePersistedSession();
     renderAll();
@@ -3077,11 +3084,13 @@
       };
       await openSession(response.session, state.actor, "viewer", response.snapshot);
       setStatus(`Viewing ${response.session.incidentName} in read-only mode.`);
+      return true;
     } catch (error) {
       if (isViewerAccessDisabledError(error)) {
         exitActiveWorkspace();
       }
       setStatus(formatError(error));
+      return false;
     }
   }
 
