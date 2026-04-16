@@ -952,8 +952,7 @@
     const url = new URL(window.location.href);
     const joinCode = url.searchParams.get("join");
     const explicitViewerMode = url.searchParams.get("view") === "1";
-    const hasStoredAuth = Boolean(state.commanderAuth?.accessToken || state.participantAuth?.accessToken);
-    const implicitViewerMode = Boolean(joinCode && !explicitViewerMode && !hasStoredAuth);
+    const implicitViewerMode = Boolean(joinCode && !explicitViewerMode);
     state.viewerMode = explicitViewerMode || implicitViewerMode;
     state.viewerJoinCode = state.viewerMode && joinCode ? joinCode.toUpperCase() : null;
     if (joinCode) {
