@@ -4,12 +4,14 @@ This document describes how the Specialty Kit Finder is deployed to Render.
 
 ## Architecture
 
-The Specialty Kit Finder is deployed as a **static web service** on Render:
-- **Service Name:** `specialty-kit-finder`
+The Specialty Kit Finder is deployed as part of the **Toolbox** static web service on Render:
+- **Service Name:** `ics-collaborative-map` (serves all toolbox apps including Trainer Finder)
 - **Runtime:** Static
-- **Build Command:** `npm ci && npm run build`
-- **Publish Directory:** `native-ios/App/public/toolbox/training/specialty-kits`
-- **URL:** `https://specialty-kit-finder-{random}.onrender.com` (configured in Render dashboard)
+- **Root Directory:** `native-ios/App/public/`
+- **Build Command:** Runs `build.js` to generate config from environment variables
+- **Accessible at:** `https://ics-collaborative-map-75ct.onrender.com/toolbox/training/specialty-kits/`
+
+All toolbox apps (Trainer Finder, Specialty Kit Finder, etc.) are served from the same Render service under `/toolbox/training/`.
 
 ## Build Process
 

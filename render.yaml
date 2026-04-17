@@ -29,14 +29,9 @@ services:
   - type: web
     name: ics-collaborative-map
     runtime: static
-    buildCommand: echo "ICS Collaborative Map static site"
-    staticPublishPath: Incident-Mapper-Apple/app/ios/App/App/public/apps/ics-collaborative-map
-  - type: web
-    name: specialty-kit-finder
-    runtime: static
-    rootDir: native-ios/App/public/toolbox/training/specialty-kits
-    buildCommand: npm ci && npm run build
-    staticPublishPath: native-ios/App/public/toolbox/training/specialty-kits
+    rootDir: native-ios/App/public
+    buildCommand: cd toolbox/training/specialty-kits && npm ci && npm run build
+    staticPublishPath: native-ios/App/public
     envVars:
       - key: SPECIALTY_KITS_SUPABASE_URL
         value: https://domebvsyhexhgvsducbm.supabase.co

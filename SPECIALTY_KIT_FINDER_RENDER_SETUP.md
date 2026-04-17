@@ -1,6 +1,8 @@
 # Specialty Kit Finder - Complete Render Deployment Setup
 
-This guide walks you through deploying the Specialty Kit Finder to Render from start to finish.
+This guide walks you through deploying the Specialty Kit Finder to Render.
+
+**Note:** The Specialty Kit Finder is served from the existing `ics-collaborative-map` Render service, which also hosts the Trainer Finder and other toolbox apps.
 
 ## Prerequisites
 
@@ -8,12 +10,13 @@ This guide walks you through deploying the Specialty Kit Finder to Render from s
 - Render account (create at [render.com](https://render.com))
 - Supabase project with the specialty_kits table created
 - Admin email address for access control
+- Access to update the existing `ics-collaborative-map` Render service
 
 ## Step 1: Verify GitHub Repository
 
 Your code is already pushed to: https://github.com/LightsOn-Safety-Solutions/hazmat-toolkit
 
-The `specialty-kit-finder` service is configured in `render.yaml` at the repository root.
+The `ics-collaborative-map` service in `render.yaml` now serves all toolbox apps from `native-ios/App/public/`.
 
 ## Step 2: Create Render Account
 
@@ -23,30 +26,19 @@ The `specialty-kit-finder` service is configured in `render.yaml` at the reposit
 4. Authorize Render to access your GitHub account
 5. Complete your profile
 
-## Step 3: Create a Render Service
+## Step 3: Update the Existing Render Service
 
-### Option A: Using render.yaml (Recommended)
-
-If your Render account is connected to your GitHub org, Render will auto-detect the render.yaml file:
+You should already have an `ics-collaborative-map` service running. Update it to include the Specialty Kit Finder:
 
 1. Go to [Render Dashboard](https://dashboard.render.com)
-2. Click **New +** → **Blueprint** 
-3. Select `LightsOn-Safety-Solutions/hazmat-toolkit` repository
-4. Render will create all services from `render.yaml` automatically
-5. Skip to Step 4 below
-
-### Option B: Manual Setup (If Blueprint doesn't auto-detect)
-
-1. Go to [Render Dashboard](https://dashboard.render.com)
-2. Click **New +** → **Static Site**
-3. Click **Connect Repository**
-4. Search for `hazmat-toolkit` and select it
-5. Fill in:
-   - **Name:** `specialty-kit-finder`
-   - **Branch:** `main`
+2. Find your **`ics-collaborative-map`** service
+3. Click **Settings**
+4. Update:
    - **Build Command:** `cd native-ios/App/public/toolbox/training/specialty-kits && npm ci && npm run build`
-   - **Publish Directory:** `native-ios/App/public/toolbox/training/specialty-kits`
-6. Click **Create Static Site**
+   - **Publish Directory:** `native-ios/App/public` (should already be set)
+5. Click **Save Changes**
+
+The build command will generate `config.runtime.js` for the Specialty Kit Finder while preserving all other toolbox content.
 
 ## Step 4: Configure Environment Variables
 
@@ -110,27 +102,31 @@ You'll see the deployment status in the Render Dashboard.
 
 Click **Deploy** in the Render Dashboard if you want to redeploy without code changes.
 
-## Step 6: Find Your URL
+## Step 6: Access Your App
 
-Once deployed:
+Once deployed, the Specialty Kit Finder is available at:
 
-1. Go to your service in Render Dashboard
-2. At the top, you'll see the URL like: `https://specialty-kit-finder-XXXXX.onrender.com`
-3. Click it to open your live app
+```
+https://ics-collaborative-map-75ct.onrender.com/toolbox/training/specialty-kits/
+```
+
+Other toolbox apps remain accessible:
+- **Trainer Finder:** `https://ics-collaborative-map-75ct.onrender.com/toolbox/training/trainers.html`
+- **Response Kits Map:** `https://ics-collaborative-map-75ct.onrender.com/toolbox/training/response-kits-map.html`
 
 ## Step 7: Verify Deployment
 
-### Check the App Loads
+### Check the Specialty Kit Finder Loads
 
 ```bash
-curl https://specialty-kit-finder-XXXXX.onrender.com/index.html
+curl https://ics-collaborative-map-75ct.onrender.com/toolbox/training/specialty-kits/index.html
 ```
 
 You should see HTML content (not an error).
 
 ### Test Admin Page
 
-1. Go to `https://specialty-kit-finder-XXXXX.onrender.com/admin.html`
+1. Go to `https://ics-collaborative-map-75ct.onrender.com/toolbox/training/specialty-kits/admin.html`
 2. You should be redirected to login
 3. Sign in with one of the admin emails
 4. If login works, Supabase is connected correctly
@@ -145,21 +141,16 @@ Open your browser's Developer Tools (F12) and check the Console tab:
 
 ## Step 8: Update URLs (if needed)
 
-If your Render URL is different from the example above, update any hardcoded URLs:
+The Specialty Kit Finder is now accessible at a path under the existing Render domain. Update any external links:
 
-### In your application code
+- Old local URL: `http://localhost:9000/specialty-kits/index.html`
+- New production URL: `https://ics-collaborative-map-75ct.onrender.com/toolbox/training/specialty-kits/index.html`
 
-Search for hardcoded URLs and update to your Render domain:
-
-- Change: `https://localhost:9000` → `https://specialty-kit-finder-XXXXX.onrender.com`
-- Search your code for old URLs and update
-
-### In client apps
-
-If other apps reference this URL, update:
-- config.js files
-- API endpoints
-- Any hardcoded links
+Update any hardcoded links in:
+- Documentation
+- User communications
+- QR codes or deep links
+- API references
 
 ## Troubleshooting
 
@@ -202,15 +193,17 @@ This usually means the `staticPublishPath` is wrong. Check:
 
 ## Custom Domain Setup
 
-To use a custom domain like `specialty-kits.example.com`:
+The entire toolbox (including Specialty Kit Finder) can be served from a custom domain like `toolbox.example.com`:
 
-1. In Render Dashboard, go to your service
+1. In Render Dashboard, go to your `ics-collaborative-map` service
 2. Click **Settings**
 3. Scroll to **Custom Domain**
 4. Click **Add Custom Domain**
-5. Enter your domain: `specialty-kits.example.com`
+5. Enter your domain: `toolbox.example.com`
 6. Follow DNS configuration steps
 7. Update your DNS provider (GoDaddy, Route53, etc.)
+
+Then the Specialty Kit Finder will be at: `https://toolbox.example.com/toolbox/training/specialty-kits/`
 
 ## SSL/TLS Certificate
 
