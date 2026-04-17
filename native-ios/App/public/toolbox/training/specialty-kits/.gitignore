@@ -1,0 +1,19 @@
+# Configuration (keep example, ignore actual)
+config.runtime.js
+
+# OS files
+.DS_Store
+._*
+Thumbs.db
+
+# Development
+node_modules/
+.env
+.env.local
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

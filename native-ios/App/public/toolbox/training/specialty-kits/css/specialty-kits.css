@@ -1,0 +1,41 @@
+/* Specialty Kits CSS - Supplements trainer.css */
+
+/* Kit-specific customizations and overrides */
+
+/* Phone call buttons in kit list items */
+.item .miniActions a.miniBtn[href^="tel:"] {
+  background: rgba(54, 211, 153, 0.12);
+  border-color: rgba(54, 211, 153, 0.35);
+  color: rgba(54, 211, 153, 0.95);
+}
+
+.item .miniActions a.miniBtn[href^="tel:"]:hover {
+  border-color: rgba(54, 211, 153, 0.55);
+  box-shadow: 0 0 0 1px rgba(54, 211, 153, 0.18), 0 12px 24px rgba(0, 0, 0, 0.36);
+}
+
+/* Popup contact links */
+.popup a[href^="tel:"],
+.popup a[href^="mailto:"] {
+  color: rgba(255, 209, 0, 0.9);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.popup a[href^="tel:"]:hover,
+.popup a[href^="mailto:"]:hover {
+  color: rgba(255, 209, 0, 1);
+}
+
+/* Kit-specific status messages */
+.status .ok {
+  color: rgba(54, 211, 153, 0.95);
+}
+
+.status .warn {
+  color: rgba(255, 209, 0, 0.95);
+}
+
+.status .bad {
+  color: rgba(255, 77, 77, 0.95);
+}

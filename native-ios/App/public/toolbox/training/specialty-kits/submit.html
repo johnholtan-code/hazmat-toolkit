@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Submit a Specialty Kit | The Hazmat Guys</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../trainers/css/trainers.css" />
+  <link rel="stylesheet" href="./css/specialty-kits.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.runtime.js"></script>
+  <style>
+    .form-section { margin-bottom: 2rem; padding: 1.5rem; background: rgba(14,17,22,.5); border-radius: 12px; border: 1px solid rgba(255,209,0,.12); }
+    .form-section h3 { margin-top: 0; font-size: 14px; letter-spacing: 0.85px; text-transform: uppercase; color: rgba(255,209,0,.9); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1rem; }
+    .form-row.full { grid-template-columns: 1fr; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label { font-size: 12px; color: rgba(190,205,222,.78); margin: 0 0 6px 2px; letter-spacing: .15px; }
+    .form-group input, .form-group select, .form-group textarea { padding: 10px 11px; border-radius: 12px; border: 1px solid rgba(255,209,0,.20); background: rgba(10,12,15,.78); color: var(--text); outline: none; font-family: inherit; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: rgba(255,209,0,.40); box-shadow: 0 0 0 3px rgba(255,209,0,.14); }
+    .form-group textarea { min-height: 80px; resize: vertical; }
+    .checkGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    .chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 999px; background: rgba(255,209,0,.07); border: 1px solid rgba(255,209,0,.18); font-size: 12px; cursor: pointer; user-select: none; }
+    .chip input { width: auto; margin: 0; }
+    .chip span { color: rgba(245,248,252,.90); font-weight: 750; }
+    .chip:hover { border-color: rgba(255,209,0,.35); }
+    .submit-btn { padding: 12px 24px; border-radius: 12px; font-weight: 900; letter-spacing: .25px; font-size: 13px; border: none; cursor: pointer; background: linear-gradient(135deg, rgba(255,209,0,.98), rgba(255,183,3,.78)); color: #0b0d10; box-shadow: 0 14px 28px rgba(0,0,0,.35), 0 10px 26px rgba(255,209,0,.14); }
+    .submit-btn:hover { box-shadow: 0 0 0 1px rgba(255,209,0,.18), 0 16px 34px rgba(0,0,0,.42), 0 14px 28px rgba(255,209,0,.16); }
+    .success-state { text-align: center; padding: 3rem 2rem; background: rgba(54,211,153,.08); border: 1px solid rgba(54,211,153,.18); border-radius: 14px; }
+    .success-state h2 { color: rgba(54,211,153,.95); margin: 0 0 1rem; }
+    .success-state p { color: rgba(190,205,222,.78); margin: 0.5rem 0; }
+    .back-to-finder { display: inline-block; margin-top: 1.5rem; padding: 10px 16px; background: rgba(255,209,0,.07); border: 1px solid rgba(255,209,0,.22); border-radius: 12px; color: rgba(245,248,252,.92); text-decoration: none; font-weight: 600; }
+    .back-to-finder:hover { border-color: rgba(255,209,0,.40); box-shadow: 0 0 0 1px rgba(255,209,0,.14), 0 12px 24px rgba(0,0,0,.36); }
+  </style>
+</head>
+<body class="conference-page">
+  <header class="conference-hero">
+    <div class="hero-brand">
+      <img class="brand-logo" src="../trainers/assets/thmg-web-logo.png" alt="The Hazmat Guys logo" />
+    </div>
+    <div class="hero-copy">
+      <p class="conference-eyebrow">Specialty Kit Finder</p>
+      <h1>Submit a Specialty Response Kit</h1>
+      <p class="conference-sub">Submit your organization's specialty hazmat or firefighting response kit for review and public listing.</p>
+      <a class="back-link" href="./index.html">← Back to Kit Finder</a>
+    </div>
+  </header>
+
+  <main class="conference-shell">
+    <div class="wrap">
+      <div style="max-width: 900px; margin: 0 auto;">
+        <form id="submissionForm">
+          <!-- Contact / Organization Section -->
+          <div class="form-section">
+            <h3>Contact & Organization</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="organizationName">Organization Name *</label>
+                <input id="organizationName" name="organizationName" required />
+              </div>
+              <div class="form-group">
+                <label for="contactName">Contact Name</label>
+                <input id="contactName" name="contactName" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="phone">Primary Phone *</label>
+                <input id="phone" name="phone" type="tel" required />
+              </div>
+              <div class="form-group">
+                <label for="secondaryPhone">Secondary Phone</label>
+                <input id="secondaryPhone" name="secondaryPhone" type="tel" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" />
+              </div>
+              <div class="form-group">
+                <label for="website">Website</label>
+                <input id="website" name="website" type="url" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Kit Identity Section -->
+          <div class="form-section">
+            <h3>Kit Identity</h3>
+            <div class="form-row full">
+              <div class="form-group">
+                <label for="kitName">Kit Name *</label>
+                <input id="kitName" name="kitName" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="kitCategory">Kit Category</label>
+                <select id="kitCategory" name="kitCategory"><option value="">Select a category</option></select>
+              </div>
+              <div class="form-group">
+                <label for="deploymentType">Deployment Type</label>
+                <select id="deploymentType" name="deploymentType"><option value="">Select type</option></select>
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <label>Kit Types (select all that apply)</label>
+                <div class="checkGrid" id="kitTypesOptions"></div>
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <label>Hazard Focus (select all that apply)</label>
+                <div class="checkGrid" id="hazardFocusOptions"></div>
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <label>Equipment Capabilities (select all that apply)</label>
+                <div class="checkGrid" id="equipmentCapabilitiesOptions"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Location Section -->
+          <div class="form-section">
+            <h3>Location</h3>
+            <div class="form-row full">
+              <div class="form-group">
+                <label for="useDevice">Get Coordinates From:</label>
+                <select id="useDevice" name="useDevice"><option value="no">Address</option><option value="yes">Device GPS</option></select>
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <label for="address">Full Address (we'll geocode this to coordinates)</label>
+                <input id="address" name="address" placeholder="e.g., '123 Main St, Springfield, IL 62701'" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="lat">Latitude (or leave blank if using address)</label>
+                <input id="lat" name="lat" type="number" step="0.0001" />
+              </div>
+              <div class="form-group">
+                <label for="lng">Longitude (or leave blank if using address)</label>
+                <input id="lng" name="lng" type="number" step="0.0001" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="city">City</label>
+                <input id="city" name="city" />
+              </div>
+              <div class="form-group">
+                <label for="state">State</label>
+                <select id="state" name="state"><option value="">Select state</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="zip">ZIP Code</label>
+                <input id="zip" name="zip" />
+              </div>
+              <div class="form-group">
+                <label for="region">Region</label>
+                <select id="region" name="region"><option value="">Select region</option></select>
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <label for="locationLabel">Location Label (optional)</label>
+                <input id="locationLabel" name="locationLabel" placeholder="e.g., 'Main Fire Station', 'Training Facility'" />
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <label for="travelOrServiceAreaNotes">Travel or Service Area Notes</label>
+                <textarea id="travelOrServiceAreaNotes" name="travelOrServiceAreaNotes" placeholder="e.g., 'Available within 100 miles', 'Regional mutual aid only'"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Operational Context Section -->
+          <div class="form-section">
+            <h3>Operational Context</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="availabilityStatus">Availability Status</label>
+                <select id="availabilityStatus" name="availabilityStatus"><option value="">Select availability</option></select>
+              </div>
+              <div class="form-group">
+                <label for="accessType">Access Type</label>
+                <select id="accessType" name="accessType"><option value="">Select access type</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="storageEnvironment">Storage Environment</label>
+                <select id="storageEnvironment" name="storageEnvironment"><option value="">Select environment</option></select>
+              </div>
+              <div class="form-group">
+                <label for="transportCapable">Transport Capable</label>
+                <select id="transportCapable" name="transportCapable"><option value="">Select option</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="trailerRequired">Trailer Required</label>
+                <select id="trailerRequired" name="trailerRequired"><option value="">Select option</option></select>
+              </div>
+              <div class="form-group">
+                <label for="responseTeamIncluded">Response Team Included</label>
+                <select id="responseTeamIncluded" name="responseTeamIncluded"><option value="">Select option</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="trainingRequired">Training Required</label>
+                <select id="trainingRequired" name="trainingRequired"><option value="">Select option</option></select>
+              </div>
+              <div class="form-group">
+                <label for="callBeforeUse">Call Before Use</label>
+                <select id="callBeforeUse" name="callBeforeUse"><option value="">Select option</option></select>
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <label for="hoursOfAvailability">Hours of Availability</label>
+                <input id="hoursOfAvailability" name="hoursOfAvailability" placeholder="e.g., 'Mon-Fri 8am-5pm, 24/7 emergency'" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Descriptive Section -->
+          <div class="form-section">
+            <h3>Descriptive Information</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="manufacturer">Manufacturer</label>
+                <input id="manufacturer" name="manufacturer" />
+              </div>
+              <div class="form-group">
+                <label for="modelOrBuild">Model or Build</label>
+                <input id="modelOrBuild" name="modelOrBuild" />
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <label for="quantitySummary">Quantity Summary</label>
+                <input id="quantitySummary" name="quantitySummary" placeholder="e.g., '2 main kits, 3 backup components'" />
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <label for="notes">Additional Notes</label>
+                <textarea id="notes" name="notes" placeholder="Any other relevant information about this kit..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="status" id="status"><strong>Status:</strong> Ready to submit.</div>
+            <button class="submit-btn" type="submit">Submit Kit for Review</button>
+            <p style="font-size: 12px; color: rgba(190,205,222,.72); margin-top: 1rem;">
+              Your submission will be reviewed by our Super Admin team before appearing on the public map.
+            </p>
+          </div>
+        </form>
+
+        <div class="success-state" id="successMessage" hidden>
+          <h2>✓ Kit Submitted Successfully</h2>
+          <p>Your specialty kit submission has been received and is awaiting Super Admin review.</p>
+          <p>Once approved, it will appear on the public Specialty Kit Finder.</p>
+          <a class="back-to-finder" href="./index.html">Back to Kit Finder</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="./js/submission-page.js"></script>
+</body>
+</html>
