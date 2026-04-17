@@ -1,0 +1,12 @@
+{
+  "name": "specialty-kit-finder",
+  "version": "1.0.0",
+  "description": "Moderated directory for hazmat response and firefighting specialty kits",
+  "scripts": {
+    "build": "node build.js",
+    "start": "echo 'Static site - serve with any HTTP server'"
+  },
+  "keywords": ["hazmat", "specialty-kits", "firefighting"],
+  "author": "Lights On Safety Solutions",
+  "license": "MIT"
+}
