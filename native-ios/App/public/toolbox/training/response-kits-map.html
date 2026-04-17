@@ -1,0 +1,1452 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Response Kits Map</title>
+  <meta http-equiv="refresh" content="0; url=./specialty-kits/index.html" />
+  <script>
+    window.location.replace("./specialty-kits/index.html");
+  </script>
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <style>
+    :root{
+      /* ----------- THEME TOKENS (safe + maintainable) ----------- */
+      --bg: #07080a;
+      --panel: rgba(12,14,18,.92);
+      --panel2: rgba(10,12,15,.78);
+
+      --text: rgba(245,248,252,.96);
+      --muted: rgba(190,205,222,.78);
+
+      --gold: #ffd100;
+      --gold2: #ffb703;
+
+      --danger:#ff4d4d;
+      --ok:#36d399;
+
+      --ring: rgba(255,209,0,.22);
+      --ring2: rgba(255,209,0,.38);
+
+      --shadow: 0 18px 48px rgba(0,0,0,.62);
+      --glow: 0 0 0 1px var(--ring), 0 0 34px rgba(255,209,0,.10);
+
+      --radius: 16px;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    *{ box-sizing:border-box; }
+    html, body{ height: 100%; }
+
+    body{
+      margin:0;
+      background:
+        radial-gradient(1100px 720px at 15% -10%, rgba(255,209,0,.14), transparent 60%),
+        radial-gradient(900px 620px at 85% 10%, rgba(255,183,3,.10), transparent 60%),
+        linear-gradient(180deg, #050607, var(--bg));
+      color:var(--text);
+      font-family:var(--sans);
+    }
+
+    a{ color: inherit; text-decoration: none; }
+    a:focus-visible, button:focus-visible, input:focus-visible{
+      outline: 3px solid rgba(255,209,0,.22);
+      outline-offset: 2px;
+      border-radius: 10px;
+    }
+
+    .wrap{
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* Quick feature-flag: hide nav items + CTA without deleting markup */
+    .is-hidden{ display:none !important; }
+
+    /* =============== THMG-LIKE HEADER/NAV STRUCTURE (NOT COPIED) =============== */
+    header.siteHeader{
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--ring2);
+      background: linear-gradient(to bottom, rgba(5,6,8,.94), rgba(5,6,8,.78));
+      box-shadow: 0 10px 34px rgba(0,0,0,.55);
+    }
+
+    /* Utility/top bar */
+    .topbar{
+      border-bottom: 1px solid rgba(255,209,0,.12);
+      background: rgba(0,0,0,.18);
+    }
+    .topbarInner{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      padding: 10px 0;
+      gap: 12px;
+      font-size: 12px;
+      color: rgba(245,248,252,.88);
+      letter-spacing: .35px;
+      text-transform: uppercase;
+    }
+    .topbarLeft{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      color: rgba(245,248,252,.78);
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .topbarRight{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .topLink{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,209,0,.18);
+      background: rgba(255,209,0,.06);
+      box-shadow: 0 10px 22px rgba(0,0,0,.35);
+      color: rgba(245,248,252,.92);
+      font-weight: 800;
+      letter-spacing: .4px;
+    }
+    .topLink:hover{
+      border-color: rgba(255,209,0,.38);
+      box-shadow: 0 0 0 1px rgba(255,209,0,.14), 0 12px 24px rgba(0,0,0,.38);
+    }
+
+    /* Primary nav row */
+    .navrow{
+      padding: 14px 0;
+    }
+    .navInner{
+      display:flex;
+      align-items:center;
+      gap: 14px;
+    }
+
+    /* Brand mark (badge + text) */
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width: 240px;
+    }
+    .badge{
+      height: 36px;
+      width: fit-content;      /* shrink-wrap to text width */
+      padding: 0 10px;
+      border-radius: 11px;
+      background:
+        radial-gradient(circle at 20% 25%, rgba(255,255,255,.22), transparent 40%),
+        linear-gradient(135deg, rgba(255,209,0,.98), rgba(255,183,3,.72));
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 10px 26px rgba(255,209,0,.16);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .badge span{
+      color:#0b0d10;
+      font-weight: 950;
+      font-family: var(--mono);
+      letter-spacing: .9px;
+      line-height: 1;
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+    .brandText{
+      display:flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+    .brandName{
+      font-weight: 900;
+      letter-spacing: .7px;
+      text-transform: uppercase;
+      font-size: 14px;
+    }
+    .brandTag{
+      margin-top: 3px;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: .25px;
+      text-transform: none;
+    }
+
+    /* Nav */
+    .navToggle{
+      display:none;
+      margin-left: auto;
+      border: 1px solid rgba(255,209,0,.22);
+      background: rgba(255,209,0,.06);
+      color: rgba(245,248,252,.92);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 900;
+      letter-spacing: .4px;
+      cursor:pointer;
+      box-shadow: 0 12px 24px rgba(0,0,0,.35);
+    }
+
+    nav.primaryNav{
+      margin-left: auto;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+    .navList{
+      list-style:none;
+      padding:0;
+      margin:0;
+      display:flex;
+      align-items:center;
+      gap: 6px;
+    }
+    .navItem{
+      position: relative;
+    }
+    .navBtn, .navLink{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: rgba(245,248,252,.92);
+      font-weight: 850;
+      letter-spacing: .55px;
+      text-transform: uppercase;
+      font-size: 12px;
+      cursor:pointer;
+      user-select:none;
+      white-space: nowrap;
+    }
+    .navBtn:hover, .navLink:hover{
+      border-color: rgba(255,209,0,.22);
+      background: rgba(255,209,0,.06);
+      box-shadow: 0 0 0 1px rgba(255,209,0,.10);
+    }
+    .chev{
+      font-family: var(--mono);
+      font-weight: 900;
+      color: rgba(255,209,0,.95);
+      line-height: 1;
+      font-size: 12px;
+      transform: translateY(-1px);
+    }
+
+    /* Dropdown */
+    .menu{
+      position:absolute;
+      top: calc(100% + 10px);
+      left: 0;
+      min-width: 240px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,209,0,.18);
+      background: linear-gradient(180deg, rgba(14,17,22,.98), rgba(9,11,14,.98));
+      box-shadow: var(--shadow), 0 0 0 1px rgba(255,209,0,.10);
+      padding: 8px;
+      display:none;
+    }
+    .navItem[data-open="true"] > .menu{ display:block; }
+    .menu a{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      color: rgba(245,248,252,.92);
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: .2px;
+    }
+    .menu a:hover{
+      border-color: rgba(255,209,0,.18);
+      background: rgba(255,209,0,.06);
+    }
+    .menu .desc{
+      font-size: 11px;
+      color: rgba(190,205,222,.70);
+      margin-top: 2px;
+      font-weight: 600;
+      letter-spacing: .1px;
+      text-transform: none;
+    }
+
+    /* CTA */
+    .cta{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 950;
+      letter-spacing: .35px;
+      text-transform: uppercase;
+      font-size: 12px;
+      cursor:pointer;
+      border: 1px solid rgba(255,255,255,.14);
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,.20), transparent 45%),
+        linear-gradient(135deg, rgba(255,209,0,.98), rgba(255,183,3,.78));
+      color: #0b0d10;
+      box-shadow: 0 14px 28px rgba(0,0,0,.35), 0 10px 26px rgba(255,209,0,.14);
+      white-space: nowrap;
+    }
+    .cta:hover{
+      box-shadow: 0 0 0 1px rgba(255,209,0,.18), 0 16px 34px rgba(0,0,0,.42), 0 14px 28px rgba(255,209,0,.16);
+    }
+
+    /* Responsive nav: collapse to burger */
+    @media (max-width: 1060px){
+      .navToggle{ display:inline-flex; }
+      nav.primaryNav{
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(420px, 92vw);
+        background: linear-gradient(180deg, rgba(14,17,22,.98), rgba(9,11,14,.98));
+        border-left: 1px solid rgba(255,209,0,.18);
+        box-shadow: -16px 0 40px rgba(0,0,0,.55);
+        transform: translateX(105%);
+        transition: transform .18s ease;
+        padding: 18px;
+        display:flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        z-index: 100;
+      }
+      nav.primaryNav[data-open="true"]{ transform: translateX(0%); }
+      .navList{
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+      }
+      .navItem{ width: 100%; }
+      .navBtn, .navLink{ width: 100%; justify-content: space-between; }
+      .menu{
+        position: static;
+        display:none;
+        margin-top: 6px;
+      }
+      .navItem[data-open="true"] > .menu{ display:block; }
+      .cta{ width: 100%; }
+    }
+
+    /* Backdrop for mobile nav */
+    .navBackdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display:none;
+      z-index: 90;
+    }
+    .navBackdrop[data-open="true"]{ display:block; }
+
+    /* =============== MAIN APP LAYOUT (kept, lightly reskinned) =============== */
+    main .wrap{ padding-top: 14px; padding-bottom: 28px; }
+
+    /* Layout: filters | gutter | map */
+    .grid{
+      display:grid;
+      grid-template-columns: 420px 18px 1fr;
+      gap:0;
+      align-items:start;
+      transition: grid-template-columns .18s ease;
+    }
+    .grid.is-collapsed{
+      grid-template-columns: 0px 18px 1fr;
+    }
+    .leftPanel{
+      padding-right: 14px;
+      transition: transform .18s ease, opacity .18s ease;
+      transform-origin: left center;
+    }
+    .grid.is-collapsed .leftPanel{
+      transform: translateX(-12px);
+      opacity: 0;
+      pointer-events: none;
+      height: 0;
+      overflow: hidden;
+      padding-right: 0;
+    }
+
+    .gutter{
+      position: relative;
+      height: 100%;
+      min-height: 640px;
+      display:flex;
+      align-items: center;
+      justify-content: center;
+      user-select:none;
+    }
+    .gutter::before{
+      content:"";
+      position:absolute;
+      top: 10px;
+      bottom: 10px;
+      left: 50%;
+      width: 2px;
+      transform: translateX(-50%);
+      background: linear-gradient(to bottom, rgba(255,209,0,.10), rgba(255,209,0,.35), rgba(255,209,0,.10));
+      border-radius: 999px;
+    }
+    .gutterBtn{
+      position: relative;
+      z-index: 2;
+      width: 30px;
+      height: 70px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,209,0,.20);
+      background: rgba(16,20,26,.85);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 14px 28px rgba(0,0,0,.35);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    .gutterBtn:hover{ transform: translateY(-1px); border-color: rgba(255,209,0,.35); }
+    .gutterBtn:active{ transform: translateY(0px); }
+    .gutterIcon{
+      font-family: var(--mono);
+      font-weight: 900;
+      color: rgba(255,209,0,.95);
+      font-size: 18px;
+      width: 18px;
+      text-align:center;
+      line-height: 1;
+    }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; gap:14px; }
+      .grid.is-collapsed{ grid-template-columns: 1fr; }
+      .gutter{ display:none; }
+      .leftPanel{ padding-right: 0; }
+      .grid.is-collapsed .leftPanel{
+        transform:none; opacity:1; pointer-events:auto; height:auto; overflow:visible; padding-right:0;
+      }
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(14,17,22,.94), rgba(9,11,14,.94));
+      border: 1px solid rgba(255,209,0,.16);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card:hover{
+      box-shadow: var(--shadow), 0 0 0 1px rgba(255,209,0,.14), 0 0 28px rgba(255,209,0,.08);
+    }
+
+    .card .hd{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,209,0,.12);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .card .hd .title{
+      font-weight: 900;
+      font-size:12px;
+      letter-spacing:.85px;
+      text-transform: uppercase;
+      color: rgba(245,248,252,.90);
+    }
+    .card .bd{ padding: 14px; }
+
+    label{
+      display:block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 6px 2px;
+      letter-spacing: .15px;
+    }
+    input{
+      width:100%;
+      padding: 10px 11px;
+      border-radius: 12px;
+      border:1px solid rgba(255,209,0,.20);
+      background: var(--panel2);
+      color: var(--text);
+      outline:none;
+    }
+    input::placeholder{ color: rgba(190,205,222,.55); }
+    input:focus{
+      border-color: rgba(255,209,0,.40);
+      box-shadow: 0 0 0 3px rgba(255,209,0,.14);
+    }
+
+    .hint{
+      font-size: 11px;
+      color: rgba(190,205,222,.72);
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+
+    .chips{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top: 10px;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,209,0,.07);
+      border: 1px solid rgba(255,209,0,.18);
+      font-size: 12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .chip input{ width:auto; }
+    .chip span{ color: rgba(245,248,252,.90); font-weight: 750; }
+    .chip:hover{ border-color: rgba(255,209,0,.35); }
+
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top: 12px;
+    }
+    button{
+      cursor:pointer;
+      border:none;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight:900;
+      letter-spacing:.25px;
+      font-size: 13px;
+    }
+    .btn-ghost{
+      background: rgba(255,209,0,.07);
+      color: rgba(245,248,252,.92);
+      border: 1px solid rgba(255,209,0,.22);
+      box-shadow: 0 10px 22px rgba(0,0,0,.30);
+    }
+    .btn-ghost:hover{
+      border-color: rgba(255,209,0,.40);
+      box-shadow: 0 0 0 1px rgba(255,209,0,.14), 0 12px 24px rgba(0,0,0,.36);
+    }
+
+    .status{
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .status strong{ color: var(--text); }
+    .status .ok{ color: var(--ok); }
+    .status .bad{ color: var(--danger); }
+
+    #map{
+      height: 640px;
+      width: 100%;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,209,0,.16);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    @media (max-width: 980px){ #map{ height: 520px; } }
+
+    .count{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(255,209,0,.9);
+    }
+
+    .leaflet-popup-content-wrapper{
+      background: rgba(16,20,26,.98);
+      color: var(--text);
+      border: 1px solid rgba(255,209,0,.18);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+    .leaflet-popup-tip{
+      background: rgba(16,20,26,.98);
+      border: 1px solid rgba(255,209,0,.18);
+    }
+    .popup h3{ margin:0 0 6px 0; font-size: 14px; letter-spacing:.2px; }
+    .popup .tagline{ font-size: 11px; color: rgba(190,205,222,.9); margin-bottom: 8px; }
+    .popup .pill{
+      display:inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,209,0,.10);
+      border: 1px solid rgba(255,209,0,.20);
+      font-size: 11px;
+      margin: 2px 6px 2px 0;
+      color: var(--text);
+      max-width: 260px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      vertical-align:middle;
+    }
+    .popup .kv{ font-size: 12px; color: rgba(245,248,252,.92); margin-top: 6px; line-height: 1.35; }
+    .popup .kv span{ color: rgba(190,205,222,.95); }
+
+    .pin{
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.7), rgba(255,255,255,0) 35%),
+                  linear-gradient(135deg, var(--gold), var(--gold2));
+      border: 2px solid rgba(10,10,10,.85);
+      box-shadow: 0 10px 22px rgba(255,209,0,.14);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- mobile nav backdrop -->
+  <div class="navBackdrop" id="navBackdrop" data-open="false" aria-hidden="true"></div>
+
+  <!-- Header with THMG-like structure -->
+  <header class="siteHeader">
+    <div class="topbar">
+      <div class="wrap topbarInner">
+        <div class="topbarLeft">
+          <span>Hazmat ToolK.I.T.</span>
+          <span style="opacity:.45;">•</span>
+          <span style="opacity:.85;">Response Kits Map</span>
+        </div>
+        <div class="topbarRight">
+          <a class="topLink" href="#" id="btnLogin" role="button" aria-label="User login (demo)">
+            USER LOGIN
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="navrow">
+      <div class="wrap navInner">
+        <a class="brand" href="#" aria-label="Hazmat ToolK.I.T. home (demo)">
+          <div class="badge" aria-hidden="true"><span>THMG</span></div>
+          <div class="brandText">
+            <div class="brandName">Hazmat ToolK.I.T.</div>
+            <div class="brandTag">Knowledge in Training</div>
+          </div>
+        </a>
+
+        <button class="navToggle" id="navToggle" type="button" aria-expanded="false" aria-controls="primaryNav">
+          MENU ☰
+        </button>
+
+        <nav class="primaryNav" id="primaryNav" data-open="false" aria-label="Primary navigation">
+          <ul class="navList" id="navList">
+            <!-- HIDDEN: Podcasts -->
+            <li class="navItem is-hidden" data-open="false">
+              <button class="navBtn" type="button" data-menu="podcasts" aria-expanded="false">
+                Podcasts <span class="chev">▾</span>
+              </button>
+              <div class="menu" role="menu" aria-label="Podcasts menu">
+                <a href="#" role="menuitem">
+                  The HazMat Guys
+                  <span class="desc">Link placeholder</span>
+                </a>
+                <a href="#" role="menuitem">
+                  Hazard Class
+                  <span class="desc">Link placeholder</span>
+                </a>
+                <a href="#" role="menuitem">
+                  After Action Report
+                  <span class="desc">Link placeholder</span>
+                </a>
+              </div>
+            </li>
+
+            <!-- HIDDEN: Premium -->
+            <li class="navItem is-hidden" data-open="false">
+              <button class="navBtn" type="button" data-menu="premium" aria-expanded="false">
+                Premium <span class="chev">▾</span>
+              </button>
+              <div class="menu" role="menu" aria-label="Premium menu">
+                <a href="#" role="menuitem">
+                  Instructor’s Corner
+                  <span class="desc">Link placeholder</span>
+                </a>
+                <a href="#" role="menuitem">
+                  Premium Episodes
+                  <span class="desc">Link placeholder</span>
+                </a>
+                <a href="#" role="menuitem">
+                  Nuggets / Happy Hour
+                  <span class="desc">Link placeholder</span>
+                </a>
+              </div>
+            </li>
+
+            <!-- HIDDEN: Training -->
+            <li class="navItem is-hidden" data-open="false">
+              <button class="navBtn" type="button" data-menu="training" aria-expanded="false">
+                Training <span class="chev">▾</span>
+              </button>
+              <div class="menu" role="menu" aria-label="Training menu">
+                <a href="#" role="menuitem">
+                  In-Person
+                  <span class="desc">Link placeholder</span>
+                </a>
+                <a href="#" role="menuitem">
+                  Online
+                  <span class="desc">Link placeholder</span>
+                </a>
+                <a href="#" role="menuitem">
+                  Training Calendar
+                  <span class="desc">Link placeholder</span>
+                </a>
+              </div>
+            </li>
+
+            <!-- HIDDEN: Other Stuff -->
+            <li class="navItem is-hidden" data-open="false">
+              <button class="navBtn" type="button" data-menu="stuff" aria-expanded="false">
+                Other Stuff <span class="chev">▾</span>
+              </button>
+              <div class="menu" role="menu" aria-label="Other Stuff menu">
+                <a href="#" role="menuitem">
+                  Battery Resources
+                  <span class="desc">Link placeholder</span>
+                </a>
+                <a href="#" role="menuitem">
+                  THMG Roundtable
+                  <span class="desc">Link placeholder</span>
+                </a>
+                <a href="#" role="menuitem">
+                  FAQs
+                  <span class="desc">Link placeholder</span>
+                </a>
+              </div>
+            </li>
+
+            <!-- HIDDEN: Store -->
+            <li class="navItem is-hidden" data-open="false">
+              <button class="navBtn" type="button" data-menu="store" aria-expanded="false">
+                Store <span class="chev">▾</span>
+              </button>
+              <div class="menu" role="menu" aria-label="Store menu">
+                <a href="#" role="menuitem">
+                  Knowledge Base
+                  <span class="desc">Link placeholder</span>
+                </a>
+                <a href="#" role="menuitem">
+                  Apparel / Drinkware
+                  <span class="desc">Link placeholder</span>
+                </a>
+                <a href="#" role="menuitem">
+                  Gifts
+                  <span class="desc">Link placeholder</span>
+                </a>
+              </div>
+            </li>
+
+            <!-- HIDDEN: Conference -->
+            <li class="navItem is-hidden">
+              <a class="navLink" href="#" role="link">Conference</a>
+            </li>
+
+            <!-- HIDDEN: Contact -->
+            <li class="navItem is-hidden" data-open="false">
+              <button class="navBtn" type="button" data-menu="contact" aria-expanded="false">
+                Contact <span class="chev">▾</span>
+              </button>
+              <div class="menu" role="menu" aria-label="Contact menu">
+                <a href="#" role="menuitem">
+                  General Inquiries
+                  <span class="desc">Link placeholder</span>
+                </a>
+                <a href="#" role="menuitem">
+                  Become a Sponsor
+                  <span class="desc">Link placeholder</span>
+                </a>
+                <a href="#" role="menuitem">
+                  Request Training
+                  <span class="desc">Link placeholder</span>
+                </a>
+              </div>
+            </li>
+          </ul>
+
+          <!-- HIDDEN: Open ToolK.I.T. -->
+          <a class="cta is-hidden" href="#" id="ctaOpenTool" role="button" aria-label="Open ToolK.I.T. (demo)">
+            OPEN TOOLK.I.T.
+          </a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <div class="grid" id="grid">
+        <!-- LEFT: Filters -->
+        <section class="card leftPanel">
+          <div class="hd">
+            <div class="title">Filters</div>
+            <div class="count" id="countLabel">0 shown</div>
+          </div>
+          <div class="bd">
+            <div>
+              <label for="q">Search</label>
+              <input id="q" placeholder="Search products (e.g., flare, manifold, case, kit)"/>
+              <div class="hint">Search matches name + tags.</div>
+            </div>
+
+            <div style="margin-top:12px;">
+              <label>Kit Type</label>
+              <div class="chips" id="chips"></div>
+              <div class="hint">Select one or many. “All” shows everything.</div>
+            </div>
+
+            <div class="actions">
+              <button class="btn-ghost" type="button" id="btnReset">Reset</button>
+              <button class="btn-ghost" type="button" id="btnCenterUS">Center Map (US)</button>
+              <button class="btn-ghost" type="button" id="btnReloadStations">Load Demo Locations</button>
+            </div>
+
+            <div class="status" id="status"><strong>Status:</strong> Ready. Using static demo locations.</div>
+
+            <div class="hint" style="margin-top:10px;">
+              **This is not a dynamic list as it is hard coded for trial purposes.
+            </div>
+          </div>
+        </section>
+
+        <!-- Gutter collapse handle -->
+        <div class="gutter" aria-label="Collapse/expand handle">
+          <button class="gutterBtn" id="btnGutter" type="button" title="Collapse/Expand filters">
+            <span class="gutterIcon" id="gutterIcon">◀</span>
+          </button>
+        </div>
+
+        <!-- RIGHT: Map -->
+        <section>
+          <div id="map" class="card" aria-label="United States map"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ===========================
+    // NAV / DROPDOWNS (safe, maintainable)
+    // ===========================
+    const navToggle = document.getElementById("navToggle");
+    const primaryNav = document.getElementById("primaryNav");
+    const navBackdrop = document.getElementById("navBackdrop");
+    const navItems = Array.from(document.querySelectorAll(".navItem"));
+    const prefersMobileNav = () => window.matchMedia("(max-width: 1060px)").matches;
+
+    function closeAllMenus(){
+      navItems.forEach(li => {
+        li.dataset.open = "false";
+        const btn = li.querySelector(".navBtn");
+        if(btn) btn.setAttribute("aria-expanded","false");
+      });
+    }
+
+    function openMobileNav(){
+      primaryNav.dataset.open = "true";
+      navBackdrop.dataset.open = "true";
+      navToggle.setAttribute("aria-expanded","true");
+    }
+    function closeMobileNav(){
+      primaryNav.dataset.open = "false";
+      navBackdrop.dataset.open = "false";
+      navToggle.setAttribute("aria-expanded","false");
+      closeAllMenus();
+    }
+
+    navToggle.addEventListener("click", () => {
+      const isOpen = primaryNav.dataset.open === "true";
+      if(isOpen) closeMobileNav();
+      else openMobileNav();
+    });
+
+    navBackdrop.addEventListener("click", () => closeMobileNav());
+
+    // Dropdown toggles
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".navBtn");
+      const insideMenu = e.target.closest(".menu");
+      const insideNav = e.target.closest("#primaryNav");
+
+      if(btn){
+        const li = btn.closest(".navItem");
+        const isOpen = li.dataset.open === "true";
+        closeAllMenus();
+        li.dataset.open = isOpen ? "false" : "true";
+        btn.setAttribute("aria-expanded", isOpen ? "false" : "true");
+        e.preventDefault();
+        return;
+      }
+
+      if(!insideNav && !prefersMobileNav()){
+        closeAllMenus();
+      }
+
+      if(prefersMobileNav() && insideMenu && e.target.closest("a")){
+        closeMobileNav();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if(e.key === "Escape"){
+        if(prefersMobileNav() && primaryNav.dataset.open === "true") closeMobileNav();
+        else closeAllMenus();
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      if(!prefersMobileNav()){
+        primaryNav.dataset.open = "false";
+        navBackdrop.dataset.open = "false";
+        navToggle.setAttribute("aria-expanded","false");
+      } else {
+        closeAllMenus();
+      }
+    });
+
+    // Demo buttons (avoid dead clicks)
+    document.getElementById("btnLogin").addEventListener("click", (e) => {
+      e.preventDefault();
+      alert("Demo: hook this to your ToolK.I.T. auth flow.");
+    });
+    document.getElementById("ctaOpenTool").addEventListener("click", (e) => {
+      e.preventDefault();
+      alert("Demo: hook this to your ToolK.I.T. launcher.");
+    });
+
+    // -----------------------------
+    // Products (from manufacturer Response Kits page list you provided earlier)
+    // -----------------------------
+    const PRODUCTS = [
+      { name: "1-Inch Propane Distribution Manifold" },
+      { name: "1/2″ Propane Flare Kit" },
+      { name: "2-Inch 3-Port Propane Distribution Manifold" },
+      { name: "2-Inch 6-Port Propane Distribution Manifold" },
+      { name: "AL2727-0909AC Hardigg HOSE Case" },
+      { name: "CNG Fuel Transfer Wiring Harness Kit" },
+      { name: "Compressed Natural Gas Vent/Flare Connector Kit" },
+      { name: "Foam insert – Propane Specialist Response Kit #4 (FOAM ONLY)" },
+      { name: "Multi-Gauge Pressure Test Kit (LPG/NH3)" },
+      { name: "PELICAN™ AL6912-1003 SINGLE LID LONG SHIPPING CASE WITH FOAM – BLACK" },
+      { name: "Propane Cap-N-Seal Kit" },
+      { name: "Propane Specialist Response Kit" },
+      { name: "Propane Specialist Response Kit – Box 4" },
+      { name: "Propane Specialist Response Kit Box# 2" },
+      { name: "RESPONDER PROPANE FLARE™ – aka “The Dragon Slayer™” – the only commercially available folding 1-inch Propane Flare that can be tilted" },
+      { name: "The Flaring Kit – LPG/PHO/BHO" },
+      { name: "Propane Specialist Response Kit Box# 1" },
+      { name: "Propane Incident Water Injection Kit" }
+    ];
+
+    // -----------------------------
+    // Helpers
+    // -----------------------------
+    const el = (id) => document.getElementById(id);
+
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function setStatus(msg){
+      el("status").innerHTML = "<strong>Status:</strong> " + escapeHtml(msg);
+    }
+
+    // Deterministic seeded RNG so each kit chooses a consistent "search seed"
+    function xmur3(str){
+      let h = 1779033703 ^ str.length;
+      for (let i=0; i<str.length; i++){
+        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+        h = (h << 13) | (h >>> 19);
+      }
+      return function(){
+        h = Math.imul(h ^ (h >>> 16), 2246822507);
+        h = Math.imul(h ^ (h >>> 13), 3266489909);
+        h ^= h >>> 16;
+        return h >>> 0;
+      };
+    }
+    function mulberry32(a){
+      return function(){
+        let t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    // US bounding-ish box (lower 48)
+    const US = { latMin: 25.0, latMax: 49.5, lngMin: -124.7, lngMax: -66.9 };
+
+    function seededUSPoint(seedStr){
+      const seed = xmur3(seedStr)();
+      const rnd = mulberry32(seed);
+      const lat = US.latMin + rnd() * (US.latMax - US.latMin);
+      const lng = US.lngMin + rnd() * (US.lngMax - US.lngMin);
+      return { lat, lng };
+    }
+
+    // -----------------------------
+    // Tag inference (prototype)
+    // -----------------------------
+    function inferTags(name){
+      const n = name.toLowerCase();
+      const tags = new Set();
+
+      if (n.includes("propane")) tags.add("Propane");
+      if (n.includes("cng") || n.includes("compressed natural gas")) tags.add("CNG");
+      if (n.includes("flare") || n.includes("flaring")) tags.add("Flaring");
+      if (n.includes("distribution manifold") || n.includes("manifold") || n.includes("port")) tags.add("Manifold");
+      if (n.includes("case") || n.includes("pelican") || n.includes("hardigg") || n.includes("shipping")) tags.add("Case/Storage");
+      if (n.includes("pressure test") || n.includes("gauge")) tags.add("Pressure Testing");
+      if (n.includes("cap-n-seal") || n.includes("seal")) tags.add("Leak Control");
+      if (n.includes("wiring harness")) tags.add("Wiring/Transfer");
+      if (n.includes("connector")) tags.add("Connectors");
+      if (n.includes("foam insert")) tags.add("Foam Insert");
+      if (n.includes("water injection")) tags.add("Water Injection");
+      if (n.includes("specialist response kit") || n.includes("box") || n.includes("kit")) tags.add("Response Kit");
+
+      if (tags.size === 0) tags.add("Other");
+      return Array.from(tags);
+    }
+
+    // -----------------------------
+    // OpenStreetMap station anchoring
+    //  - Overpass: find nearest fire_station around a seeded point
+    //  - Nominatim: reverse geocode to an address string
+    // -----------------------------
+    const CACHE_KEY = "kit_station_anchors_v1";
+    const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+
+    function loadCache(){
+      try{
+        const raw = localStorage.getItem(CACHE_KEY);
+        if(!raw) return null;
+        const obj = JSON.parse(raw);
+        if(!obj || !obj.savedAt || !obj.data) return null;
+        if(Date.now() - obj.savedAt > CACHE_TTL_MS) return null;
+        return obj.data;
+      } catch {
+        return null;
+      }
+    }
+
+    function saveCache(data){
+      try{
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data }));
+      } catch {}
+    }
+
+    function clearCache(){
+      try{ localStorage.removeItem(CACHE_KEY); } catch {}
+    }
+
+    function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+    async function overpassNearestFireStation(lat, lng, radiusMeters){
+      const q = `
+        [out:json][timeout:25];
+        (
+          node["amenity"="fire_station"](around:${radiusMeters},${lat},${lng});
+          way["amenity"="fire_station"](around:${radiusMeters},${lat},${lng});
+          relation["amenity"="fire_station"](around:${radiusMeters},${lat},${lng});
+        );
+        out center 20;
+      `.trim();
+
+      const url = "https://overpass-api.de/api/interpreter";
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+        body: "data=" + encodeURIComponent(q)
+      });
+      if(!res.ok) throw new Error("Overpass error: " + res.status);
+      const json = await res.json();
+      const els = Array.isArray(json.elements) ? json.elements : [];
+      if(els.length === 0) return null;
+
+      function haversineKm(aLat,aLng,bLat,bLng){
+        const R = 6371;
+        const dLat = (bLat-aLat)*Math.PI/180;
+        const dLng = (bLng-aLng)*Math.PI/180;
+        const s1 = Math.sin(dLat/2);
+        const s2 = Math.sin(dLng/2);
+        const aa = s1*s1 + Math.cos(aLat*Math.PI/180)*Math.cos(bLat*Math.PI/180)*s2*s2;
+        return 2*R*Math.asin(Math.min(1, Math.sqrt(aa)));
+      }
+
+      let best = null;
+      let bestD = Infinity;
+
+      for(const e of els){
+        const pLat = (typeof e.lat === "number") ? e.lat : (e.center && typeof e.center.lat==="number" ? e.center.lat : null);
+        const pLng = (typeof e.lon === "number") ? e.lon : (e.center && typeof e.center.lon==="number" ? e.center.lon : null);
+        if(pLat == null || pLng == null) continue;
+        const d = haversineKm(lat, lng, pLat, pLng);
+        if(d < bestD){
+          bestD = d;
+          best = { element: e, lat: pLat, lng: pLng, distKm: d };
+        }
+      }
+      return best;
+    }
+
+    async function reverseGeocode(lat, lng){
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
+      const res = await fetch(url, { headers: { "Accept": "application/json" } });
+      if(!res.ok) throw new Error("Nominatim error: " + res.status);
+      const json = await res.json();
+      const addr = json && (json.display_name || (json.address && JSON.stringify(json.address)));
+      return addr || "";
+    }
+
+    function stationNameFromTags(tags){
+      if(!tags) return "";
+      return tags.name || tags.operator || tags["addr:housename"] || "";
+    }
+
+    const DATA = PRODUCTS.map(p => {
+      const tags = inferTags(p.name);
+      const seed = seededUSPoint(p.name);
+      return {
+        id: p.name,
+        name: p.name,
+        tags,
+        type: tags.includes("Response Kit") ? "Kit Assembly" : "Component",
+        seedLat: seed.lat,
+        seedLng: seed.lng,
+        station: null
+      };
+    });
+
+    const DEMO_STATIONS = [
+      { stationName: "Station 10", address: "Chicago, IL", lat: 41.8781, lng: -87.6298 },
+      { stationName: "Station 42", address: "Houston, TX", lat: 29.7604, lng: -95.3698 },
+      { stationName: "Station 7", address: "Los Angeles, CA", lat: 34.0522, lng: -118.2437 },
+      { stationName: "Station 14", address: "Boston, MA", lat: 42.3601, lng: -71.0589 },
+      { stationName: "Station 21", address: "Denver, CO", lat: 39.7392, lng: -104.9903 },
+      { stationName: "Station 9", address: "Phoenix, AZ", lat: 33.4484, lng: -112.0740 },
+      { stationName: "Station 3", address: "Washington, DC", lat: 38.9072, lng: -77.0369 },
+      { stationName: "Station 18", address: "Seattle, WA", lat: 47.6062, lng: -122.3321 },
+      { stationName: "Station 16", address: "Columbus, OH", lat: 39.9612, lng: -82.9988 },
+      { stationName: "Station 25", address: "Orlando, FL", lat: 28.5383, lng: -81.3792 },
+      { stationName: "Station 11", address: "Nashville, TN", lat: 36.1627, lng: -86.7816 },
+      { stationName: "Station 6", address: "Detroit, MI", lat: 42.3314, lng: -83.0458 },
+      { stationName: "Station 15", address: "New Orleans, LA", lat: 29.9511, lng: -90.0715 },
+      { stationName: "Station 8", address: "Charlotte, NC", lat: 35.2271, lng: -80.8431 },
+      { stationName: "Station 12", address: "San Francisco, CA", lat: 37.7749, lng: -122.4194 },
+      { stationName: "Station 4", address: "Las Vegas, NV", lat: 36.1699, lng: -115.1398 },
+      { stationName: "Station 19", address: "Wichita, KS", lat: 37.6872, lng: -97.3301 },
+      { stationName: "Station 13", address: "Salt Lake City, UT", lat: 40.7608, lng: -111.8910 },
+      { stationName: "Station 22", address: "Des Moines, IA", lat: 41.5868, lng: -93.6250 },
+      { stationName: "Station 5", address: "Philadelphia, PA", lat: 39.9526, lng: -75.1652 }
+    ];
+
+    function applyDemoStations() {
+      DATA.forEach((item, idx) => {
+        const d = DEMO_STATIONS[idx % DEMO_STATIONS.length];
+        item.station = { lat: d.lat, lng: d.lng, address: d.address, stationName: d.stationName };
+      });
+    }
+
+    // -----------------------------
+    // Map
+    // -----------------------------
+    const usCenter = [39.8283, -98.5795];
+    const usZoom = 4;
+
+    const map = L.map("map", { zoomControl: true, minZoom: 3 }).setView(usCenter, usZoom);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const pinIcon = L.divIcon({
+      className: "",
+      html: '<div class="pin"></div>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9]
+    });
+
+    const markersById = new Map();
+
+    function popupHtml(item){
+      const pills = item.tags.map(t => `<span class="pill">${escapeHtml(t)}</span>`).join("");
+      const st = item.station;
+
+      const stationLine = st
+        ? `<div class="kv"><span>Fire Station:</span> ${escapeHtml(st.stationName || "Fire Station")}</div>
+           <div class="kv"><span>Address:</span> ${escapeHtml(st.address || "Address unavailable")}</div>
+           <div class="kv"><span>Coords:</span> ${st.lat.toFixed(5)}, ${st.lng.toFixed(5)}</div>`
+        : `<div class="kv"><span>Fire Station:</span> Loading…</div>`;
+
+      return `
+        <div class="popup">
+          <h3>${escapeHtml(item.name)}</h3>
+          <div class="tagline">${escapeHtml(item.type)} • Anchored to a static demo station</div>
+          <div style="margin-top:8px">${pills}</div>
+          <div style="margin-top:8px">${stationLine}</div>
+        </div>
+      `;
+    }
+
+    function clearMarkers(){
+      markersById.forEach(m => map.removeLayer(m));
+      markersById.clear();
+    }
+
+    function addMarker(item){
+      if(!item.station) return;
+      const m = L.marker([item.station.lat, item.station.lng], { icon: pinIcon })
+        .bindPopup(popupHtml(item), { maxWidth: 340 })
+        .addTo(map);
+      markersById.set(item.id, m);
+    }
+
+    // -----------------------------
+    // Filters UI
+    // -----------------------------
+    const qEl = el("q");
+    const chipsEl = el("chips");
+    const countLabel = el("countLabel");
+
+    const ALL_TAGS = Array.from(new Set(DATA.flatMap(d => d.tags))).sort();
+    const FILTERS = {
+      q: "",
+      tags: new Set(["All"])
+    };
+
+    function buildChips(){
+      chipsEl.innerHTML = "";
+
+      const makeChip = (label, checked) => {
+        const chip = document.createElement("label");
+        chip.className = "chip";
+        chip.innerHTML = `
+          <input type="checkbox" ${checked ? "checked" : ""} />
+          <span>${escapeHtml(label)}</span>
+        `;
+        chip.addEventListener("click", (e) => {
+          e.preventDefault();
+          toggleTag(label);
+        });
+        chipsEl.appendChild(chip);
+      };
+
+      makeChip("All", FILTERS.tags.has("All"));
+      ALL_TAGS.forEach(t => makeChip(t, FILTERS.tags.has(t) && !FILTERS.tags.has("All")));
+    }
+
+    function toggleTag(tag){
+      if(tag === "All"){
+        FILTERS.tags = new Set(["All"]);
+      } else {
+        if(FILTERS.tags.has("All")) FILTERS.tags.delete("All");
+        if(FILTERS.tags.has(tag)) FILTERS.tags.delete(tag);
+        else FILTERS.tags.add(tag);
+        if(FILTERS.tags.size === 0) FILTERS.tags = new Set(["All"]);
+      }
+      buildChips();
+      applyFilters();
+    }
+
+    function matches(item){
+      const q = (FILTERS.q || "").trim().toLowerCase();
+      const qOk = !q || item.name.toLowerCase().includes(q) || item.tags.some(t => t.toLowerCase().includes(q));
+      const tagOk = FILTERS.tags.has("All") ? true : item.tags.some(t => FILTERS.tags.has(t));
+      const hasStation = !!item.station;
+      return qOk && tagOk && hasStation;
+    }
+
+    function applyFilters(){
+      const shown = DATA.filter(matches);
+      clearMarkers();
+      shown.forEach(addMarker);
+      countLabel.textContent = `${shown.length} shown`;
+
+      if(shown.length === 0) setStatus("No matches.");
+      else setStatus(`Showing ${shown.length} item(s).`);
+    }
+
+    qEl.addEventListener("input", () => {
+      FILTERS.q = qEl.value || "";
+      applyFilters();
+    });
+
+    el("btnReset").addEventListener("click", () => {
+      FILTERS.q = "";
+      FILTERS.tags = new Set(["All"]);
+      qEl.value = "";
+      buildChips();
+      applyFilters();
+    });
+
+    el("btnCenterUS").addEventListener("click", () => {
+      map.setView(usCenter, usZoom, { animate: true });
+    });
+
+    // -----------------------------
+    // Collapse via gutter
+    // -----------------------------
+    let isCollapsed = false;
+    const gridEl = el("grid");
+    const gutterIcon = el("gutterIcon");
+
+    function applyCollapsedState(){
+      if(isCollapsed){
+        gridEl.classList.add("is-collapsed");
+        gutterIcon.textContent = "▶";
+        el("btnGutter").title = "Expand filters";
+      } else {
+        gridEl.classList.remove("is-collapsed");
+        gutterIcon.textContent = "◀";
+        el("btnGutter").title = "Collapse filters";
+      }
+      window.setTimeout(() => map.invalidateSize(true), 220);
+    }
+
+    el("btnGutter").addEventListener("click", () => {
+      isCollapsed = !isCollapsed;
+      applyCollapsedState();
+    });
+
+    function syncGutterHeight(){
+      const mapEl = document.getElementById("map");
+      const gut = document.querySelector(".gutter");
+      if(mapEl && gut){
+        gut.style.minHeight = (mapEl.getBoundingClientRect().height || 640) + "px";
+      }
+    }
+    window.addEventListener("resize", syncGutterHeight);
+
+    // -----------------------------
+    // Station resolution (with caching + throttling)
+    // -----------------------------
+    async function resolveStations({force=false} = {}){
+      if(force) clearCache();
+
+      const cached = (!force) ? loadCache() : null;
+      if(cached && typeof cached === "object"){
+        for(const item of DATA){
+          if(cached[item.id]){
+            item.station = cached[item.id];
+          }
+        }
+        buildChips();
+        applyFilters();
+        setStatus("Loaded station anchors from cache.");
+        return;
+      }
+
+      setStatus("Finding real fire stations (this can take ~20–40 seconds the first time)...");
+      const out = {};
+      let okCount = 0;
+
+      for(let i=0; i<DATA.length; i++){
+        const item = DATA[i];
+        const seedLat = item.seedLat;
+        const seedLng = item.seedLng;
+
+        let station = null;
+        const radii = [15000, 30000, 60000, 120000, 200000];
+
+        for(const r of radii){
+          try{
+            const nearest = await overpassNearestFireStation(seedLat, seedLng, r);
+            if(nearest){
+              const tags = (nearest.element && nearest.element.tags) ? nearest.element.tags : {};
+              const name = stationNameFromTags(tags);
+
+              let address = "";
+              try{
+                await sleep(900);
+                address = await reverseGeocode(nearest.lat, nearest.lng);
+              } catch {}
+
+              station = { lat: nearest.lat, lng: nearest.lng, address, stationName: name };
+              break;
+            }
+          } catch {}
+
+          await sleep(600);
+        }
+
+        if(station){
+          item.station = station;
+          out[item.id] = station;
+          okCount++;
+        }
+
+        setStatus(`Resolved ${okCount}/${DATA.length} station anchors...`);
+        buildChips();
+        applyFilters();
+        await sleep(900);
+      }
+
+      saveCache(out);
+      setStatus(`Done. Resolved ${okCount}/${DATA.length} station anchors (cached for 7 days).`);
+    }
+
+    el("btnReloadStations").addEventListener("click", () => {
+      applyDemoStations();
+      applyFilters();
+      setStatus("Loaded static demo locations.");
+    });
+
+    // -----------------------------
+    // Init
+    // -----------------------------
+    applyDemoStations();
+    buildChips();
+    applyFilters();
+    window.setTimeout(syncGutterHeight, 50);
+  </script>
+</body>
+</html>
