@@ -229,7 +229,7 @@ export const scenariosRoutes: FastifyPluginAsync = async (app) => {
           returning id::text as id
         `,
         [
-          identity.trainerId,
+          trainer?.id ?? identity.trainerId,
           trainerRef,
           body.scenario_name,
           body.detection_device,
