@@ -71,8 +71,7 @@ where t.id = r.id
 
 create unique index if not exists uq_trainers_trainer_ref
   on trainers (trainer_ref)
-  where trainer_ref is not null
-    and btrim(trainer_ref) <> '';
+  where trainer_ref is not null;
 
 create unique index if not exists uq_trainers_email_lower
   on trainers (lower(email))

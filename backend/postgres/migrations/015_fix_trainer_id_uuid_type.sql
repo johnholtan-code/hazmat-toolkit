@@ -11,8 +11,7 @@ drop index if exists uq_trainers_trainer_ref;
 -- Recreate the unique index without any UUID comparison issues
 create unique index if not exists uq_trainers_trainer_ref
   on trainers (trainer_ref)
-  where trainer_ref is not null
-    and btrim(trainer_ref) <> '';
+  where trainer_ref is not null;
 
 -- Ensure all foreign key references to trainers(id) are properly typed
 -- Check and potentially fix any cascade issues in dependent tables
