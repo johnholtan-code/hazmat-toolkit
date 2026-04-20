@@ -12,13 +12,10 @@ alter table if exists trainers
   add column if not exists last_login_at timestamptz,
   add column if not exists updated_at timestamptz not null default now();
 
-alter table if exists trainers
-  alter column id set default gen_random_uuid()::text;
-
 update trainers
-set id = gen_random_uuid()::text
+set id = gen_random_uuid()
 where id is null
-  or btrim(id) = '';
+  or btrim(id::text) = '';
 
 update trainers
 set email = lower(email)
@@ -67,7 +64,7 @@ with ranked as (
     and btrim(trainer_ref) <> ''
 )
 update trainers t
-set trainer_ref = t.trainer_ref || '-' || left(t.id, 8)
+set trainer_ref = t.trainer_ref || '-' || left(t.id::text, 8)
 from ranked r
 where t.id = r.id
   and r.row_num > 1;
