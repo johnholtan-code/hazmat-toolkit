@@ -1665,13 +1665,16 @@ export const collabRoutes: FastifyPluginAsync = async (app) => {
       await client.query('BEGIN');
       const actor = await resolveSessionActorWithClient(client, app, request.params.sessionId, request.headers.authorization, { requireCommander: true });
       const previousSession = (await fetchSessionByID(client, actor.session.id)) ?? actor.session;
+      const nextJoinCode = await getViewerAccessJoinCodeUpdate(client, request.body.enabled);
       await client.query<CollabSessionRow>(
         `
           update collab_map_sessions
-          set viewer_access_enabled = $2
+          set
+            viewer_access_enabled = $2,
+            join_code = coalesce($3, join_code)
           where id = $1::uuid
         `,
-        [actor.session.id, request.body.enabled]
+        [actor.session.id, request.body.enabled, nextJoinCode]
       );
       const refreshed = await recordSessionMutation(client, app.config, {
         sessionID: actor.session.id,
@@ -3650,6 +3653,16 @@ async function generateUniqueCollabJoinCode(pool: { query: PoolClient['query'] }
     }
   }
   throw lastError ?? new Error('Unable to generate join code.');
+}
+
+export async function getViewerAccessJoinCodeUpdate(
+  pool: { query: PoolClient['query'] },
+  enabled: boolean
+) {
+  if (enabled) {
+    return null;
+  }
+  return generateUniqueCollabJoinCode(pool);
 }
 
 function createParticipantToken() {
