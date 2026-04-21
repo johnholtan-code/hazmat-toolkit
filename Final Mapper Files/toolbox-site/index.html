@@ -4,110 +4,130 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hazmat ToolK.I.T.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body class="home-page">
   <main class="page">
-    <header class="hero">
+    <header class="hero hero-panel">
+      <img class="brand-logo home-brand-logo" src="assets/thmg-web-logo.png" alt="The Hazmat Guys logo" />
+      <p class="home-eyebrow">Operational Readiness Platform</p>
       <h1>Hazmat ToolK.I.T.</h1>
       <p>Click a drawer to open tools.</p>
     </header>
 
-    <section class="pricing-legend" aria-label="Pricing tiers">
-      <h2>Pricing Legend</h2>
-      <ul>
-        <li><strong>Tier 0</strong> <span>Free</span></li>
-        <li><strong>Tier 1</strong> <span>$25/year</span></li>
-        <li><strong>Tier 2</strong> <span>$50/year</span></li>
-        <li><strong>Tier 3</strong> <span>$500/year</span></li>
-      </ul>
-    </section>
+    <div class="pricing-legend">
+      <div class="pricing-head">
+        <div class="pricing-title">Pricing Legend</div>
+        <div class="pricing-sub">Annual access • Click a drawer to open tools</div>
+      </div>
 
-    <section class="toolbox-section" aria-labelledby="responder-heading">
-      <h2 id="responder-heading">Responder Toolbox</h2>
-      <div class="toolbox-frame">
-        <img src="responder_red_split_1800w.png" alt="Responder red toolbox" width="1800" height="2400" />
-        <svg class="toolbox-overlay" viewBox="0 0 1800 2400" aria-label="Responder toolbox drawer links">
-          <a class="drawer-link" href="/tools/hazmat-toolkit" aria-label="Hazmat ToolK.I.T., Tier 3, 500 dollars per year">
-            <rect class="drawer-hit" x="360" y="1200" width="1080" height="96" rx="10" />
-            <text class="drawer-label" x="402" y="1260">Hazmat ToolK.I.T.</text>
-            <rect class="badge-bg" x="1075" y="1216" width="340" height="64" rx="30" />
-            <text class="badge-text" x="1245" y="1258">Tier 3 · $500/yr</text>
-          </a>
+      <div class="tier-grid">
+        <div class="tier-card t0">
+          <div class="tier-top">
+            <span class="tier-pill">Tier 0</span>
+            <span class="tier-price">Free</span>
+          </div>
+          <div class="tier-note">Preview + basics</div>
+        </div>
 
-          <a class="drawer-link" href="/tools/flamenator-9000" aria-label="Flamenator 9000, Tier 2, 50 dollars per year">
-            <rect class="drawer-hit" x="360" y="1330" width="1080" height="96" rx="10" />
-            <text class="drawer-label" x="402" y="1390">Flamenator 9000</text>
-            <rect class="badge-bg" x="1075" y="1346" width="340" height="64" rx="30" />
-            <text class="badge-text" x="1245" y="1388">Tier 2 · $50/yr</text>
-          </a>
+        <div class="tier-card t1">
+          <div class="tier-top">
+            <span class="tier-pill">Tier 1</span>
+            <span class="tier-price">$25<span class="per">/yr</span></span>
+          </div>
+          <div class="tier-note">Vault workflow + downloads</div>
+        </div>
 
-          <a class="drawer-link" href="/tools/plumenator-9000" aria-label="Plumenator 9000, Tier 2, 50 dollars per year">
-            <rect class="drawer-hit" x="360" y="1460" width="1080" height="96" rx="10" />
-            <text class="drawer-label" x="402" y="1520">Plumenator 9000</text>
-            <rect class="badge-bg" x="1075" y="1476" width="340" height="64" rx="30" />
-            <text class="badge-text" x="1245" y="1518">Tier 2 · $50/yr</text>
-          </a>
+        <div class="tier-card t2">
+          <div class="tier-top">
+            <span class="tier-pill">Tier 2</span>
+            <span class="tier-price">$50<span class="per">/yr</span></span>
+          </div>
+          <div class="tier-note">Core tools</div>
+        </div>
 
-          <a class="drawer-link" href="/tools/after-action-reporter" aria-label="After Action Reporter, Tier 2, 50 dollars per year">
-            <rect class="drawer-hit" x="360" y="1590" width="1080" height="96" rx="10" />
-            <text class="drawer-label" x="402" y="1650">After Action Reporter</text>
-            <rect class="badge-bg" x="1075" y="1606" width="340" height="64" rx="30" />
-            <text class="badge-text" x="1245" y="1648">Tier 2 · $50/yr</text>
-          </a>
+        <div class="tier-card t3">
+          <div class="tier-top">
+            <span class="tier-pill">Tier 3</span>
+            <span class="tier-price">$500<span class="per">/yr</span></span>
+          </div>
+          <div class="tier-note">Pro suite / agency</div>
+        </div>
+      </div>
+    </div>
 
-          <a class="drawer-link" href="/tools/incident-mapper" aria-label="Incident Mapper, Tier 3, 500 dollars per year">
-            <rect class="drawer-hit" x="360" y="1720" width="1080" height="96" rx="10" />
-            <text class="drawer-label" x="402" y="1780">Incident Mapper</text>
-            <rect class="badge-bg" x="1075" y="1736" width="340" height="64" rx="30" />
-            <text class="badge-text" x="1245" y="1778">Tier 3 · $500/yr</text>
-          </a>
+    <section class="toolbox-section" aria-label="Trainer Toolbox">
+      <div class="toolbox-wrap">
+        <svg viewBox="0 0 843 1125" class="toolbox-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Trainer Toolbox">
+          <image href="responder_red.jpg" x="0" y="0" width="843" height="1125" preserveAspectRatio="xMidYMid meet" />
+          <text class="toolbox-title-svg" x="421.5" y="338" text-anchor="middle" dominant-baseline="middle">Trainer</text>
+          <rect class="debug-rect debug-title-box" x="227" y="249" width="389" height="179" />
         </svg>
+        <div class="drawer-overlay" aria-label="Trainer toolbox drawer links">
+          <a class="drawer" style="--top:49.9%; --h:6.3%;" href="/tools/hazmat-toolkit" aria-label="Hazmat ToolK.I.T. Tier 3 500 dollars per year" title="Tier 3 · $500/yr">
+            <span class="drawer-title">Hazmat ToolK.I.T.</span>
+            <span class="drawer-badge">Tier 3 · $500/yr</span>
+          </a>
+          <a class="drawer" style="--top:55.7%; --h:6.3%;" href="Flaminator%209000.html" aria-label="Flaminator 9000 Tier 2 50 dollars per year" title="Tier 2 · $50/yr">
+            <span class="drawer-title">Flaminator 9000</span>
+            <span class="drawer-badge">Tier 2 · $50/yr</span>
+          </a>
+          <a class="drawer" style="--top:61.5%; --h:6.3%;" href="Pluminator%209000.html" aria-label="Pluminator 9000 Tier 2 50 dollars per year" title="Tier 2 · $50/yr">
+            <span class="drawer-title">Pluminator 9000</span>
+            <span class="drawer-badge">Tier 2 · $50/yr</span>
+          </a>
+          <a class="drawer" style="--top:67.2%; --h:6.3%;" href="After%20Action%20Report.html" aria-label="After Action Reporter Tier 2 50 dollars per year" title="Tier 2 · $50/yr">
+            <span class="drawer-title">After Action Reporter</span>
+            <span class="drawer-badge">Tier 2 · $50/yr</span>
+          </a>
+          <a class="drawer" style="--top:73.0%; --h:6.3%;" href="http://localhost:8084/Incident%20Mapper.html" aria-label="Incident Mapper Tier 3 500 dollars per year" title="Tier 3 · $500/yr">
+            <span class="drawer-title">Incident Mapper</span>
+            <span class="drawer-badge">Tier 3 · $500/yr</span>
+          </a>
+        </div>
       </div>
     </section>
 
-    <section class="toolbox-section" aria-labelledby="trainer-heading">
-      <h2 id="trainer-heading">Trainer Toolbox</h2>
-      <div class="toolbox-frame">
-        <img src="trainer_blue_split_1800w.png" alt="Trainer blue toolbox" width="1800" height="2400" />
-        <svg class="toolbox-overlay" viewBox="0 0 1800 2400" aria-label="Trainer toolbox drawer links">
-          <a class="drawer-link" href="/tools/specialty-kit-finder" aria-label="Specialty Kit Finder, Tier 0, Free">
-            <rect class="drawer-hit" x="360" y="1200" width="1080" height="96" rx="10" />
-            <text class="drawer-label" x="402" y="1260">Specialty Kit Finder</text>
-            <rect class="badge-bg" x="1090" y="1216" width="325" height="64" rx="30" />
-            <text class="badge-text" x="1252" y="1258">Tier 0 · Free</text>
-          </a>
-
-          <a class="drawer-link" href="/tools/instructor-map" aria-label="Instructor Map, Tier 0, Free">
-            <rect class="drawer-hit" x="360" y="1330" width="1080" height="96" rx="10" />
-            <text class="drawer-label" x="402" y="1390">Instructor Map</text>
-            <rect class="badge-bg" x="1090" y="1346" width="325" height="64" rx="30" />
-            <text class="badge-text" x="1252" y="1388">Tier 0 · Free</text>
-          </a>
-
-          <a class="drawer-link" href="/tools/conference-calendar" aria-label="Conference Calendar, Tier 0, Free">
-            <rect class="drawer-hit" x="360" y="1460" width="1080" height="96" rx="10" />
-            <text class="drawer-label" x="402" y="1520">Conference Calendar</text>
-            <rect class="badge-bg" x="1090" y="1476" width="325" height="64" rx="30" />
-            <text class="badge-text" x="1252" y="1518">Tier 0 · Free</text>
-          </a>
-
-          <a class="drawer-link" href="/tools/vault-preview" aria-label="Vault Preview, Tier 0, Free">
-            <rect class="drawer-hit" x="360" y="1590" width="1080" height="96" rx="10" />
-            <text class="drawer-label" x="402" y="1650">Vault Preview</text>
-            <rect class="badge-bg" x="1090" y="1606" width="325" height="64" rx="30" />
-            <text class="badge-text" x="1252" y="1648">Tier 0 · Free</text>
-          </a>
-
-          <a class="drawer-link" href="/tools/vault-workflow-downloads" aria-label="Vault Workflow plus Downloads, Tier 1, 25 dollars per year">
-            <rect class="drawer-hit" x="360" y="1720" width="1080" height="96" rx="10" />
-            <text class="drawer-label" x="402" y="1780">Vault Workflow + Downloads</text>
-            <rect class="badge-bg" x="1075" y="1736" width="340" height="64" rx="30" />
-            <text class="badge-text" x="1245" y="1778">Tier 1 · $25/yr</text>
-          </a>
+    <section class="toolbox-section" aria-label="Responder Toolbox">
+      <div class="toolbox-wrap">
+        <svg viewBox="0 0 843 1125" class="toolbox-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Responder Toolbox">
+          <image href="trainer_blue.jpg" x="0" y="0" width="843" height="1125" preserveAspectRatio="xMidYMid meet" />
+          <text class="toolbox-title-svg" x="421.5" y="338" text-anchor="middle" dominant-baseline="middle">Responder</text>
+          <rect class="debug-rect debug-title-box" x="227" y="249" width="389" height="179" />
         </svg>
+        <div class="drawer-overlay" aria-label="Responder toolbox drawer links">
+          <a class="drawer" style="--top:49.9%; --h:6.3%;" href="training/response-kits-map.html" aria-label="Specialty Kit Finder Tier 0 Free" title="Tier 0 · Free">
+            <span class="drawer-title">Specialty Kit Finder</span>
+            <span class="drawer-badge">Tier 0 · Free</span>
+          </a>
+          <a class="drawer" style="--top:55.7%; --h:6.3%;" href="training/trainers.html" aria-label="Instructor Map Tier 0 Free" title="Tier 0 · Free">
+            <span class="drawer-title">Instructor Map</span>
+            <span class="drawer-badge">Tier 0 · Free</span>
+          </a>
+          <a class="drawer" style="--top:61.5%; --h:6.3%;" href="tools/conference-calendar/index.html" aria-label="Conference Calendar Tier 0 Free" title="Tier 0 · Free">
+            <span class="drawer-title">Conference Calendar</span>
+            <span class="drawer-badge">Tier 0 · Free</span>
+          </a>
+          <a class="drawer" style="--top:67.2%; --h:6.3%;" href="/tools/vault-preview" aria-label="Vault Preview Tier 0 Free" title="Tier 0 · Free">
+            <span class="drawer-title">Vault Preview</span>
+            <span class="drawer-badge">Tier 0 · Free</span>
+          </a>
+          <a class="drawer" style="--top:73.0%; --h:6.3%;" href="/tools/vault-workflow-downloads" aria-label="Vault Workflow and Downloads Tier 1 25 dollars per year" title="Tier 1 · $25/yr">
+            <span class="drawer-title">Vault Workflow + Downloads</span>
+            <span class="drawer-badge">Tier 1 · $25/yr</span>
+          </a>
+        </div>
       </div>
     </section>
   </main>
+  <script>
+    const debugParam = new URLSearchParams(window.location.search).get("debug");
+    if (debugParam === "1" || debugParam === "true") {
+      document.body.classList.add("debug-overlays");
+    }
+  </script>
 </body>
 </html>

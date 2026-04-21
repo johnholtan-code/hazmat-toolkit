@@ -1,0 +1,19 @@
+{
+  "name": "incident-mapper-apple",
+  "version": "1.0.0",
+  "description": "Apple packaging project for Incident Mapper",
+  "scripts": {
+    "cap:sync": "npx cap sync ios",
+    "cap:copy": "npx cap copy ios",
+    "cap:open:ios": "npx cap open ios"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@capacitor/cli": "8.1.0",
+    "@capacitor/core": "^8.1.0",
+    "@capacitor/ios": "^8.1.0",
+    "@capacitor/network": "^8.0.1"
+  }
+}

@@ -1,0 +1,2079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Hazmat Guys - Flaminator 9000</title>
+<style>
+  @font-face{
+    font-family:"Depressionist 3 Revisited";
+    src:url("fonts/Depressionist_3_Revisited_2010.ttf") format("truetype");
+    font-weight:normal;
+    font-style:normal;
+    font-display:swap;
+  }
+  :root { --bg:#0b1220; --panel:#101826; --muted:#5f728a; --text:#e8eef8; --accent:#ff7b00; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #1c2838;background:linear-gradient(180deg,#1a0e00,#0f0600)}
+  header h1{margin:0;font-size:18px;font-family:"Depressionist 3 Revisited", "Times New Roman", serif}
+  h2,h3,legend,label{
+    font-family:"Depressionist 3 Revisited", "Times New Roman", serif;
+  }
+  header p{margin:4px 0 0;color:var(--muted)}
+  .settings-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:bold;}
+  .wrap{display:grid;grid-template-columns:360px 1fr;gap:14px;padding:14px;min-height:calc(100vh - 70px)}
+  .panel{background:var(--panel);border:1px solid #1b2738;border-radius:14px;padding:14px;transition:transform 0.3s ease,opacity 0.3s ease;}
+  fieldset{border:1px solid #39210a;border-radius:12px;margin:10px 0;padding:10px}
+  legend{padding:0 8px;color:#ffb74d}
+  label{display:block;margin:8px 0 4px;color:#e6c59a}
+  input[type="range"],select,button{width:100%}
+  .hint{color:#b38c4c;font-size:12px}
+  .stage{position:relative;display:grid;place-items:center;background:#000;border-radius:14px;border:1px solid #1b2738;min-height:60vh;overflow:hidden}
+  canvas{max-width:100%;height:auto;border-radius:12px;background:#000}
+
+  /* Emitter switcher UX */
+  .emitter-controls{display:flex;gap:8px;margin-top:6px;align-items:flex-end;}
+  .emitter-switch{flex:1;display:flex;flex-direction:column;gap:6px;}
+  .emitter-label{font-size:12px;color:#ffe88a;letter-spacing:0.2px;}
+  .emitter-segmented{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:4px;
+    background:#0c121c;
+    border:1px solid rgba(255,212,0,0.2);
+    border-radius:10px;
+    padding:3px;
+  }
+  .emitter-segmented input{position:absolute;opacity:0;pointer-events:none;}
+  .emitter-segmented label{
+    text-align:center;
+    padding:6px 8px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+    color:var(--text);
+    transition:background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .emitter-segmented input:checked + label{
+    background:rgba(255,212,0,0.22);
+    color:var(--text);
+    box-shadow:inset 0 0 0 1px rgba(255,212,0,0.35);
+  }
+  .emitter-segmented label:hover{
+    background:rgba(255,212,0,0.12);
+  }
+  .emitter-add{
+    flex:1;
+    height:34px;
+    font-size:13px;
+    border-radius:10px;
+  }
+
+  /* Settings Modal */
+  #settingsModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:999;}
+  .modal-content{background:var(--panel);border:1px solid #444;border-radius:10px;padding:20px;min-width:300px;max-width:400px;}
+  .modal-content h2{margin-top:0;color:#ffb74d;text-align:center;}
+  .modal-content label{margin-top:10px;}
+  .modal-content button{margin-top:14px;background:var(--accent);color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;width:100%;}
+
+  /* === Collapsible sidebar (append-only) === */
+  #panelToggle {
+    position: fixed;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 0 6px 6px 0;
+    font-size: 16px;
+    width: 28px;
+    height: 48px;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.4);
+    transition: background 0.2s ease, transform 0.3s ease;
+  }
+  #panelToggle:hover { background: #ffb74d; }
+  .wrap.is-collapsed aside.panel {
+    transform: translateX(-360px);
+    opacity: 0;
+    pointer-events: none;
+  }
+  aside.panel { box-shadow: 6px 0 20px rgba(0,0,0,0.35); }
+  .wrap.is-collapsed + #panelToggle { transform: translateY(-50%) rotate(180deg); }
+</style>
+
+<!-- ===== APPENDED THEME OVERRIDES (Black + Yellow) — APPEND ONLY ===== -->
+<style>
+  /* Strong black/yellow palette without deleting original rules */
+  :root {
+    --bg:#000000;                 /* deep black */
+    --panel:#0a0a0a;              /* near-black panel */
+    --text:#f5f5f5;               /* readable light text on black */
+    --muted:#c9b458;              /* paragraph yellow — the reference color */
+    --accent:#ffd400;             /* bright safety yellow */
+  }
+
+  header{
+    border-bottom:1px solid rgba(255,212,0,0.25);
+    background:linear-gradient(180deg,#0a0a0a,#000000);
+  }
+  .panel{
+    border-color:rgba(255,212,0,0.15);
+    box-shadow:0 0 0 1px rgba(255,212,0,0.05), 0 8px 24px rgba(0,0,0,0.6);
+  }
+  fieldset{
+    border:1px solid rgba(255,212,0,0.25);
+  }
+  legend{
+    color:#ffd400;
+    font-weight:600;
+    letter-spacing:.2px;
+  }
+  label{
+    color:#ffe88a; /* readable soft yellow for labels */
+  }
+  .hint{
+    color:#c9b458;
+  }
+  .settings-btn{
+    background:var(--accent);
+    color:#000;
+    box-shadow:0 2px 10px rgba(255,212,0,0.2);
+  }
+  .settings-btn:hover{
+    filter:brightness(1.05);
+  }
+
+  /* Make the stage taller so the photo/canvas feels full-bleed on black */
+  .stage{
+    border-color:rgba(255,212,0,0.1);
+    height:calc(100vh - 120px); /* grow stage for a fuller canvas view */
+    min-height:auto;            /* override earlier min-height */
+  }
+
+  /* When collapsed, let the canvas area reclaim the full width */
+  .wrap.is-collapsed{
+    grid-template-columns:0px 1fr; /* panel disappears, main takes all space */
+  }
+  .wrap.is-collapsed main.panel{
+    transform:none !important;
+  }
+  /* Nudge the toggle so it still feels responsive in the yellow theme */
+  #panelToggle{
+    background:var(--accent);
+    color:#000;
+    font-weight:700;
+    border-right:1px solid rgba(0,0,0,0.6);
+  }
+  #panelToggle:hover{
+    box-shadow:2px 0 10px rgba(255,212,0,0.35);
+  }
+
+  /* Inputs: subtle yellow focus ring for cohesion */
+  input[type="range"]:focus,
+  select:focus,
+  input[type="number"]:focus,
+  button:focus{
+    outline:2px solid rgba(255,212,0,0.45);
+    outline-offset:1px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>The Hazmat Guys - Flaminator 9000</h1>
+    <p>Train hard. Break nothing. Learn everything.</p>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button class="settings-btn" id="exportGif">🎞️ Export GIF</button>
+    <button class="settings-btn" id="openSettings">⚙️ Settings</button>
+  </div>
+</header>
+
+<!-- Settings Modal -->
+<div id="settingsModal">
+  <div class="modal-content">
+    <h2>Default Settings</h2>
+    <label title="Overall flame emission power (0–100%)">Intensity (%) <input type="number" id="defIntensity" min="0" max="100" /></label>
+    <label title="Overall transparency (0–1)">Opacity (0–1) <input type="number" id="defOpacity" min="0" max="1" step="0.01" /></label>
+    <label title="Base flame size multiplier">Size (x) <input type="number" id="defSize" min="0.1" max="5" step="0.1" /></label>
+    <label title="How fast flames rise upward">Rise Speed <input type="number" id="defRise" min="1" max="100" /></label>
+    <label title="Cool (0) to hot (100)">Color Temp (%) <input type="number" id="defColorTemp" min="0" max="100" /></label>
+    <label title="Black smoke (0) to white smoke (100)">Smoke Color (%) <input type="number" id="defSmokeColor" min="0" max="100" /></label>
+    <button id="applySettings">Apply</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <aside class="panel">
+    <fieldset>
+      <legend>Base Photo</legend>
+      <input type="file" id="photoInput" accept="image/*" />
+      <div class="hint">Click anywhere on the canvas to move the active emitter.</div>
+      <div class="emitter-controls">
+        <div class="emitter-switch">
+          <div class="emitter-label">Active Emitter</div>
+          <div class="emitter-segmented" role="group" aria-label="Active Emitter">
+            <input type="radio" id="emitterA" name="activeEmitter" value="A" checked />
+            <label for="emitterA">Emitter A</label>
+            <input type="radio" id="emitterB" name="activeEmitter" value="B" />
+            <label for="emitterB">Emitter B</label>
+          </div>
+        </div>
+        <button id="addEmitterB" class="emitter-add">➕ Add Emitter B</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Fire Controls</legend>
+      <label title="Overall flame emission power (0–100%)">Intensity (%) <span id="amountVal">50</span></label>
+      <input type="range" id="amount" min="0" max="100" value="50" title="Overall flame emission power (0–100%)" />
+      <label title="Overall transparency (0–1)">Opacity (0–1) <span id="opacityVal">0.85</span></label>
+      <input type="range" id="opacity" min="0" max="100" value="85" title="Overall transparency (0–1)" />
+      <label title="Base flame size multiplier">Size (x) <span id="sizeVal">.20</span></label>
+      <input type="range" id="size" min="5" max="300" value="120" title="Base flame size multiplier" />
+      <label title="How fast flames rise upward">Rise Speed <span id="riseVal">28</span></label>
+      <input type="range" id="rise" min="5" max="80" value="28" title="How fast flames rise upward" />
+      <label title="Emission direction angle in degrees">Angle (°) <span id="angleVal">0</span></label>
+      <input type="range" id="angle" min="0" max="360" value="0" title="Emission direction angle in degrees" />
+      <label title="Stretches flame length">Flame Length (x) <span id="lengthVal">1.0</span>x</label>
+      <input type="range" id="length" min="0.5" max="3.0" step="0.1" value="1.0" title="Stretches flame length" />
+      <label title="Spreads flame width">Flame Width (x) <span id="widthVal">1.0</span>x</label>
+      <input type="range" id="width" min="0.5" max="3.0" step="0.1" value="1.0" title="Spreads flame width" />
+      <label title="Cool (0) to hot (100)">Color Temperature (%) <span id="colorVal">50</span></label>
+      <input type="range" id="colorTemp" min="0" max="100" value="50" title="Cool (0) to hot (100)" />
+      <label title="Black smoke (0) to white smoke (100)">Smoke Color (%) <span id="smokeColorVal">0</span></label>
+      <input type="range" id="smokeColor" min="0" max="100" value="0" title="Black smoke (0) to white smoke (100)" />
+    </fieldset>
+  </aside>
+
+  <main class="panel">
+    <div class="stage" id="stage">
+      <canvas id="c" width="800" height="600"></canvas>
+    </div>
+  </main>
+</div>
+
+<!-- Collapsible Toggle Button -->
+<button id="panelToggle" aria-label="Toggle settings panel">◀</button>
+
+<script>
+/* === ORIGINAL FIRE SIMULATION CODE (unchanged) === */
+const $ = id => document.getElementById(id);
+const c = $('c'), ctx = c.getContext('2d'), stage = $('stage');
+let bgImg=new Image(),bgLoaded=false;
+let leakA={x:400,y:550}, leakB=null;
+let activeEmitter='A';
+
+// Settings modal
+const modal=$('settingsModal'),openBtn=$('openSettings'),applyBtn=$('applySettings');
+openBtn.onclick=()=>{modal.style.display='flex';loadDefaults();};
+applyBtn.onclick=()=>{saveDefaults();modal.style.display='none';};
+window.onclick=e=>{if(e.target===modal)modal.style.display='none';};
+
+function loadDefaults(){
+  const defs=JSON.parse(localStorage.getItem('fireDefaults')||'{}');
+  $('defIntensity').value=defs.intensity||50;
+  $('defOpacity').value=defs.opacity||0.85;
+  $('defSize').value=defs.size||.20;
+  $('defRise').value=defs.rise||28;
+  $('defColorTemp').value=defs.colorTemp||50;
+  $('defSmokeColor').value=defs.smokeColor||0;
+}
+function saveDefaults(){
+  const defs={
+    intensity:+$('defIntensity').value,
+    opacity:+$('defOpacity').value,
+    size:+$('defSize').value,
+    rise:+$('defRise').value,
+    colorTemp:+$('defColorTemp').value,
+    smokeColor:+$('defSmokeColor').value
+  };
+  localStorage.setItem('fireDefaults',JSON.stringify(defs));
+  setStateFromDefaults(defs);
+}
+function setStateFromDefaults(defs){
+  setBothStates({
+    amount: defs.intensity,
+    opacity: defs.opacity,
+    size: defs.size,
+    rise: defs.rise,
+    colorTemp: defs.colorTemp,
+    smokeColor: defs.smokeColor
+  });
+  applyStateToUI(getState());
+}
+
+// Photo upload (original)
+$('photoInput').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const url = URL.createObjectURL(f);
+  bgImg.onload = () => {
+    bgLoaded = true;
+    c.width = bgImg.width;
+    c.height = bgImg.height;
+    draw();
+  };
+  bgImg.src = url;
+});
+
+// Emitters
+function setActiveEmitter(val){
+  activeEmitter = val;
+  const radio = document.querySelector(`input[name="activeEmitter"][value="${val}"]`);
+  if (radio) radio.checked = true;
+  applyStateToUI(getState());
+}
+document.querySelectorAll('input[name="activeEmitter"]').forEach(r => {
+  r.addEventListener('change', e => setActiveEmitter(e.target.value));
+});
+$('addEmitterB').onclick = () => { if (!leakB) leakB = {x: c.width/2 + 100, y: c.height - 50}; };
+
+const makeState = () => ({amount:50,opacity:0.85,size:.20,rise:28,angle:0,length:1.0,width:1.0,colorTemp:50,smokeColor:0});
+let stateA = makeState();
+let stateB = makeState();
+const getState = () => (activeEmitter === 'B' ? stateB : stateA);
+const setBothStates = (patch) => {
+  stateA = { ...stateA, ...patch };
+  stateB = { ...stateB, ...patch };
+};
+
+// Load defaults
+(()=>{const defs=JSON.parse(localStorage.getItem('fireDefaults')||'{}');
+if(Object.keys(defs).length>0){
+  setBothStates({
+    amount: defs.intensity ?? stateA.amount,
+    opacity: defs.opacity ?? stateA.opacity,
+    size: defs.size ?? stateA.size,
+    rise: defs.rise ?? stateA.rise,
+    colorTemp: defs.colorTemp ?? stateA.colorTemp,
+    smokeColor: defs.smokeColor ?? stateA.smokeColor
+  });
+}})();
+
+const particles=[];
+function applyStateToUI(s){
+  $('amount').value = s.amount;
+  $('amountVal').textContent = s.amount.toFixed(0);
+  $('opacity').value = Math.round(s.opacity*100);
+  $('opacityVal').textContent = s.opacity.toFixed(2);
+  $('size').value = Math.round(s.size*100);
+  $('sizeVal').textContent = s.size.toFixed(2);
+  $('rise').value = s.rise;
+  $('riseVal').textContent = s.rise.toFixed(0);
+  $('angle').value = s.angle;
+  $('angleVal').textContent = s.angle.toFixed(0);
+  $('length').value = s.length;
+  $('lengthVal').textContent = s.length.toFixed(1)+'x';
+  $('width').value = s.width;
+  $('widthVal').textContent = s.width.toFixed(1)+'x';
+  $('colorTemp').value = s.colorTemp;
+  $('colorVal').textContent = s.colorTemp.toFixed(0);
+  $('smokeColor').value = s.smokeColor;
+  $('smokeColorVal').textContent = s.smokeColor.toFixed(0);
+}
+function bindSliders(){
+  $('amount').oninput=()=>{const s=getState();s.amount=+$('amount').value;$('amountVal').textContent=s.amount.toFixed(0);};
+  $('opacity').oninput=()=>{const s=getState();s.opacity=+$('opacity').value/100;$('opacityVal').textContent=s.opacity.toFixed(2);};
+  $('size').oninput=()=>{const s=getState();s.size=+$('size').value/100;$('sizeVal').textContent=s.size.toFixed(2);};
+  $('rise').oninput=()=>{const s=getState();s.rise=+$('rise').value;$('riseVal').textContent=s.rise.toFixed(0);};
+  $('angle').oninput=()=>{const s=getState();s.angle=+$('angle').value;$('angleVal').textContent=s.angle.toFixed(0);};
+  $('length').oninput=()=>{const s=getState();s.length=+$('length').value;$('lengthVal').textContent=s.length.toFixed(1)+'x';};
+  $('width').oninput=()=>{const s=getState();s.width=+$('width').value;$('widthVal').textContent=s.width.toFixed(1)+'x';};
+  $('colorTemp').oninput=()=>{const s=getState();s.colorTemp=+$('colorTemp').value;$('colorVal').textContent=s.colorTemp.toFixed(0);};
+  $('smokeColor').oninput=()=>{const s=getState();s.smokeColor=+$('smokeColor').value;$('smokeColorVal').textContent=s.smokeColor.toFixed(0);};}
+bindSliders();
+applyStateToUI(stateA);
+
+const rnd=(a,b)=>a+Math.random()*(b-a);
+// Simple smooth noise for turbulence (lightweight, no external deps)
+const _noiseSeed = Math.random() * 9999;
+function noise2d(x, y){
+  const s = Math.sin(x*12.9898 + y*78.233 + _noiseSeed) * 43758.5453;
+  return s - Math.floor(s);
+}
+function smoothNoise(x, y){
+  const x0 = Math.floor(x), y0 = Math.floor(y);
+  const xf = x - x0, yf = y - y0;
+  const n00 = noise2d(x0, y0);
+  const n10 = noise2d(x0+1, y0);
+  const n01 = noise2d(x0, y0+1);
+  const n11 = noise2d(x0+1, y0+1);
+  const u = xf*xf*(3-2*xf);
+  const v = yf*yf*(3-2*yf);
+  const nx0 = n00*(1-u) + n10*u;
+  const nx1 = n01*(1-u) + n11*u;
+  return nx0*(1-v) + nx1*v;
+}
+const getColorTempRGB=t=>t<25?'255,80,40':t<50?'255,140,20':t<75?'255,200,80':'255,240,200';
+function spawnEmitter(dt,e,s){const rate=s.amount*0.9,expect=rate*dt;let n=Math.floor(expect)+(Math.random()<(expect%1)?1:0);
+const ang=s.angle*Math.PI/180;
+for(let i=0;i<n;i++){const spread=rnd(-1.4,1.4)*s.size*s.width;
+const lift=-rnd(1.2,2.6)*s.rise*0.045*s.length;
+const vx=Math.cos(ang)*spread-Math.sin(ang)*lift*0.25;
+const vy=Math.sin(ang)*spread+Math.cos(ang)*lift;
+particles.push({
+  x:e.x+rnd(-18,18),
+  y:e.y+rnd(-6,6),
+  vx,vy,
+  life:rnd(1.6,3.1)*s.length,
+  age:0,
+  size:(s.size*100)*rnd(0.6,2.0),
+  wobble:rnd(0,1000),
+  opacity:s.opacity,
+  colorTemp:s.colorTemp,
+  smokeColor:s.smokeColor
+});}}
+function spawn(dt){spawnEmitter(dt,leakA,stateA);if(leakB)spawnEmitter(dt,leakB,stateB);}
+function step(dt){for(let p of particles){
+  const t = p.age * 0.6;
+  const turb = (smoothNoise(p.x*0.015, p.y*0.015 + t) - 0.5) * 2;
+  const swirl = (smoothNoise(p.y*0.01 + p.wobble, p.x*0.01) - 0.5) * 2;
+  p.vx += turb * 0.25;
+  p.vy += -Math.abs(swirl) * 0.12;
+  p.x+=p.vx*dt*60;
+  p.y+=p.vy*dt*60;
+  p.vx*=rnd(0.95,1.03);
+  p.age+=dt;
+}
+for(let i=particles.length-1;i>=0;i--)if(particles[i].age>particles[i].life)particles.splice(i,1);}
+function draw(){ctx.clearRect(0,0,c.width,c.height);if(bgLoaded)ctx.drawImage(bgImg,0,0,c.width,c.height);
+ctx.globalCompositeOperation='lighter';
+for(let p of particles){
+  const baseColor=getColorTempRGB(p.colorTemp);
+  const t=p.age/p.life;
+  const flicker = 0.85 + 0.25 * Math.sin((p.age*12) + p.wobble);
+  const a=p.opacity*(1-t)*flicker;
+  const r=p.size*(0.55+t*0.9);
+  // Hot core
+  const core=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*0.45);
+  core.addColorStop(0,`rgba(255,255,220,${a*1.15})`);
+  core.addColorStop(0.5,`rgba(255,220,120,${a*0.9})`);
+  core.addColorStop(1,`rgba(255,180,80,0)`);
+  ctx.fillStyle=core;ctx.beginPath();ctx.arc(p.x,p.y,r*0.7,0,Math.PI*2);ctx.fill();
+    // Outer envelope
+    const grad=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
+    grad.addColorStop(0,`rgba(${baseColor},${a*0.9})`);
+    grad.addColorStop(0.35,`rgba(${baseColor},${a*0.6})`);
+    grad.addColorStop(1,`rgba(${baseColor},0)`);
+    ctx.fillStyle=grad;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();
+
+    // Sooty ember wisps (darker orange)
+    const emberRadius = r * (1.1 + t*0.6);
+    const emberAlpha = a * (0.35 + 0.25*Math.sin(p.wobble + p.age*6));
+    const ember=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,emberRadius);
+    ember.addColorStop(0,`rgba(140,60,10,${emberAlpha})`);
+    ember.addColorStop(0.5,`rgba(180,70,15,${emberAlpha*0.5})`);
+    ember.addColorStop(1,`rgba(120,50,10,0)`);
+    ctx.fillStyle=ember;ctx.beginPath();ctx.arc(p.x,p.y,emberRadius,0,Math.PI*2);ctx.fill();
+if(t>0.6){ctx.save();ctx.globalCompositeOperation='source-over';
+const smokeAlpha=(t-0.6)*1.5,shade=Math.floor(p.smokeColor*2.55);
+const gradSmoke=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*1.8);
+gradSmoke.addColorStop(0,`rgba(${shade},${shade},${shade},${smokeAlpha})`);
+gradSmoke.addColorStop(1,`rgba(${shade},${shade},${shade},0)`);
+ctx.fillStyle=gradSmoke;ctx.beginPath();ctx.arc(p.x,p.y,r*1.8,0,Math.PI*2);ctx.fill();ctx.restore();}}
+ctx.globalCompositeOperation='source-over';}
+stage.addEventListener('mousedown',e=>{const r=c.getBoundingClientRect();
+const pos={x:(e.clientX-r.left)*(c.width/r.width),y:(e.clientY-r.top)*(c.height/r.height)};
+if(activeEmitter==='A')leakA=pos;else if(leakB)leakB=pos;});
+let last=performance.now();function tick(now){const dt=Math.min(.05,(now-last)/1000);last=now;spawn(dt);step(dt);draw();requestAnimationFrame(tick);}requestAnimationFrame(tick);
+
+/* === Visual-only toggle append === */
+(() => {
+  const wrap = document.querySelector('.wrap');
+  const toggle = document.getElementById('panelToggle');
+  if (!wrap || !toggle) return;
+  toggle.addEventListener('click', () => {
+    wrap.classList.toggle('is-collapsed');
+    toggle.textContent = wrap.classList.contains('is-collapsed') ? '▶' : '◀';
+  });
+})();
+</script>
+
+<!-- ===== APPENDED RESIZE LOGIC FOR FULL-WIDTH CANVAS ON COLLAPSE — APPEND ONLY ===== -->
+<script>
+(() => {
+  const wrap = document.querySelector('.wrap');
+  const toggle = document.getElementById('panelToggle');
+  const stage = document.getElementById('stage');
+  const c = document.getElementById('c');
+  let resizeTimer;
+
+  function resizeCanvasToStage() {
+    const w = Math.max(1, stage.clientWidth);
+    const h = Math.max(1, stage.clientHeight);
+    if (c.width !== w || c.height !== h) {
+      c.width = w;
+      c.height = h;
+    }
+  }
+
+  window.addEventListener('load', resizeCanvasToStage);
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resizeCanvasToStage, 80);
+  });
+
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      setTimeout(() => { resizeCanvasToStage(); if (typeof window.draw==='function') window.draw(); }, 320);
+    });
+  }
+
+  try{
+    if (window.bgImg) {
+      bgImg.addEventListener('load', () => { resizeCanvasToStage(); if (typeof window.draw==='function') window.draw(); });
+    }
+  }catch(e){}
+})();
+</script>
+
+<!-- ===== APPENDED: Preserve photo aspect ratio (contain) — APPEND ONLY ===== -->
+<script>
+(() => {
+  if (window.__aspectFitPatched) return;
+  window.__aspectFitPatched = true;
+
+  function drawAspectFitBackground(ctx, img, cw, ch){
+    if(!img || !img.width || !img.height) return;
+    const iw = img.width, ih = img.height;
+    const scale = Math.min(cw/iw, ch/ih);
+    const dw = Math.max(1, Math.floor(iw * scale));
+    const dh = Math.max(1, Math.floor(ih * scale));
+    const dx = Math.floor((cw - dw) / 2);
+    const dy = 0; // align image to top; keep horizontal centering
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
+
+  const _origDraw = window.draw;
+
+  window.draw = function(){
+    ctx.clearRect(0,0,c.width,c.height);
+    if (window.bgLoaded) {
+      drawAspectFitBackground(ctx, window.bgImg, c.width, c.height);
+    }
+    ctx.globalCompositeOperation='lighter';
+    for (let p of particles){
+      const baseColor = getColorTempRGB(p.colorTemp);
+      const t=p.age/p.life;
+      const flicker = 0.85 + 0.25 * Math.sin((p.age*12) + p.wobble);
+      const a=p.opacity*(1-t)*flicker;
+      const r=p.size*(0.55+t*0.9);
+
+      // Hot core
+      const core=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*0.45);
+      core.addColorStop(0,`rgba(255,255,220,${a*1.15})`);
+      core.addColorStop(0.5,`rgba(255,220,120,${a*0.9})`);
+      core.addColorStop(1,`rgba(255,180,80,0)`);
+      ctx.fillStyle=core;ctx.beginPath();ctx.arc(p.x,p.y,r*0.7,0,Math.PI*2);ctx.fill();
+
+      // Outer envelope
+      const grad=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
+      grad.addColorStop(0,`rgba(${baseColor},${a*0.9})`);
+      grad.addColorStop(0.35,`rgba(${baseColor},${a*0.6})`);
+      grad.addColorStop(1,`rgba(${baseColor},0)`);
+      ctx.fillStyle=grad;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();
+
+      // Sooty ember wisps (darker orange)
+      const emberRadius = r * (1.1 + t*0.6);
+      const emberAlpha = a * (0.35 + 0.25*Math.sin(p.wobble + p.age*6));
+      const ember=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,emberRadius);
+      ember.addColorStop(0,`rgba(140,60,10,${emberAlpha})`);
+      ember.addColorStop(0.5,`rgba(180,70,15,${emberAlpha*0.5})`);
+      ember.addColorStop(1,`rgba(120,50,10,0)`);
+      ctx.fillStyle=ember;ctx.beginPath();ctx.arc(p.x,p.y,emberRadius,0,Math.PI*2);ctx.fill();
+
+      if (t>0.6){
+        ctx.save();ctx.globalCompositeOperation='source-over';
+        const smokeAlpha=(t-0.6)*1.5, shade=Math.floor(p.smokeColor*2.55);
+        const gradSmoke=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*1.8);
+        gradSmoke.addColorStop(0,`rgba(${shade},${shade},${shade},${smokeAlpha})`);
+        gradSmoke.addColorStop(1,`rgba(${shade},${shade},${shade},0)`);
+        ctx.fillStyle=gradSmoke;ctx.beginPath();ctx.arc(p.x,p.y,r*1.8,0,Math.PI*2);ctx.fill();ctx.restore();
+      }
+    }
+    ctx.globalCompositeOperation='source-over';
+  };
+
+  try{
+    if (window.bgImg) {
+      bgImg.addEventListener('load', function(){
+        const stage = document.getElementById('stage');
+        const c = document.getElementById('c');
+        if (stage && c){
+          const w = Math.max(1, stage.clientWidth);
+          const h = Math.max(1, stage.clientHeight);
+          if (c.width !== w || c.height !== h){ c.width = w; c.height = h; }
+        }
+        if (typeof window.draw==='function') window.draw();
+      });
+    }
+  }catch(e){}
+})();
+</script>
+
+<!-- ===== APPENDED: Robust photo loader & race-condition guard — APPEND ONLY ===== -->
+<script>
+(() => {
+  if (window.__robustLoaderPatched) return;
+  window.__robustLoaderPatched = true;
+
+  const fileInput = document.getElementById('photoInput');
+  const stage = document.getElementById('stage');
+  const canvas = document.getElementById('c');
+  const ctx2 = canvas.getContext('2d');
+
+  function resizeCanvasToStageNow(){
+    const w = Math.max(1, stage.clientWidth);
+    const h = Math.max(1, stage.clientHeight);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+  }
+
+  function loadPhotoFromFile(file){
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function(){
+        window.bgImg = img;
+        window.bgLoaded = true;
+        resizeCanvasToStageNow();
+        ctx2.clearRect(0,0,canvas.width,canvas.height);
+        if (typeof window.draw === 'function') window.draw();
+      };
+      img.onerror = function(){ console.warn('Image failed to load.'); };
+      img.src = ev.target.result;
+    };
+    reader.onerror = function(){ console.warn('FileReader failed.'); };
+    reader.readAsDataURL(file);
+  }
+
+  fileInput.addEventListener('change', function(e){
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    loadPhotoFromFile(f);
+  });
+
+  const toggle = document.getElementById('panelToggle');
+  if (toggle){
+    toggle.addEventListener('click', () => setTimeout(() => {
+      resizeCanvasToStageNow();
+      if (typeof window.draw==='function') window.draw();
+    }, 340));
+  }
+})();
+</script>
+
+<!-- ===== APPENDED: FIXED particle cleanup + redraw hooks — APPEND ONLY ===== -->
+<script>
+(() => {
+  if (window.__stepFixed) return;
+  window.__stepFixed = true;
+
+  // Save original for reference (not used, but kept in case)
+  const _origStep = window.step;
+
+  // Override step() with correct cleanup logic to prevent runtime errors
+  window.step = function(dt){
+    for (let p of particles){
+      p.x += p.vx * dt * 60;
+      p.y += p.vy * dt * 60;
+      p.vx *= rnd(0.96,1.04);
+      p.age += dt;
+    }
+    for (let i = particles.length - 1; i >= 0; i--){
+      const pi = particles[i];
+      if (pi.age > pi.life) particles.splice(i,1);
+    }
+  };
+
+  // Also ensure a draw occurs after any window resize completes
+  let __resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(__resizeTimer);
+    __resizeTimer = setTimeout(() => {
+      if (typeof window.draw==='function') window.draw();
+    }, 120);
+  });
+})();
+</script>
+
+<!-- ===== APPENDED ONLY: Match header "Settings" width to "Add Emitter B" ===== -->
+<script>
+(() => {
+  if (window.__syncSettingsBtnWidth) return;
+  window.__syncSettingsBtnWidth = true;
+
+  const settingsBtn = document.getElementById('openSettings');
+  const exportBtn = document.getElementById('exportGif');
+  const addBtn = document.getElementById('addEmitterB');
+  const toggle = document.getElementById('panelToggle');
+  let rAF, debounce;
+
+  function syncWidth() {
+    if (!addBtn || (!settingsBtn && !exportBtn)) return;
+    const rect = addBtn.getBoundingClientRect();
+    const w = Math.ceil(rect.width);
+    if (w > 0) {
+      if (settingsBtn) settingsBtn.style.width = w + 'px';
+      if (exportBtn) exportBtn.style.width = w + 'px';
+    }
+  }
+
+  function scheduleSync(delay = 0) {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => {
+      cancelAnimationFrame(rAF);
+      rAF = requestAnimationFrame(syncWidth);
+    }, delay);
+  }
+
+  window.addEventListener('load', () => scheduleSync(0));
+  window.addEventListener('resize', () => scheduleSync(50));
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => scheduleSync(0));
+  }
+  if (toggle) {
+    toggle.addEventListener('click', () => scheduleSync(330)); // after collapse transition
+  }
+
+  // Initial attempt
+  scheduleSync(0);
+})();
+</script>
+
+<!-- ===== APPENDED ONLY: Unify all yellows to match the paragraph color ===== -->
+<style>
+  /* Use the paragraph yellow (#c9b458) for ALL yellow accents */
+  :root{
+    --accent: var(--muted);             /* buttons/toggles now match paragraph */
+    /* RGB helper for transparent borders/shadows using same hue */
+    --muted-rgb: 201,180,88;            /* #c9b458 */
+  }
+
+  /* Text colors */
+  legend,
+  label,
+  .hint,
+  .modal-content h2,
+  #panelToggle { color: var(--muted) !important; }
+
+  /* Backgrounds that were yellow → match muted */
+  .settings-btn,
+  #panelToggle { background: var(--accent) !important; }
+
+  /* Borders/underlines that used various yellows → unify to muted with translucency */
+  header,
+  .panel,
+  fieldset,
+  .stage { border-color: rgba(var(--muted-rgb), 0.25) !important; }
+
+  /* Focus rings & subtle outlines */
+  input[type="range"]:focus,
+  select:focus,
+  input[type="number"]:focus,
+  button:focus { outline-color: rgba(var(--muted-rgb), 0.45) !important; }
+
+  /* Shadows unified */
+  #panelToggle:hover { box-shadow: 2px 0 10px rgba(var(--muted-rgb), 0.35) !important; }
+  .settings-btn { box-shadow: 0 2px 10px rgba(var(--muted-rgb), 0.20) !important; }
+
+  legend { color: var(--muted) !important; }
+  label { color: var(--muted) !important; }
+  .hint { color: var(--muted) !important; }
+  .modal-content h2 { color: var(--muted) !important; }
+</style>
+
+<!-- ===== APPENDED ONLY: Ensure panel toggle arrow is visible ===== -->
+<style>
+  /* Make the ◀ / ▶ arrow stand out against the muted-yellow background */
+  #panelToggle{
+    color:#000 !important;                 /* strong contrast on yellow */
+    text-shadow: 0 0 2px rgba(255,255,255,0.35); /* subtle edge for readability */
+  }
+  #panelToggle:hover{
+    color:#000 !important;                 /* keep contrast on hover */
+  }
+  @media (prefers-contrast: more){
+    #panelToggle{ text-shadow: 0 0 3px rgba(255,255,255,0.6); }
+  }
+</style>
+<style>
+  /* ===== APPENDED ONLY: Remove top gap above photo/canvas ===== */
+  .stage{
+    display:block !important;     /* stop grid centering */
+    padding:0 !important;
+  }
+  canvas#c{
+    display:block !important;     /* removes inline-canvas baseline gaps */
+    width:100% !important;
+    height:100% !important;       /* fill the stage vertically */
+    max-width:none !important;
+    border-radius:12px;
+    background:#000;
+  }
+</style>
+<!-- ===== APPENDED ONLY: GIF export support ===== -->
+<script src="https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.js"></script>
+<script>
+(() => {
+  const exportBtn = document.getElementById('exportGif');
+  if (!exportBtn) return;
+  let workerScriptUrl;
+
+  function setButtonState(isBusy, label) {
+    exportBtn.disabled = isBusy;
+    exportBtn.textContent = label;
+  }
+
+  async function getWorkerScriptUrl() {
+    if (workerScriptUrl) return workerScriptUrl;
+    const workerSrc = 'https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.worker.js';
+    const response = await fetch(workerSrc);
+    if (!response.ok) throw new Error('Failed to load GIF worker.');
+    const workerText = await response.text();
+    const blob = new Blob([workerText], { type: 'text/javascript' });
+    workerScriptUrl = URL.createObjectURL(blob);
+    return workerScriptUrl;
+  }
+
+  exportBtn.addEventListener('click', async () => {
+    if (typeof GIF === 'undefined') {
+      alert('GIF export library failed to load. Please check your connection and try again.');
+      return;
+    }
+
+    const canvas = document.getElementById('c');
+    const fps = 20;
+    const durationMs = 3000;
+    const frameDelay = 1000 / fps;
+    const totalFrames = Math.round((durationMs / 1000) * fps);
+
+    setButtonState(true, 'Capturing…');
+
+    let gif;
+    try {
+      const workerUrl = await getWorkerScriptUrl();
+      gif = new GIF({
+        workers: 2,
+        quality: 12,
+        repeat: 0,
+        width: canvas.width,
+        height: canvas.height,
+        workerScript: workerUrl
+      });
+    } catch (err) {
+      console.warn(err);
+      gif = new GIF({
+        workers: 0,
+        quality: 12,
+        repeat: 0,
+        width: canvas.width,
+        height: canvas.height
+      });
+    }
+
+    let renderTimeout;
+    const startRenderTimeout = () => {
+      clearTimeout(renderTimeout);
+      renderTimeout = setTimeout(() => {
+        gif.abort();
+        alert('GIF rendering is taking too long. Please try again or reduce the canvas size.');
+      }, 20000);
+    };
+
+    for (let captured = 1; captured <= totalFrames; captured += 1) {
+      gif.addFrame(canvas, { copy: true, delay: frameDelay });
+      setButtonState(true, `Capturing… ${captured}/${totalFrames}`);
+      await new Promise(resolve => setTimeout(resolve, frameDelay));
+    }
+
+    setButtonState(true, 'Rendering…');
+    startRenderTimeout();
+    gif.render();
+
+    gif.on('progress', (p) => {
+      const pct = Math.max(0, Math.min(100, Math.round(p * 100)));
+      setButtonState(true, `Rendering… ${pct}%`);
+      startRenderTimeout();
+    });
+
+    gif.on('error', (err) => {
+      clearTimeout(renderTimeout);
+      console.warn(err);
+      alert('GIF rendering failed. Please try again or reduce the canvas size.');
+      setButtonState(false, '🎞️ Export GIF');
+    });
+
+    gif.on('finished', (blob) => {
+      clearTimeout(renderTimeout);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'flaminator-loop.gif';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setButtonState(false, '🎞️ Export GIF');
+    });
+
+    gif.on('abort', () => {
+      clearTimeout(renderTimeout);
+      setButtonState(false, '🎞️ Export GIF');
+    });
+  });
+})();
+</script>
+
+<!-- ===== APPENDED ONLY: Video-based emitters (optional replacement for particles) ===== -->
+<style>
+  .video-emitter-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .video-emitter-grid .full{grid-column:1/-1}
+  .video-emitter-grid input[type="file"],
+  .video-emitter-grid select{width:100%}
+  .video-emitter-inline{display:flex;align-items:center;gap:8px;margin:6px 0;color:#e6c59a}
+  .video-emitter-inline input[type="checkbox"]{width:auto}
+  .video-emitter-hidden{display:none !important}
+</style>
+<script>
+(() => {
+  if (window.__videoEmitterLayerPatched) return;
+  window.__videoEmitterLayerPatched = true;
+
+  const sidebar = document.querySelector('aside.panel');
+  if (!sidebar) return;
+  const controlSets = sidebar.querySelectorAll('fieldset');
+  if (!controlSets.length) return;
+
+  const fieldset = document.createElement('fieldset');
+  fieldset.innerHTML = `
+    <legend>Video Emitters</legend>
+    <div class="video-emitter-grid">
+      <label class="full" title="Use a fire video clip instead of procedural particles">
+        Fire Video
+        <input type="file" id="videoEmitterFile" accept="video/*,.mov,.mp4,.webm" />
+      </label>
+      <label title="Blending mode for the fire clip">
+        Blend
+        <select id="videoBlendMode">
+          <option value="lighter" selected>Lighter</option>
+          <option value="screen">Screen</option>
+          <option value="source-over">Normal</option>
+        </select>
+      </label>
+      <label title="Overall size multiplier for the video clip">
+        Clip Scale (%) <span id="videoScaleVal">140</span>
+        <input type="range" id="videoScale" min="20" max="400" value="140" />
+      </label>
+      <label title="Move clip up/down from emitter point">
+        Vertical Offset <span id="videoYOffsetVal">0</span>
+        <input type="range" id="videoYOffset" min="-240" max="240" value="0" />
+      </label>
+      <label title="Brightness cutoff for removing dark background">
+        Black Cutoff <span id="videoKeyThreshVal">28</span>
+        <input type="range" id="videoKeyThreshold" min="0" max="120" value="28" />
+      </label>
+      <label title="Soft transition around the cutoff to avoid harsh edges">
+        Key Softness <span id="videoKeySoftVal">20</span>
+        <input type="range" id="videoKeySoftness" min="0" max="80" value="20" />
+      </label>
+      <div class="video-emitter-inline full">
+        <input type="checkbox" id="videoEmittersEnabled" />
+        <label for="videoEmittersEnabled" style="margin:0">Enable video emitters</label>
+      </div>
+      <div class="video-emitter-inline full video-emitter-hidden">
+        <input type="checkbox" id="videoKeyEnabled" checked />
+        <label for="videoKeyEnabled" style="margin:0">Remove black background</label>
+      </div>
+      <div class="video-emitter-inline full">
+        <input type="checkbox" id="replaceParticlesWithVideo" checked />
+        <label for="replaceParticlesWithVideo" style="margin:0">Replace particles with video</label>
+      </div>
+      <div id="videoEmitterStatus" class="hint full">No video loaded.</div>
+    </div>
+  `;
+  sidebar.appendChild(fieldset);
+
+  const videoFileInput = document.getElementById('videoEmitterFile');
+  const enableInput = document.getElementById('videoEmittersEnabled');
+  const replaceInput = document.getElementById('replaceParticlesWithVideo');
+  const blendInput = document.getElementById('videoBlendMode');
+  const scaleInput = document.getElementById('videoScale');
+  const yOffsetInput = document.getElementById('videoYOffset');
+  const keyEnabledInput = document.getElementById('videoKeyEnabled');
+  const keyThresholdInput = document.getElementById('videoKeyThreshold');
+  const keySoftnessInput = document.getElementById('videoKeySoftness');
+  const scaleVal = document.getElementById('videoScaleVal');
+  const yOffsetVal = document.getElementById('videoYOffsetVal');
+  const keyThreshVal = document.getElementById('videoKeyThreshVal');
+  const keySoftVal = document.getElementById('videoKeySoftVal');
+  const status = document.getElementById('videoEmitterStatus');
+  if (keyEnabledInput) keyEnabledInput.checked = true;
+
+  const fireVideo = document.createElement('video');
+  fireVideo.muted = true;
+  fireVideo.loop = true;
+  fireVideo.playsInline = true;
+  fireVideo.setAttribute('playsinline', '');
+  fireVideo.setAttribute('webkit-playsinline', '');
+  fireVideo.preload = 'auto';
+  fireVideo.style.position = 'fixed';
+  fireVideo.style.left = '-9999px';
+  fireVideo.style.top = '-9999px';
+  fireVideo.style.width = '2px';
+  fireVideo.style.height = '2px';
+  fireVideo.style.opacity = '0';
+  fireVideo.style.pointerEvents = 'none';
+  document.body.appendChild(fireVideo);
+
+  let fileObjectUrl = '';
+  let videoReady = false;
+
+  const originalSpawn = window.spawn;
+  const originalStep = window.step;
+  const originalDraw = window.draw;
+  if (typeof originalSpawn !== 'function' || typeof originalStep !== 'function' || typeof originalDraw !== 'function') {
+    status.textContent = 'Video layer could not attach to renderer.';
+    return;
+  }
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const hasVideoClip = () => !!fireVideo.src && videoReady;
+  const videoEnabled = () => enableInput.checked && hasVideoClip();
+  const replaceParticles = () => replaceInput.checked;
+  const stageCanvas = document.getElementById('c');
+  const stageCtx = stageCanvas.getContext('2d');
+  const keyCanvas = document.createElement('canvas');
+  const keyCtx = keyCanvas.getContext('2d', { willReadFrequently: true });
+  let keyDirty = true;
+  let lastKeyedTime = -1;
+
+  function setStatus(text) {
+    status.textContent = text;
+  }
+
+  function markKeyDirty() {
+    keyDirty = true;
+    lastKeyedTime = -1;
+  }
+
+  function getVideoFrameSource() {
+    const vw = fireVideo.videoWidth || 0;
+    const vh = fireVideo.videoHeight || 0;
+    if (!vw || !vh) return fireVideo;
+
+    if (keyCanvas.width !== vw || keyCanvas.height !== vh) {
+      keyCanvas.width = vw;
+      keyCanvas.height = vh;
+      markKeyDirty();
+    }
+
+    const t = fireVideo.currentTime || 0;
+    if (!keyDirty && Math.abs(t - lastKeyedTime) < (1 / 240)) return keyCanvas;
+
+    keyCtx.clearRect(0, 0, vw, vh);
+    keyCtx.drawImage(fireVideo, 0, 0, vw, vh);
+
+    const frame = keyCtx.getImageData(0, 0, vw, vh);
+    const data = frame.data;
+    const threshold = +keyThresholdInput.value || 0;
+    const softness = +keySoftnessInput.value || 0;
+    const low = Math.max(0, threshold - softness);
+    const high = Math.min(255, threshold + softness);
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const luma = Math.max(r, g, b);
+      if (luma <= low) {
+        data[i + 3] = 0;
+      } else if (luma < high && high > low) {
+        const ratio = (luma - low) / (high - low);
+        data[i + 3] = Math.round(data[i + 3] * ratio);
+      }
+    }
+
+    keyCtx.putImageData(frame, 0, 0);
+    keyDirty = false;
+    lastKeyedTime = t;
+    return keyCanvas;
+  }
+
+  function drawBackgroundOnly() {
+    stageCtx.clearRect(0, 0, stageCanvas.width, stageCanvas.height);
+    if (!window.bgLoaded || !window.bgImg) return;
+    const img = window.bgImg;
+    const iw = img.width;
+    const ih = img.height;
+    if (!iw || !ih) return;
+    const scale = Math.min(stageCanvas.width / iw, stageCanvas.height / ih);
+    const dw = Math.max(1, Math.floor(iw * scale));
+    const dh = Math.max(1, Math.floor(ih * scale));
+    const dx = Math.floor((stageCanvas.width - dw) / 2);
+    stageCtx.fillStyle = '#000';
+    stageCtx.fillRect(0, 0, stageCanvas.width, stageCanvas.height);
+    stageCtx.drawImage(img, dx, 0, dw, dh);
+  }
+
+  function drawVideoEmitterAt(emitter, emitterState) {
+    if (!emitter || !emitterState || !videoEnabled()) return;
+    if (fireVideo.readyState < 2) return;
+
+    const globalScale = (+scaleInput.value || 100) / 100;
+    const yOffset = +yOffsetInput.value || 0;
+    const base = Math.max(20, emitterState.size * 100);
+    const h = Math.max(36, base * 5.6 * emitterState.length * globalScale);
+    const w = Math.max(20, base * 2.6 * emitterState.width * globalScale);
+    const a = clamp(emitterState.opacity, 0, 1);
+    const angleRad = (emitterState.angle || 0) * Math.PI / 180;
+    const frameSource = getVideoFrameSource();
+
+    stageCtx.save();
+    stageCtx.globalCompositeOperation = blendInput.value || 'lighter';
+    stageCtx.globalAlpha = a;
+    stageCtx.translate(emitter.x, emitter.y + yOffset);
+    stageCtx.rotate(angleRad);
+    stageCtx.drawImage(frameSource, -w / 2, -h, w, h);
+    stageCtx.restore();
+  }
+
+  function requestRedraw() {
+    if (typeof window.draw === 'function') window.draw();
+  }
+
+  async function ensureVideoPlaying() {
+    if (!videoEnabled()) return;
+    if (!fireVideo.paused && !fireVideo.ended) return;
+    try { await fireVideo.play(); } catch (_) {}
+  }
+
+  fireVideo.addEventListener('loadeddata', async () => {
+    videoReady = true;
+    markKeyDirty();
+    try { await fireVideo.play(); } catch (_) {}
+    setStatus(`Video loaded: ${Math.round(fireVideo.videoWidth)}x${Math.round(fireVideo.videoHeight)}.`);
+    requestRedraw();
+  });
+
+  fireVideo.addEventListener('error', () => {
+    videoReady = false;
+    enableInput.checked = false;
+    setStatus('Video failed to load. Try MP4/WebM if MOV does not decode in your browser.');
+    requestRedraw();
+  });
+
+  videoFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (fileObjectUrl) URL.revokeObjectURL(fileObjectUrl);
+    fileObjectUrl = URL.createObjectURL(file);
+    videoReady = false;
+    fireVideo.src = fileObjectUrl;
+    fireVideo.load();
+    try { await fireVideo.play(); } catch (_) {}
+    enableInput.checked = true;
+    setStatus(`Loading ${file.name}...`);
+  });
+
+  scaleInput.addEventListener('input', () => {
+    scaleVal.textContent = scaleInput.value;
+    requestRedraw();
+  });
+  yOffsetInput.addEventListener('input', () => {
+    yOffsetVal.textContent = yOffsetInput.value;
+    requestRedraw();
+  });
+  keyThresholdInput.addEventListener('input', () => {
+    keyThreshVal.textContent = keyThresholdInput.value;
+    markKeyDirty();
+    requestRedraw();
+  });
+  keySoftnessInput.addEventListener('input', () => {
+    keySoftVal.textContent = keySoftnessInput.value;
+    markKeyDirty();
+    requestRedraw();
+  });
+
+  [enableInput, replaceInput, blendInput].forEach((el) => {
+    el.addEventListener('change', () => {
+      if (videoEnabled() && replaceParticles()) {
+        try { particles.length = 0; } catch (_) {}
+      }
+      ensureVideoPlaying();
+      markKeyDirty();
+      requestRedraw();
+    });
+  });
+
+  window.spawn = function(dt) {
+    if (videoEnabled() && replaceParticles()) return;
+    return originalSpawn(dt);
+  };
+
+  window.step = function(dt) {
+    if (videoEnabled() && replaceParticles()) return;
+    return originalStep(dt);
+  };
+
+  window.draw = function() {
+    ensureVideoPlaying();
+    if (videoEnabled() && replaceParticles()) {
+      drawBackgroundOnly();
+      drawVideoEmitterAt(typeof leakA !== 'undefined' ? leakA : null, typeof stateA !== 'undefined' ? stateA : null);
+      drawVideoEmitterAt(typeof leakB !== 'undefined' ? leakB : null, typeof stateB !== 'undefined' ? stateB : null);
+      return;
+    }
+
+    originalDraw();
+    if (videoEnabled()) {
+      drawVideoEmitterAt(typeof leakA !== 'undefined' ? leakA : null, typeof stateA !== 'undefined' ? stateA : null);
+      drawVideoEmitterAt(typeof leakB !== 'undefined' ? leakB : null, typeof stateB !== 'undefined' ? stateB : null);
+    }
+  };
+
+  // The main RAF loop calls global bindings (`spawn`, `step`, `draw`) directly.
+  // Rebind them so the loop uses these wrapped implementations.
+  try { spawn = window.spawn; } catch (_) {}
+  try { step = window.step; } catch (_) {}
+  try { draw = window.draw; } catch (_) {}
+})();
+</script>
+
+<!-- ===== APPENDED ONLY: Tabs for Fire Controls / Video Emitters ===== -->
+<style>
+  .control-tabs{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+    margin:10px 0 8px;
+  }
+  .control-tab{
+    border:1px solid rgba(201,180,88,0.35);
+    background:#0b111a;
+    color:#c9b458;
+    border-radius:10px;
+    padding:7px 10px;
+    font-family:"Depressionist 3 Revisited", "Times New Roman", serif;
+    font-size:15px;
+    letter-spacing:0.2px;
+    cursor:pointer;
+  }
+  .control-tab.is-active{
+    background:rgba(201,180,88,0.22);
+    box-shadow:inset 0 0 0 1px rgba(201,180,88,0.45);
+    color:#ffe88a;
+  }
+  fieldset.tab-hidden{display:none !important;}
+</style>
+<script>
+(() => {
+  if (window.__controlTabsPatched) return;
+  window.__controlTabsPatched = true;
+
+  function initTabs(){
+    const aside = document.querySelector('aside.panel');
+    if (!aside) return false;
+    if (aside.querySelector('.control-tabs')) return true;
+
+    const fieldsets = Array.from(aside.querySelectorAll('fieldset'));
+    const fireSet = fieldsets.find(fs => {
+      const lg = fs.querySelector('legend');
+      return lg && /fire controls/i.test((lg.textContent || '').trim());
+    });
+    const videoSet = fieldsets.find(fs => {
+      const lg = fs.querySelector('legend');
+      return lg && /video emitters/i.test((lg.textContent || '').trim());
+    });
+    if (!fireSet || !videoSet) return false;
+
+    const tabs = document.createElement('div');
+    tabs.className = 'control-tabs';
+    tabs.innerHTML = `
+      <button type="button" class="control-tab is-active" data-target="fire">Fire Controls</button>
+      <button type="button" class="control-tab" data-target="video">Video Emitters</button>
+    `;
+    fireSet.parentNode.insertBefore(tabs, fireSet);
+
+    const fireBtn = tabs.querySelector('[data-target="fire"]');
+    const videoBtn = tabs.querySelector('[data-target="video"]');
+
+    function show(which){
+      const showFire = which === 'fire';
+      fireSet.classList.toggle('tab-hidden', !showFire);
+      videoSet.classList.toggle('tab-hidden', showFire);
+      fireBtn.classList.toggle('is-active', showFire);
+      videoBtn.classList.toggle('is-active', !showFire);
+    }
+
+    fireBtn.addEventListener('click', () => show('fire'));
+    videoBtn.addEventListener('click', () => show('video'));
+    show('fire');
+    return true;
+  }
+
+  if (!initTabs()) {
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      if (initTabs() || tries > 50) clearInterval(timer);
+    }, 50);
+  }
+})();
+</script>
+
+<!-- ===== APPENDED ONLY: Multi-fire emitters (cap 10, per-emitter controls) ===== -->
+<style>
+  .emitter-select-wrap{display:flex;gap:8px;align-items:center}
+  .emitter-controls.emitter-controls--stack{
+    display:flex !important;
+    flex-direction:column;
+    align-items:stretch;
+    gap:8px;
+  }
+  .emitter-controls.emitter-controls--stack .emitter-switch{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .emitter-controls.emitter-controls--stack .emitter-segmented{
+    display:block;
+    grid-template-columns:none !important;
+    padding:6px;
+  }
+  .emitter-controls.emitter-controls--stack .emitter-action-row{
+    width:100%;
+    margin-top:0;
+  }
+  #emitterSelect{
+    flex:1;
+    min-width:0;
+    height:34px;
+    border-radius:10px;
+    border:1px solid rgba(201,180,88,0.35);
+    background:#0b111a;
+    color:#ffe88a;
+    padding:0 10px;
+    font-family:"Depressionist 3 Revisited", "Times New Roman", serif;
+  }
+  #emitterCount{
+    font-size:12px;
+    color:#c9b458;
+    white-space:nowrap;
+    min-width:52px;
+    text-align:center;
+    border:1px solid rgba(201,180,88,0.25);
+    border-radius:8px;
+    padding:6px 8px;
+    background:#0b111a;
+  }
+  .emitter-action-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-top:8px;
+  }
+  #addEmitterB,
+  #removeEmitterBtn{
+    width:100% !important;
+    height:58px !important;
+    min-height:58px !important;
+    padding:8px 10px;
+    line-height:1.1;
+    white-space:normal;
+    font-size:12px;
+    text-align:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+</style>
+<script>
+(() => {
+  if (window.__multiEmitterPatched) return;
+  window.__multiEmitterPatched = true;
+
+  const MAX_EMITTERS = 5;
+  const stageEl = document.getElementById('stage');
+  const canvasEl = document.getElementById('c');
+  const addBtn = document.getElementById('addEmitterB');
+  const controlsWrap = document.querySelector('.emitter-controls');
+  const segmented = document.querySelector('.emitter-segmented');
+  const emitterLabel = document.querySelector('.emitter-label');
+  if (!stageEl || !canvasEl || !addBtn || !controlsWrap || !segmented || !emitterLabel) return;
+
+  controlsWrap.classList.add('emitter-controls--stack');
+
+  emitterLabel.textContent = 'Active Emitter';
+  segmented.innerHTML = `
+    <div class="emitter-select-wrap">
+      <select id="emitterSelect" aria-label="Active Emitter"></select>
+      <span id="emitterCount">1/${MAX_EMITTERS}</span>
+    </div>
+  `;
+  addBtn.textContent = '➕ Add Another Emitter';
+
+  const emitterSelect = document.getElementById('emitterSelect');
+  const emitterCount = document.getElementById('emitterCount');
+  const removeBtn = document.createElement('button');
+  removeBtn.id = 'removeEmitterBtn';
+  removeBtn.className = 'emitter-add';
+  removeBtn.type = 'button';
+  removeBtn.textContent = '➖ Remove Emitter';
+
+  const actionsRow = document.createElement('div');
+  actionsRow.className = 'emitter-action-row';
+  const actionsParent = addBtn.parentNode;
+  actionsParent.insertBefore(actionsRow, addBtn);
+  actionsRow.appendChild(addBtn);
+  actionsRow.appendChild(removeBtn);
+
+  const cloneState = (s) => ({
+    amount: +s.amount,
+    opacity: +s.opacity,
+    size: +s.size,
+    rise: +s.rise,
+    angle: +s.angle,
+    length: +s.length,
+    width: +s.width,
+    colorTemp: +s.colorTemp,
+    smokeColor: +s.smokeColor
+  });
+
+  const emitters = [];
+  emitters.push({
+    id: 1,
+    pos: { x: leakA.x, y: leakA.y },
+    state: cloneState(stateA)
+  });
+  if (leakB && stateB && emitters.length < MAX_EMITTERS) {
+    emitters.push({
+      id: 2,
+      pos: { x: leakB.x, y: leakB.y },
+      state: cloneState(stateB)
+    });
+  }
+
+  let activeEmitterIndex = 0;
+
+  function syncLegacyRefs() {
+    if (emitters[0]) {
+      leakA = emitters[0].pos;
+      stateA = emitters[0].state;
+    }
+    if (emitters[1]) {
+      leakB = emitters[1].pos;
+      stateB = emitters[1].state;
+    } else {
+      leakB = null;
+    }
+    activeEmitter = activeEmitterIndex === 1 ? 'B' : 'A';
+  }
+
+  function getActiveEmitter() {
+    return emitters[activeEmitterIndex] || emitters[0];
+  }
+
+  function refreshEmitterOptions() {
+    const oldValue = emitterSelect.value;
+    emitterSelect.innerHTML = emitters.map((e, i) => (
+      `<option value="${i}">Emitter ${e.id}</option>`
+    )).join('');
+    const target = Number.isFinite(+oldValue) && +oldValue < emitters.length ? +oldValue : activeEmitterIndex;
+    activeEmitterIndex = Math.max(0, Math.min(target, emitters.length - 1));
+    emitterSelect.value = String(activeEmitterIndex);
+    emitterCount.textContent = `${emitters.length}/${MAX_EMITTERS}`;
+    addBtn.disabled = emitters.length >= MAX_EMITTERS;
+    removeBtn.disabled = emitters.length <= 1;
+    syncLegacyRefs();
+  }
+
+  function applyActiveToUI() {
+    const a = getActiveEmitter();
+    if (!a) return;
+    applyStateToUI(a.state);
+    syncLegacyRefs();
+  }
+
+  function bindEmitterAwareSliders() {
+    const update = (id, prop, transform, formatEl, formatVal) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.oninput = () => {
+        const a = getActiveEmitter();
+        if (!a) return;
+        a.state[prop] = transform ? transform(el.value) : +el.value;
+        if (formatEl) formatEl.textContent = formatVal(a.state[prop]);
+        syncLegacyRefs();
+      };
+    };
+
+    update('amount', 'amount', (v) => +v, document.getElementById('amountVal'), (v) => (+v).toFixed(0));
+    update('opacity', 'opacity', (v) => +v / 100, document.getElementById('opacityVal'), (v) => (+v).toFixed(2));
+    update('size', 'size', (v) => +v / 100, document.getElementById('sizeVal'), (v) => (+v).toFixed(2));
+    update('rise', 'rise', (v) => +v, document.getElementById('riseVal'), (v) => (+v).toFixed(0));
+    update('angle', 'angle', (v) => +v, document.getElementById('angleVal'), (v) => (+v).toFixed(0));
+    update('length', 'length', (v) => +v, document.getElementById('lengthVal'), (v) => (+v).toFixed(1) + 'x');
+    update('width', 'width', (v) => +v, document.getElementById('widthVal'), (v) => (+v).toFixed(1) + 'x');
+    update('colorTemp', 'colorTemp', (v) => +v, document.getElementById('colorVal'), (v) => (+v).toFixed(0));
+    update('smokeColor', 'smokeColor', (v) => +v, document.getElementById('smokeColorVal'), (v) => (+v).toFixed(0));
+  }
+
+  emitterSelect.addEventListener('change', () => {
+    activeEmitterIndex = Math.max(0, Math.min(+emitterSelect.value || 0, emitters.length - 1));
+    applyActiveToUI();
+  });
+
+  addBtn.onclick = () => {
+    if (emitters.length >= MAX_EMITTERS) return;
+    const src = getActiveEmitter() || emitters[0];
+    const nextId = emitters.length + 1;
+    emitters.push({
+      id: nextId,
+      pos: {
+        x: Math.max(20, Math.min(canvasEl.width - 20, src.pos.x + 35)),
+        y: Math.max(20, Math.min(canvasEl.height - 20, src.pos.y))
+      },
+      state: cloneState(src.state)
+    });
+    activeEmitterIndex = emitters.length - 1;
+    refreshEmitterOptions();
+    applyActiveToUI();
+  };
+
+  removeBtn.onclick = () => {
+    if (emitters.length <= 1) return;
+    emitters.splice(activeEmitterIndex, 1);
+    activeEmitterIndex = Math.max(0, activeEmitterIndex - 1);
+    refreshEmitterOptions();
+    applyActiveToUI();
+  };
+
+  // Capture phase intercepts the original click handler so only active emitter moves.
+  stageEl.addEventListener('mousedown', (e) => {
+    const r = canvasEl.getBoundingClientRect();
+    const pos = {
+      x: (e.clientX - r.left) * (canvasEl.width / r.width),
+      y: (e.clientY - r.top) * (canvasEl.height / r.height)
+    };
+    const a = getActiveEmitter();
+    if (a) a.pos = pos;
+    syncLegacyRefs();
+    e.stopImmediatePropagation();
+  }, true);
+
+  const originalSpawn = window.spawn;
+  window.spawn = function(dt) {
+    for (const e of emitters) spawnEmitter(dt, e.pos, e.state);
+  };
+
+  // Ensure RAF loop uses updated spawn binding.
+  try { spawn = window.spawn; } catch (_) {}
+  try { draw = window.draw; } catch (_) {}
+  try { step = window.step; } catch (_) {}
+
+  bindEmitterAwareSliders();
+  refreshEmitterOptions();
+  applyActiveToUI();
+})();
+</script>
+
+<!-- ===== APPENDED ONLY: Guided tutorial (Hot Wash style) ===== -->
+<style>
+  #startTutorial{
+    min-width:120px;
+  }
+  .guide-popup{
+    position:fixed;
+    z-index:1202;
+    min-width:300px;
+    max-width:min(420px,92vw);
+    border-radius:12px;
+    border:1px solid rgba(201,180,88,0.45);
+    background:rgba(13,21,36,0.96);
+    color:#fff;
+    padding:12px 14px;
+    box-shadow:0 10px 28px rgba(0,0,0,0.45);
+    display:none;
+  }
+  .guide-popup.visible{display:block;}
+  .guide-popup .title{
+    font-family:"Depressionist 3 Revisited","Times New Roman",serif;
+    color:#ffd400;
+    margin:0 0 6px 0;
+    font-size:18px;
+  }
+  .guide-popup .body{
+    font-size:13px;
+    line-height:1.35;
+    margin-bottom:10px;
+  }
+  .guide-popup .meta{
+    font-size:11px;
+    color:#d3d9e2;
+  }
+  .guide-popup .controls{
+    margin-top:10px;
+    display:flex;
+    gap:8px;
+    justify-content:flex-end;
+  }
+  .guide-popup .controls button{
+    width:auto;
+    min-width:72px;
+    padding:7px 12px;
+    border-radius:8px;
+    border:1px solid rgba(201,180,88,0.4);
+    background:#182335;
+    color:#f5f5f5;
+    cursor:pointer;
+  }
+  .guide-popup .controls button.primary{
+    background:var(--accent);
+    color:#000;
+    font-weight:700;
+  }
+  .guide-highlight{
+    box-shadow:0 0 0 4px rgba(255,230,90,1) !important;
+    background:rgba(255,212,0,0.18) !important;
+    border-radius:10px;
+    position:relative;
+    z-index:1201 !important;
+    animation:guidePulse 1s ease-in-out infinite;
+  }
+  @keyframes guidePulse{
+    0%{
+      box-shadow:
+        0 0 0 4px rgba(255,230,90,1),
+        0 0 0 0 rgba(255,212,0,0.75),
+        0 0 18px 3px rgba(255,212,0,0.8) !important;
+    }
+    70%{
+      box-shadow:
+        0 0 0 4px rgba(255,230,90,1),
+        0 0 0 22px rgba(255,212,0,0),
+        0 0 30px 8px rgba(255,212,0,0.4) !important;
+    }
+    100%{
+      box-shadow:
+        0 0 0 4px rgba(255,230,90,1),
+        0 0 0 0 rgba(255,212,0,0),
+        0 0 12px 2px rgba(255,212,0,0.65) !important;
+    }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .guide-highlight{animation:none;}
+  }
+</style>
+<script>
+(() => {
+  if (window.__flaminatorGuidePatched) return;
+  window.__flaminatorGuidePatched = true;
+
+  const headerActions = document.querySelector('header > div:last-child');
+  if (!headerActions) return;
+
+  const tutorialBtn = document.createElement('button');
+  tutorialBtn.className = 'settings-btn';
+  tutorialBtn.id = 'startTutorial';
+  tutorialBtn.type = 'button';
+  tutorialBtn.textContent = '🧭 Tutorial';
+  headerActions.insertBefore(tutorialBtn, headerActions.firstChild);
+
+  const popup = document.createElement('div');
+  popup.id = 'guidePopup';
+  popup.className = 'guide-popup';
+  popup.setAttribute('role', 'dialog');
+  popup.setAttribute('aria-modal', 'false');
+  popup.setAttribute('aria-label', 'Flaminator walkthrough');
+  popup.innerHTML = `
+    <div id="guideTitle" class="title">Flaminator Walkthrough</div>
+    <div id="guideBody" class="body"></div>
+    <div id="guideMeta" class="meta"></div>
+    <div class="controls">
+      <button type="button" id="guideClose">Close</button>
+      <button type="button" id="guideBack">Back</button>
+      <button type="button" class="primary" id="guideNext">Next</button>
+    </div>
+  `;
+  document.body.appendChild(popup);
+
+  const guideTitle = document.getElementById('guideTitle');
+  const guideBody = document.getElementById('guideBody');
+  const guideMeta = document.getElementById('guideMeta');
+  const guideClose = document.getElementById('guideClose');
+  const guideBack = document.getElementById('guideBack');
+  const guideNext = document.getElementById('guideNext');
+
+  const guideState = { active: false, index: 0 };
+
+  function setPanelExpanded() {
+    const wrap = document.querySelector('.wrap');
+    const toggle = document.getElementById('panelToggle');
+    if (!wrap) return;
+    if (wrap.classList.contains('is-collapsed')) {
+      wrap.classList.remove('is-collapsed');
+      if (toggle) toggle.textContent = '◀';
+    }
+  }
+
+  function activateTab(kind) {
+    const tab = document.querySelector(`.control-tab[data-target="${kind}"]`);
+    if (tab) tab.click();
+  }
+
+  const guideSteps = [
+    {
+      selector: '#photoInput',
+      title: 'Load A Base Photo',
+      body: 'Start by choosing a scene image. Flames are composited over this photo.'
+    },
+    {
+      selector: '#emitterSelect',
+      title: 'Pick Active Emitter',
+      body: 'Select which emitter you are editing. Each emitter keeps independent fire settings.'
+    },
+    {
+      selector: '#addEmitterB',
+      title: 'Add Another Emitter',
+      body: 'Use this to add a new emitter (up to 5 total). New emitters copy settings from the currently active one.'
+    },
+    {
+      selector: '#removeEmitterBtn',
+      title: 'Remove Active Emitter',
+      body: 'Use this to remove only the selected emitter. At least one emitter is always retained.'
+    },
+    {
+      selector: '.control-tab[data-target="fire"]',
+      title: 'Fire Controls Tab',
+      body: 'Use this tab to tune procedural flame behavior for the active emitter.',
+      prepare: () => activateTab('fire')
+    },
+    {
+      selector: '#amount',
+      title: 'Tune Fire Intensity',
+      body: 'These sliders apply to the active emitter only: intensity, opacity, size, rise, angle, shape, and color.',
+      prepare: () => activateTab('fire')
+    },
+    {
+      selector: '.control-tab[data-target="video"]',
+      title: 'Video Emitters Tab',
+      body: 'Switch here when using prerecorded flame clips instead of procedural particles.',
+      prepare: () => activateTab('video')
+    },
+    {
+      selector: '#videoEmitterFile',
+      title: 'Load Flame Video Clip',
+      body: 'Choose an MP4/WebM clip. Then enable video emitters and adjust blend, scale, and keying controls.',
+      prepare: () => activateTab('video')
+    },
+    {
+      selector: '#exportGif',
+      title: 'Export GIF',
+      body: 'Capture a short loop of the current canvas and download it as a GIF.'
+    },
+    {
+      selector: '#openSettings',
+      title: 'Default Settings',
+      body: 'Use Settings to define default flame values that load with the tool.'
+    }
+  ];
+
+  function clearGuideHighlight() {
+    document.querySelectorAll('.guide-highlight').forEach((el) => el.classList.remove('guide-highlight'));
+  }
+
+  function isGuideTargetVisible(el) {
+    if (!el) return false;
+    const style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }
+
+  function getGuideTarget(step) {
+    if (!step || !step.selector) return null;
+    return document.querySelector(step.selector);
+  }
+
+  function positionGuidePopup(targetEl) {
+    const rect = targetEl.getBoundingClientRect();
+    const popupW = popup.offsetWidth || 320;
+    const popupH = popup.offsetHeight || 180;
+    const viewportW = window.innerWidth || 1280;
+    const viewportH = window.innerHeight || 720;
+    let left = rect.left + (rect.width / 2) - (popupW / 2);
+    left = Math.max(8, Math.min(viewportW - popupW - 8, left));
+    let top = rect.bottom + 10;
+    if (top + popupH > viewportH - 8) top = Math.max(8, rect.top - popupH - 10);
+    popup.style.left = `${Math.round(left)}px`;
+    popup.style.top = `${Math.round(top)}px`;
+  }
+
+  function closeGuideTour() {
+    guideState.active = false;
+    popup.classList.remove('visible');
+    clearGuideHighlight();
+  }
+
+  function renderGuideStep() {
+    if (!guideState.active) return;
+    const step = guideSteps[guideState.index];
+    if (!step) {
+      closeGuideTour();
+      return;
+    }
+    setPanelExpanded();
+    if (typeof step.prepare === 'function') step.prepare();
+    const target = getGuideTarget(step);
+    if (!isGuideTargetVisible(target)) {
+      const nextIndex = guideState.index + 1;
+      if (nextIndex < guideSteps.length) {
+        guideState.index = nextIndex;
+        renderGuideStep();
+      } else {
+        closeGuideTour();
+      }
+      return;
+    }
+    clearGuideHighlight();
+    target.classList.add('guide-highlight');
+    target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    guideTitle.textContent = step.title;
+    guideBody.textContent = step.body;
+    guideMeta.textContent = `Step ${guideState.index + 1} of ${guideSteps.length}`;
+    guideBack.disabled = guideState.index === 0;
+    guideNext.textContent = guideState.index === guideSteps.length - 1 ? 'Done' : 'Next';
+    popup.classList.add('visible');
+    positionGuidePopup(target);
+  }
+
+  function openGuideTour() {
+    guideState.active = true;
+    guideState.index = 0;
+    renderGuideStep();
+  }
+
+  tutorialBtn.addEventListener('click', openGuideTour);
+  guideClose.addEventListener('click', closeGuideTour);
+  guideBack.addEventListener('click', () => {
+    if (!guideState.active) return;
+    guideState.index = Math.max(0, guideState.index - 1);
+    renderGuideStep();
+  });
+  guideNext.addEventListener('click', () => {
+    if (!guideState.active) return;
+    if (guideState.index >= guideSteps.length - 1) {
+      closeGuideTour();
+      return;
+    }
+    guideState.index += 1;
+    renderGuideStep();
+  });
+
+  window.addEventListener('resize', () => {
+    if (guideState.active) renderGuideStep();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && guideState.active) closeGuideTour();
+  });
+})();
+</script>
+
+<!-- ===== APPENDED ONLY: Theme mode (Auto / Dark / Light) ===== -->
+<style>
+  body[data-theme="dark"]{
+    --bg:#000000;
+    --panel:#0a0a0a;
+    --text:#f5f5f5;
+    --muted:#c9b458;
+    --accent:#c9b458;
+  }
+  body[data-theme="light"]{
+    --bg:#f3f5f8;
+    --panel:#ffffff;
+    --text:#1a2028;
+    --muted:#5f6470;
+    --accent:#c79e00;
+  }
+  body[data-theme="light"]{
+    background:var(--bg) !important;
+    color:var(--text) !important;
+  }
+  body[data-theme="light"] header{
+    background:linear-gradient(180deg,#f6f8fb,#eef2f7) !important;
+    border-bottom-color:rgba(23,35,52,0.2) !important;
+  }
+  body[data-theme="light"] .panel{
+    border-color:rgba(23,35,52,0.18) !important;
+    box-shadow:0 8px 24px rgba(17,27,43,0.12) !important;
+    background:var(--panel) !important;
+  }
+  body[data-theme="light"] fieldset{
+    border-color:rgba(23,35,52,0.2) !important;
+  }
+  body[data-theme="light"] legend,
+  body[data-theme="light"] label,
+  body[data-theme="light"] .hint{
+    color:var(--muted) !important;
+  }
+  body[data-theme="light"] .stage,
+  body[data-theme="light"] canvas#c{
+    background:#000 !important;
+  }
+  body[data-theme="light"] .settings-btn,
+  body[data-theme="light"] #panelToggle{
+    background:var(--accent) !important;
+    color:#111 !important;
+  }
+  body[data-theme="light"] .emitter-segmented{
+    background:#eef2f7 !important;
+    border-color:rgba(23,35,52,0.2) !important;
+  }
+  body[data-theme="light"] .emitter-segmented label{
+    color:#1a2028 !important;
+  }
+  body[data-theme="light"] .emitter-segmented input:checked + label{
+    background:rgba(199,158,0,0.2) !important;
+    box-shadow:inset 0 0 0 1px rgba(199,158,0,0.45) !important;
+    color:#1a2028 !important;
+  }
+  body[data-theme="light"] .modal-content{
+    background:#fff !important;
+    border-color:rgba(23,35,52,0.2) !important;
+  }
+  body[data-theme="light"] .emitter-add,
+  body[data-theme="light"] #addEmitterB,
+  body[data-theme="light"] #removeEmitterBtn{
+    background:#e6e9ee !important;
+    border:1px solid rgba(23,35,52,0.26) !important;
+    color:#1a2028 !important;
+  }
+  body[data-theme="light"] .emitter-add:disabled,
+  body[data-theme="light"] #addEmitterB:disabled,
+  body[data-theme="light"] #removeEmitterBtn:disabled{
+    background:#f0f2f5 !important;
+    color:#5a6472 !important;
+    border-color:rgba(23,35,52,0.18) !important;
+    opacity:1 !important;
+  }
+  body[data-theme="light"] .control-tab{
+    background:#edf1f6 !important;
+    border-color:rgba(23,35,52,0.26) !important;
+    color:#1a2028 !important;
+  }
+  body[data-theme="light"] .control-tab.is-active{
+    background:#dfe7f1 !important;
+    color:#10243d !important;
+    box-shadow:inset 0 0 0 1px rgba(23,35,52,0.34) !important;
+  }
+  body[data-theme="light"] .guide-popup .controls button{
+    background:#edf1f6 !important;
+    color:#1a2028 !important;
+    border-color:rgba(23,35,52,0.25) !important;
+  }
+  body[data-theme="light"] .guide-popup .controls button.primary{
+    background:#c79e00 !important;
+    color:#111 !important;
+  }
+</style>
+<script>
+(() => {
+  if (window.__flaminatorThemeModePatched) return;
+  window.__flaminatorThemeModePatched = true;
+
+  const THEME_MODE_KEY = 'flaminatorThemeMode_v1';
+  const themeMediaQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  let currentThemeMode = 'auto';
+
+  const modalContent = document.querySelector('#settingsModal .modal-content');
+  const applyBtn = document.getElementById('applySettings');
+  if (modalContent && applyBtn && !document.getElementById('themeModeSelect')) {
+    const wrap = document.createElement('label');
+    wrap.setAttribute('for', 'themeModeSelect');
+    wrap.textContent = 'Theme';
+    const select = document.createElement('select');
+    select.id = 'themeModeSelect';
+    select.innerHTML = `
+      <option value="auto">Auto (browser)</option>
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+    `;
+    wrap.appendChild(select);
+    modalContent.insertBefore(wrap, applyBtn);
+  }
+
+  const themeModeSelect = document.getElementById('themeModeSelect');
+
+  function resolveTheme(mode) {
+    if (mode === 'light') return 'light';
+    if (mode === 'dark') return 'dark';
+    return themeMediaQuery && themeMediaQuery.matches ? 'dark' : 'light';
+  }
+
+  function applyThemeMode(mode, options = {}) {
+    const normalized = (mode === 'light' || mode === 'dark' || mode === 'auto') ? mode : 'auto';
+    const persist = options.persist !== false;
+    currentThemeMode = normalized;
+    const resolved = resolveTheme(normalized);
+    document.body.dataset.theme = resolved;
+    if (themeModeSelect) themeModeSelect.value = normalized;
+    if (persist) localStorage.setItem(THEME_MODE_KEY, normalized);
+  }
+
+  function loadThemeMode() {
+    const saved = localStorage.getItem(THEME_MODE_KEY) || 'auto';
+    applyThemeMode(saved, { persist: false });
+  }
+
+  if (themeModeSelect) {
+    themeModeSelect.addEventListener('change', (event) => {
+      applyThemeMode(event.target.value);
+    });
+  }
+
+  if (themeMediaQuery) {
+    const onSchemeChange = () => {
+      if (currentThemeMode === 'auto') applyThemeMode('auto', { persist: false });
+    };
+    if (typeof themeMediaQuery.addEventListener === 'function') {
+      themeMediaQuery.addEventListener('change', onSchemeChange);
+    } else if (typeof themeMediaQuery.addListener === 'function') {
+      themeMediaQuery.addListener(onSchemeChange);
+    }
+  }
+
+  loadThemeMode();
+})();
+</script>
+
+<!-- ===== APPENDED ONLY: Uniform main header button sizes ===== -->
+<style>
+  #startTutorial,
+  #exportGif,
+  #openSettings{
+    width:148px !important;
+    min-width:148px !important;
+    height:38px !important;
+    display:inline-flex !important;
+    align-items:center;
+    justify-content:center;
+    white-space:nowrap;
+  }
+</style>
+
+</body>
+</html>

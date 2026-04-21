@@ -1,0 +1,341 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 63;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0F042B576809EF16C0E7B80F /* FlameSpriteScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1606F6D919B87CEFCB6F358A /* FlameSpriteScene.swift */; };
+		527139CF24D9302E9408C802 /* FlameSimulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6D799F76DCB0257091E608D /* FlameSimulation.swift */; };
+		59D324845BE5EB712F6BAE3B /* FlameStageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2FF1EC3921CCB8903AA64F /* FlameStageView.swift */; };
+		8234E0B0C6504A38D4AA0D56 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82D670374CD54352AED8F68 /* ContentView.swift */; };
+		C504C1FA2F4C998000C12773 /* Flame.sks in Resources */ = {isa = PBXBuildFile; fileRef = C504C1F82F4C998000C12773 /* Flame.sks */; };
+		C504C1FF2F4C99C200C12773 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C504C1FD2F4C99C200C12773 /* Assets.xcassets */; };
+		C504C2002F4C99C200C12773 /* Smoke.sks in Resources */ = {isa = PBXBuildFile; fileRef = C504C1FE2F4C99C200C12773 /* Smoke.sks */; };
+		C504C2032F4C9B0200C12773 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C504C2012F4C9B0200C12773 /* Assets.xcassets */; };
+		D4E9C84F9564E7BC879295E3 /* Flaminator9000App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39F36FE50BB3D788F3A2A40B /* Flaminator9000App.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1606F6D919B87CEFCB6F358A /* FlameSpriteScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlameSpriteScene.swift; sourceTree = "<group>"; };
+		39F36FE50BB3D788F3A2A40B /* Flaminator9000App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Flaminator9000App.swift; sourceTree = "<group>"; };
+		59736EB1CC522DA830727DB8 /* Flaminator9000.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Flaminator9000.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA2FF1EC3921CCB8903AA64F /* FlameStageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlameStageView.swift; sourceTree = "<group>"; };
+		C504C1F82F4C998000C12773 /* Flame.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = Flame.sks; sourceTree = "<group>"; };
+		C504C1FD2F4C99C200C12773 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C504C1FE2F4C99C200C12773 /* Smoke.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = Smoke.sks; sourceTree = "<group>"; };
+		C504C2012F4C9B0200C12773 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C6D799F76DCB0257091E608D /* FlameSimulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlameSimulation.swift; sourceTree = "<group>"; };
+		F82D670374CD54352AED8F68 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		3549D2D410BA14101922E632 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				59736EB1CC522DA830727DB8 /* Flaminator9000.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3EA6D584CAD4A4D272641816 = {
+			isa = PBXGroup;
+			children = (
+				C504C2012F4C9B0200C12773 /* Assets.xcassets */,
+				D485EA72E4A13A777DC0B5A6 /* Resources */,
+				A20EBBA50E634D60ABB8B8FD /* Sources */,
+				3549D2D410BA14101922E632 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A20EBBA50E634D60ABB8B8FD /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				F82D670374CD54352AED8F68 /* ContentView.swift */,
+				C6D799F76DCB0257091E608D /* FlameSimulation.swift */,
+				1606F6D919B87CEFCB6F358A /* FlameSpriteScene.swift */,
+				AA2FF1EC3921CCB8903AA64F /* FlameStageView.swift */,
+				39F36FE50BB3D788F3A2A40B /* Flaminator9000App.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		D485EA72E4A13A777DC0B5A6 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				C504C1FD2F4C99C200C12773 /* Assets.xcassets */,
+				C504C1F82F4C998000C12773 /* Flame.sks */,
+				C504C1FE2F4C99C200C12773 /* Smoke.sks */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3098D6ACFCCC3B32A33BBA1E /* Flaminator9000 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 94191A96A7212A763B2CE7E9 /* Build configuration list for PBXNativeTarget "Flaminator9000" */;
+			buildPhases = (
+				9777A93A9BB68CCE706DCF80 /* Sources */,
+				6C2261B10F7A9674003BE655 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Flaminator9000;
+			packageProductDependencies = (
+			);
+			productName = Flaminator9000;
+			productReference = 59736EB1CC522DA830727DB8 /* Flaminator9000.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0B414C1317A83B391BE7BBB5 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					3098D6ACFCCC3B32A33BBA1E = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 521A7AD063DE474D886AD6B7 /* Build configuration list for PBXProject "Flaminator9000" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 3EA6D584CAD4A4D272641816;
+			minimizedProjectReferenceProxies = 1;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3098D6ACFCCC3B32A33BBA1E /* Flaminator9000 */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		6C2261B10F7A9674003BE655 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C504C1FA2F4C998000C12773 /* Flame.sks in Resources */,
+				C504C1FF2F4C99C200C12773 /* Assets.xcassets in Resources */,
+				C504C2002F4C99C200C12773 /* Smoke.sks in Resources */,
+				C504C2032F4C9B0200C12773 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9777A93A9BB68CCE706DCF80 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8234E0B0C6504A38D4AA0D56 /* ContentView.swift in Sources */,
+				527139CF24D9302E9408C802 /* FlameSimulation.swift in Sources */,
+				0F042B576809EF16C0E7B80F /* FlameSpriteScene.swift in Sources */,
+				59D324845BE5EB712F6BAE3B /* FlameStageView.swift in Sources */,
+				D4E9C84F9564E7BC879295E3 /* Flaminator9000App.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		235BD2DF446FE0DA4F0C294B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		42B8AF79CF7AB36FF828B6E9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A453C0DE84A6F2C74AE3B4FF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 6N9T5NUU99;
+				INFOPLIST_FILE = Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.thmg.flaminator9000;
+				PRODUCT_NAME = Flaminator9000;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F6F64A85CCAFF42DBDAF7A8E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 6N9T5NUU99;
+				INFOPLIST_FILE = Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.thmg.flaminator9000;
+				PRODUCT_NAME = Flaminator9000;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		521A7AD063DE474D886AD6B7 /* Build configuration list for PBXProject "Flaminator9000" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				42B8AF79CF7AB36FF828B6E9 /* Debug */,
+				235BD2DF446FE0DA4F0C294B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		94191A96A7212A763B2CE7E9 /* Build configuration list for PBXNativeTarget "Flaminator9000" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A453C0DE84A6F2C74AE3B4FF /* Debug */,
+				F6F64A85CCAFF42DBDAF7A8E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0B414C1317A83B391BE7BBB5 /* Project object */;
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "warehouse-leak",
+    "name": "Warehouse Drum Leak",
+    "date": "2026-02-20",
+    "notes": "Indoor warehouse response with shifting vapor and hot zone pockets.",
+    "radiationSource": { "doseAt1mRph": 0.03, "backgroundRph": 0.00002, "shielding": 1.0 },
+    "zones": [
+      { "name": "OUT", "oxygen": 20.8, "lel": 0.0, "co": 0.0, "h2s": 0.0, "pid": 0.0, "ph": 7.0 },
+      { "name": "Warm Zone", "oxygen": 20.4, "lel": 2.0, "co": 5.0, "h2s": 0.0, "pid": 8.0, "ph": 6.5 },
+      { "name": "Hot Zone A", "oxygen": 19.2, "lel": 12.0, "co": 48.0, "h2s": 14.0, "pid": 120.0, "ph": 3.0 }
+    ]
+  },
+  {
+    "id": "railcar-transfer",
+    "name": "Railcar Transfer Incident",
+    "date": "2026-02-18",
+    "notes": "Outdoor transfer area with intermittent wind-driven exposure spikes.",
+    "radiationSource": { "doseAt1mRph": 0.025, "backgroundRph": 0.000015, "shielding": 1.0 },
+    "zones": [
+      { "name": "OUT", "oxygen": 20.8, "lel": 0.0, "co": 0.0, "h2s": 0.0, "pid": 0.0, "ph": 7.0 },
+      { "name": "Transfer Pad", "oxygen": 20.1, "lel": 6.5, "co": 18.0, "h2s": 4.0, "pid": 45.0, "ph": 8.0 },
+      { "name": "Valve Side", "oxygen": 18.8, "lel": 22.0, "co": 65.0, "h2s": 22.0, "pid": 200.0, "ph": 11.0 }
+    ]
+  },
+  {
+    "id": "lab-spill",
+    "name": "Training Lab Spill",
+    "date": "2026-02-15",
+    "notes": "Smaller footprint scenario useful for pH and detector familiarization drills.",
+    "radiationSource": { "doseAt1mRph": 0.015, "backgroundRph": 0.00001, "shielding": 0.8 },
+    "zones": [
+      { "name": "OUT", "oxygen": 20.8, "lel": 0.0, "co": 0.0, "h2s": 0.0, "pid": 0.0, "ph": 7.0 },
+      { "name": "Bench Area", "oxygen": 20.6, "lel": 1.0, "co": 2.0, "h2s": 0.0, "pid": 15.0, "ph": 5.0 },
+      { "name": "Spill Pool", "oxygen": 19.9, "lel": 4.0, "co": 8.0, "h2s": 0.5, "pid": 65.0, "ph": 1.0 }
+    ]
+  }
+]

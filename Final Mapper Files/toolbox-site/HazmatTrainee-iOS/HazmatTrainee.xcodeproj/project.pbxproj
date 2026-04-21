@@ -1,0 +1,373 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 63;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1A0C5550C664F8EB6A05538D /* ScenarioListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2528F220A9FE326CC26C0267 /* ScenarioListView.swift */; };
+		3A28A49C07B0316F003DB0E2 /* SharedViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1352872F8751FBBC90757E04 /* SharedViews.swift */; };
+		5DDBCC4C3F429E4BD7D3BE50 /* DataverseConfig.example.plist in Resources */ = {isa = PBXBuildFile; fileRef = E2786866E2D8DB8BE6BB3D15 /* DataverseConfig.example.plist */; };
+		5F584A7F20E3023FA2E058C1 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC4B59A972F50406D3AED091 /* Models.swift */; };
+		74140A795A4E624898470B37 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D59D6FE4B63F4F765C19E992 /* RootView.swift */; };
+		7C5A851759A936BD7CFAD521 /* DataverseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA92D9019A6C98DD7934592D /* DataverseClient.swift */; };
+		7CE0CD72E17B70BE9B9E67B7 /* ToolListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8DD87285AA1A3DC2742F6A4 /* ToolListView.swift */; };
+		801C3850124E0298CFAACDF7 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C0D11FD17F4284178283F1A /* HomeView.swift */; };
+		845046D9C5894DD0D448E3CA /* GasSimulatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2DC501F06039B62BE12A31 /* GasSimulatorView.swift */; };
+		851C15B553828E97602CDFF1 /* RadiationSimulatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D46D33BC11CE31603CB922B /* RadiationSimulatorView.swift */; };
+		8F43CA3CB55A95C0C0DDA7EF /* HazmatTraineeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D86B6F5C8B899B3DB43436AE /* HazmatTraineeApp.swift */; };
+		9E1EB5E73591243CE0310D60 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E5866F3218CBB12BA72534 /* Theme.swift */; };
+		AED5EEE77D4D1CAC3D612F22 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9B25B4DD950FC59E42AFFFA6 /* Assets.xcassets */; };
+		B4FF0B42337C4CF56A4C6798 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4933FF0FB1174088E0C4FD76 /* AppModel.swift */; };
+		C21255DC397E08DECC274F76 /* SampleScenarios.json in Resources */ = {isa = PBXBuildFile; fileRef = AE6C9C70CE9F3F12264DC88A /* SampleScenarios.json */; };
+		D2C05BA541FA3487FEE5F375 /* PHSimulatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D77244FF63FFF998082C19E /* PHSimulatorView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1352872F8751FBBC90757E04 /* SharedViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedViews.swift; sourceTree = "<group>"; };
+		2528F220A9FE326CC26C0267 /* ScenarioListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioListView.swift; sourceTree = "<group>"; };
+		42E5866F3218CBB12BA72534 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		4933FF0FB1174088E0C4FD76 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		6D46D33BC11CE31603CB922B /* RadiationSimulatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadiationSimulatorView.swift; sourceTree = "<group>"; };
+		7C0D11FD17F4284178283F1A /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		9B25B4DD950FC59E42AFFFA6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9D77244FF63FFF998082C19E /* PHSimulatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PHSimulatorView.swift; sourceTree = "<group>"; };
+		A8DD87285AA1A3DC2742F6A4 /* ToolListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolListView.swift; sourceTree = "<group>"; };
+		AE6C9C70CE9F3F12264DC88A /* SampleScenarios.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = SampleScenarios.json; sourceTree = "<group>"; };
+		CC4B59A972F50406D3AED091 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		D59D6FE4B63F4F765C19E992 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		D86B6F5C8B899B3DB43436AE /* HazmatTraineeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HazmatTraineeApp.swift; sourceTree = "<group>"; };
+		E2786866E2D8DB8BE6BB3D15 /* DataverseConfig.example.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = DataverseConfig.example.plist; sourceTree = "<group>"; };
+		F77796476D99D6CAEED2C468 /* HazmatTrainee.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HazmatTrainee.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FA92D9019A6C98DD7934592D /* DataverseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataverseClient.swift; sourceTree = "<group>"; };
+		FE2DC501F06039B62BE12A31 /* GasSimulatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GasSimulatorView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		7E0C41E6A7AE3D6EF8DC86BF = {
+			isa = PBXGroup;
+			children = (
+				EDAFC573AC7E85381F8DC228 /* Resources */,
+				C31DF1D717DB16B1F9110BB9 /* Sources */,
+				8BA6DC8D875325149764B161 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		8BA6DC8D875325149764B161 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F77796476D99D6CAEED2C468 /* HazmatTrainee.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C31DF1D717DB16B1F9110BB9 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				4933FF0FB1174088E0C4FD76 /* AppModel.swift */,
+				FA92D9019A6C98DD7934592D /* DataverseClient.swift */,
+				FE2DC501F06039B62BE12A31 /* GasSimulatorView.swift */,
+				D86B6F5C8B899B3DB43436AE /* HazmatTraineeApp.swift */,
+				7C0D11FD17F4284178283F1A /* HomeView.swift */,
+				CC4B59A972F50406D3AED091 /* Models.swift */,
+				9D77244FF63FFF998082C19E /* PHSimulatorView.swift */,
+				6D46D33BC11CE31603CB922B /* RadiationSimulatorView.swift */,
+				D59D6FE4B63F4F765C19E992 /* RootView.swift */,
+				2528F220A9FE326CC26C0267 /* ScenarioListView.swift */,
+				1352872F8751FBBC90757E04 /* SharedViews.swift */,
+				42E5866F3218CBB12BA72534 /* Theme.swift */,
+				A8DD87285AA1A3DC2742F6A4 /* ToolListView.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		EDAFC573AC7E85381F8DC228 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				9B25B4DD950FC59E42AFFFA6 /* Assets.xcassets */,
+				E2786866E2D8DB8BE6BB3D15 /* DataverseConfig.example.plist */,
+				AE6C9C70CE9F3F12264DC88A /* SampleScenarios.json */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		940BE8267C3271ECD1FF9558 /* HazmatTrainee */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5AAA7D0ADC21C608B7A5B6D7 /* Build configuration list for PBXNativeTarget "HazmatTrainee" */;
+			buildPhases = (
+				A5FACFD0419403BB54C86A56 /* Sources */,
+				4306A7191903B5BC6DEA5F4E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HazmatTrainee;
+			packageProductDependencies = (
+			);
+			productName = HazmatTrainee;
+			productReference = F77796476D99D6CAEED2C468 /* HazmatTrainee.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D7BD0FF4C150E125CDEDAD31 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					940BE8267C3271ECD1FF9558 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = D73967D404E54C2B855F8554 /* Build configuration list for PBXProject "HazmatTrainee" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 7E0C41E6A7AE3D6EF8DC86BF;
+			minimizedProjectReferenceProxies = 1;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				940BE8267C3271ECD1FF9558 /* HazmatTrainee */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4306A7191903B5BC6DEA5F4E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AED5EEE77D4D1CAC3D612F22 /* Assets.xcassets in Resources */,
+				5DDBCC4C3F429E4BD7D3BE50 /* DataverseConfig.example.plist in Resources */,
+				C21255DC397E08DECC274F76 /* SampleScenarios.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A5FACFD0419403BB54C86A56 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B4FF0B42337C4CF56A4C6798 /* AppModel.swift in Sources */,
+				7C5A851759A936BD7CFAD521 /* DataverseClient.swift in Sources */,
+				845046D9C5894DD0D448E3CA /* GasSimulatorView.swift in Sources */,
+				8F43CA3CB55A95C0C0DDA7EF /* HazmatTraineeApp.swift in Sources */,
+				801C3850124E0298CFAACDF7 /* HomeView.swift in Sources */,
+				5F584A7F20E3023FA2E058C1 /* Models.swift in Sources */,
+				D2C05BA541FA3487FEE5F375 /* PHSimulatorView.swift in Sources */,
+				851C15B553828E97602CDFF1 /* RadiationSimulatorView.swift in Sources */,
+				74140A795A4E624898470B37 /* RootView.swift in Sources */,
+				1A0C5550C664F8EB6A05538D /* ScenarioListView.swift in Sources */,
+				3A28A49C07B0316F003DB0E2 /* SharedViews.swift in Sources */,
+				9E1EB5E73591243CE0310D60 /* Theme.swift in Sources */,
+				7CE0CD72E17B70BE9B9E67B7 /* ToolListView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2F360D2EEE7FB5DE5A88922A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6N9T5NUU99;
+				INFOPLIST_FILE = Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.thmg.hazmattrainee;
+				PRODUCT_NAME = HazmatTrainee;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		87021BE63E5D1585622144DD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6N9T5NUU99;
+				INFOPLIST_FILE = Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.thmg.hazmattrainee;
+				PRODUCT_NAME = HazmatTrainee;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8D99A5C8DA4F662559087EAA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		D9E910B278F541D44EA666D0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5AAA7D0ADC21C608B7A5B6D7 /* Build configuration list for PBXNativeTarget "HazmatTrainee" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				87021BE63E5D1585622144DD /* Debug */,
+				2F360D2EEE7FB5DE5A88922A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D73967D404E54C2B855F8554 /* Build configuration list for PBXProject "HazmatTrainee" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D9E910B278F541D44EA666D0 /* Debug */,
+				8D99A5C8DA4F662559087EAA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D7BD0FF4C150E125CDEDAD31 /* Project object */;
+}

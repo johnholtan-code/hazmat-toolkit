@@ -32,16 +32,50 @@ body {
   margin-bottom: 1rem;
 }
 
+.home-page {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 214, 0, 0.15), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(255, 214, 0, 0.09), transparent 45%),
+    linear-gradient(180deg, #060606 0%, #101010 100%);
+}
+
+.home-page .page {
+  width: min(1100px, 94vw);
+}
+
+.hero-panel {
+  border: 1px solid rgba(255, 214, 0, 0.2);
+  border-radius: 18px;
+  padding: 1.25rem 1.25rem 1.5rem;
+  background: rgba(8, 8, 8, 0.68);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.home-brand-logo {
+  width: min(300px, 60vw);
+  margin-bottom: 0.2rem;
+}
+
+.home-eyebrow {
+  margin: 0.2rem 0 0.2rem;
+  font-family: "Bebas Neue", "Segoe UI", sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 214, 0, 0.9);
+}
+
 .hero h1 {
-  margin: 0;
-  font-size: clamp(2rem, 5vw, 3.2rem);
-  letter-spacing: 0.04em;
+  margin: 0.15rem 0 0;
+  font-family: "Bebas Neue", "Segoe UI", sans-serif;
+  font-size: clamp(2.4rem, 6vw, 3.7rem);
+  letter-spacing: 0.03em;
   color: var(--accent);
 }
 
 .hero p {
   margin: 0.6rem 0 0;
-  color: #ddd;
+  color: rgba(255, 255, 255, 0.84);
 }
 
 .pricing-legend {
@@ -87,78 +121,113 @@ body {
   margin: 0 auto 2.2rem;
 }
 
-.toolbox-section h2 {
-  margin: 0 0 0.75rem;
-  text-align: center;
-  color: var(--accent);
-  letter-spacing: 0.04em;
-}
-
-.toolbox-frame {
+.toolbox-wrap {
   position: relative;
   width: min(900px, 100%);
   margin: 0 auto;
+}
+
+.toolbox-img {
+  width: 100%;
+  height: auto;
+  display: block;
   border-radius: 12px;
-  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
 }
 
-.toolbox-frame img {
+.toolbox-svg {
   width: 100%;
   height: auto;
   display: block;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
 }
 
-.toolbox-overlay {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+.toolbox-title-svg {
+  font-family: "Bebas Neue", "Segoe UI", sans-serif;
+  font-size: 126px;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
 }
 
-.drawer-link {
-  cursor: pointer;
-}
-
-.drawer-hit {
-  fill: rgba(0, 0, 0, 0.08);
-  stroke: rgba(255, 255, 255, 0.2);
-  stroke-width: 2;
-  transition: fill 0.16s ease, stroke 0.16s ease, filter 0.16s ease;
-}
-
-.badge-bg {
-  fill: rgba(255, 212, 0, 0.88);
-  stroke: rgba(0, 0, 0, 0.3);
+.debug-rect {
+  fill: none;
   stroke-width: 1;
 }
 
-.drawer-label {
-  fill: #ffffff;
-  font-size: 43px;
-  font-weight: 700;
-  paint-order: stroke;
-  stroke: rgba(0, 0, 0, 0.55);
-  stroke-width: 3px;
+.debug-title-box {
+  stroke: #ffd400;
 }
 
-.badge-text {
-  fill: #151515;
-  font-size: 30px;
-  font-weight: 800;
-  text-anchor: middle;
+/* Optional: add `debug-overlays` to body class to verify alignment boxes */
+body:not(.debug-overlays) .debug-rect {
+  display: none;
 }
 
-.drawer-link:hover .drawer-hit,
-.drawer-link:focus-visible .drawer-hit {
-  fill: rgba(255, 212, 0, 0.18);
-  stroke: rgba(255, 212, 0, 0.95);
-  filter: drop-shadow(0 0 7px rgba(255, 212, 0, 0.75));
+.drawer-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
 }
 
-.drawer-link:focus-visible {
+.drawer {
+  position: absolute;
+  left: 14%;
+  width: 72%;
+  top: var(--top);
+  height: var(--h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  text-decoration: none;
+  border-radius: 10px;
   outline: none;
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(2px);
+  transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  cursor: pointer;
+}
+
+.drawer:hover {
+  background: rgba(0, 0, 0, 0.22);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 0 0 1px rgba(255, 212, 0, 0.45), 0 0 14px rgba(255, 212, 0, 0.2);
+}
+
+.drawer:focus-visible {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+}
+
+.drawer-title {
+  color: #fff;
+  font-weight: 800;
+  font-size: clamp(18px, 1.6vw, 24px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 170px - 24px);
+  padding-right: 12px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+}
+
+.drawer-badge {
+  flex: 0 0 auto;
+  min-width: 130px;
+  text-align: center;
+  font-weight: 800;
+  font-size: clamp(12px, 1.1vw, 14px);
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 206, 0, 0.95);
+  color: #111;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
 }
 
 /* Kept for existing destination pages */
@@ -216,11 +285,222 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .drawer-label {
-    font-size: 38px;
+  .drawer {
+    left: 13.5%;
+    width: 73%;
+    padding: 0 12px;
   }
 
-  .badge-text {
-    font-size: 27px;
+  .drawer-badge {
+    min-width: 120px;
   }
+}
+
+.pricing-legend{
+  width: 900px;
+  max-width: 100%;
+  margin: 18px auto 34px;
+  border-radius: 18px;
+  padding: 18px 18px 16px;
+  border: 1px solid rgba(255, 214, 0, 0.18);
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.45);
+}
+
+.pricing-head{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pricing-title{
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,214,0,0.95);
+}
+
+.pricing-sub{
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+}
+
+.tier-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tier-card{
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(20,20,20,0.55);
+  position: relative;
+  overflow: hidden;
+}
+
+.tier-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: radial-gradient(120% 120% at 0% 0%, rgba(255,255,255,0.10), transparent 55%);
+  pointer-events:none;
+}
+
+.tier-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.tier-pill{
+  font-weight: 900;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(0,0,0,0.35);
+  color: rgba(255,255,255,0.9);
+}
+
+.tier-price{
+  font-weight: 950;
+  font-size: 22px;
+  color: rgba(255,255,255,0.95);
+}
+
+.tier-price .per{
+  font-size: 14px;
+  opacity: 0.75;
+  margin-left: 2px;
+}
+
+.tier-note{
+  color: rgba(255,255,255,0.72);
+  font-size: 13px;
+}
+
+/* subtle tier accents */
+.t0{ border-color: rgba(180,180,180,0.22); }
+.t1{ border-color: rgba(80, 220, 140, 0.22); }
+.t2{ border-color: rgba(255, 214, 0, 0.22); }
+.t3{ border-color: rgba(255, 90, 60, 0.22); }
+
+@media (max-width: 720px){
+  .tier-grid{ grid-template-columns: 1fr; }
+  .pricing-head{ flex-direction:column; align-items:flex-start; }
+}
+
+.conference-page {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 214, 0, 0.15), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(255, 214, 0, 0.09), transparent 45%),
+    linear-gradient(180deg, #060606 0%, #101010 100%);
+}
+
+.conference-shell {
+  width: min(1100px, 94vw);
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.conference-hero {
+  border: 1px solid rgba(255, 214, 0, 0.2);
+  border-radius: 18px;
+  padding: 1.25rem 1.25rem 1.5rem;
+  background: rgba(8, 8, 8, 0.68);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.conference-page .brand-logo {
+  width: min(300px, 60vw);
+}
+
+.conference-eyebrow {
+  margin: 0.25rem 0 0.2rem;
+  font-family: "Bebas Neue", "Segoe UI", sans-serif;
+  font-size: 1.25rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 214, 0, 0.9);
+}
+
+.conference-hero h1 {
+  margin: 0;
+  font-family: "Bebas Neue", "Segoe UI", sans-serif;
+  font-size: clamp(2.2rem, 6vw, 3.5rem);
+  letter-spacing: 0.03em;
+}
+
+.conference-sub {
+  margin: 0.35rem 0 1rem;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.conference-month {
+  margin-top: 1.25rem;
+  border: 1px solid rgba(255, 214, 0, 0.16);
+  border-radius: 16px;
+  background: rgba(14, 14, 14, 0.74);
+  overflow: hidden;
+}
+
+.conference-month h2 {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-family: "Bebas Neue", "Segoe UI", sans-serif;
+  font-size: 1.75rem;
+  letter-spacing: 0.06em;
+  color: rgba(255, 214, 0, 0.96);
+  border-bottom: 1px solid rgba(255, 214, 0, 0.16);
+  background: linear-gradient(90deg, rgba(255, 214, 0, 0.18), rgba(255, 214, 0, 0.03));
+}
+
+.conference-card {
+  padding: 0.92rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.conference-card:last-child {
+  border-bottom: 0;
+}
+
+.conference-card h3 {
+  margin: 0 0 0.22rem;
+  font-size: 1.1rem;
+  line-height: 1.25;
+}
+
+.conference-card p {
+  margin: 0.14rem 0;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.conference-date {
+  font-weight: 700;
+  color: rgba(255, 214, 0, 0.95) !important;
+}
+
+.conference-card a {
+  display: inline-block;
+  margin-top: 0.42rem;
+  padding: 0.28rem 0.58rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 214, 0, 0.48);
+  color: #111;
+  background: rgba(255, 214, 0, 0.95);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.conference-card a:hover,
+.conference-card a:focus-visible {
+  background: #ffd000;
 }

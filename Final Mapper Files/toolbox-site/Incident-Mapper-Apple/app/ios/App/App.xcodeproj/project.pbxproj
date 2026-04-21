@@ -1,0 +1,589 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
+		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
+		A1B2C3D4E5F6000000000091 /* HazMatDesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = A1B2C3D4E5F6000000000092 /* HazMatDesignSystem */; };
+		A1B2C3D4E5F60000000000A1 /* Depressionist_3_Revisited_2010.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60000000000A2 /* Depressionist_3_Revisited_2010.ttf */; };
+		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
+		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
+		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
+		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
+		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
+		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
+		A1B2C3D4E5F6000000000001 /* HazmatToolboxShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000002 /* HazmatToolboxShell.swift */; };
+		A1B2C3D4E5F6000000000011 /* ToolboxFlaminatorModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000012 /* ToolboxFlaminatorModule.swift */; };
+		A1B2C3D4E5F6000000000013 /* ToolboxPluminatorModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000014 /* ToolboxPluminatorModule.swift */; };
+		A1B2C3D4E5F6000000000081 /* ToolboxMainApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000082 /* ToolboxMainApp.swift */; };
+		C53FD65D2F4A19590088077B /* exportPdfHelper.js in Resources */ = {isa = PBXBuildFile; fileRef = C53FD65C2F4A19590088077B /* exportPdfHelper.js */; };
+		C53FD65F2F4B94900088077B /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C53FD65E2F4B94900088077B /* SceneDelegate.swift */; };
+		C53FD6612F4B94930088077B /* Info 2.plist in Resources */ = {isa = PBXBuildFile; fileRef = C53FD6602F4B94930088077B /* Info 2.plist */; };
+		C53FD6632F4BA2910088077B /* Info 3.plist in Resources */ = {isa = PBXBuildFile; fileRef = C53FD6622F4BA2910088077B /* Info 3.plist */; };
+		C53FD6652F4BA4C60088077B /* Info 4.plist in Resources */ = {isa = PBXBuildFile; fileRef = C53FD6642F4BA4C60088077B /* Info 4.plist */; };
+		C5C6F6A42F4D4374002BB5A3 /* DataverseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F68F2F4D4374002BB5A3 /* DataverseClient.swift */; };
+		C5C6F6A52F4D4374002BB5A3 /* ShapeChemicalReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F68D2F4D4374002BB5A3 /* ShapeChemicalReading.swift */; };
+		C5C6F6A62F4D4374002BB5A3 /* CreateScenarioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F6982F4D4374002BB5A3 /* CreateScenarioView.swift */; };
+		C5C6F6A72F4D4374002BB5A3 /* Scenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F68C2F4D4374002BB5A3 /* Scenario.swift */; };
+		C5C6F6A82F4D4374002BB5A3 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F6862F4D4374002BB5A3 /* AppStore.swift */; };
+		C5C6F6A92F4D4374002BB5A3 /* DataverseHazmatRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F6902F4D4374002BB5A3 /* DataverseHazmatRepository.swift */; };
+		C5C6F6AA2F4D4374002BB5A3 /* MapKitPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F6942F4D4374002BB5A3 /* MapKitPanel.swift */; };
+		C5C6F6AB2F4D4374002BB5A3 /* HazmatRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F6912F4D4374002BB5A3 /* HazmatRepository.swift */; };
+		C5C6F6AC2F4D4374002BB5A3 /* ChemicalReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F6882F4D4374002BB5A3 /* ChemicalReading.swift */; };
+		C5C6F6AD2F4D4374002BB5A3 /* MapPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F6952F4D4374002BB5A3 /* MapPlaceholderView.swift */; };
+		C5C6F6AE2F4D4374002BB5A3 /* HazmatToolkitIOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F6A22F4D4374002BB5A3 /* HazmatToolkitIOSApp.swift */; };
+		C5C6F6AF2F4D4374002BB5A3 /* GeoSimShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F68A2F4D4374002BB5A3 /* GeoSimShape.swift */; };
+		C5C6F6B02F4D4374002BB5A3 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F69C2F4D4374002BB5A3 /* RootView.swift */; };
+		C5C6F6B12F4D4374002BB5A3 /* GeoTrackingPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F68B2F4D4374002BB5A3 /* GeoTrackingPoint.swift */; };
+		C5C6F6B22F4D4374002BB5A3 /* MockHazmatRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F6922F4D4374002BB5A3 /* MockHazmatRepository.swift */; };
+		C5C6F6B32F4D4374002BB5A3 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F69E2F4D4374002BB5A3 /* SplashView.swift */; };
+		C5C6F6B42F4D4374002BB5A3 /* PolygonDrawingMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F6962F4D4374002BB5A3 /* PolygonDrawingMapView.swift */; };
+		C5C6F6B52F4D4374002BB5A3 /* DetectionDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F6892F4D4374002BB5A3 /* DetectionDevice.swift */; };
+		C5C6F6B62F4D4374002BB5A3 /* EditScenarioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F6992F4D4374002BB5A3 /* EditScenarioView.swift */; };
+		C5C6F6B72F4D4374002BB5A3 /* AppRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F6852F4D4374002BB5A3 /* AppRoute.swift */; };
+		C5C6F6B82F4D4374002BB5A3 /* WatchScenarioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F69F2F4D4374002BB5A3 /* WatchScenarioView.swift */; };
+		C5C6F6B92F4D4374002BB5A3 /* ScenarioListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F69D2F4D4374002BB5A3 /* ScenarioListView.swift */; };
+		C5C6F6BA2F4D4374002BB5A3 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F69A2F4D4374002BB5A3 /* HomeView.swift */; };
+		C5C6F6BB2F4D4374002BB5A3 /* MapMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C6F69B2F4D4374002BB5A3 /* MapMode.swift */; };
+		C5C6F6BC2F4D4374002BB5A3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C5C6F6A12F4D4374002BB5A3 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
+		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
+		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		504EC30C1FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
+		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		A1B2C3D4E5F6000000000002 /* HazmatToolboxShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HazmatToolboxShell.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6000000000012 /* ToolboxFlaminatorModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolboxFlaminatorModule.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6000000000014 /* ToolboxPluminatorModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolboxPluminatorModule.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6000000000082 /* ToolboxMainApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolboxMainApp.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60000000000A2 /* Depressionist_3_Revisited_2010.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Depressionist_3_Revisited_2010.ttf; sourceTree = "<group>"; };
+		C53FD65C2F4A19590088077B /* exportPdfHelper.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = exportPdfHelper.js; sourceTree = "<group>"; };
+		C53FD65E2F4B94900088077B /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		C53FD6602F4B94930088077B /* Info 2.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info 2.plist"; sourceTree = "<group>"; };
+		C53FD6622F4BA2910088077B /* Info 3.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info 3.plist"; sourceTree = "<group>"; };
+		C53FD6642F4BA4C60088077B /* Info 4.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info 4.plist"; sourceTree = "<group>"; };
+		C5C6F6852F4D4374002BB5A3 /* AppRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRoute.swift; sourceTree = "<group>"; };
+		C5C6F6862F4D4374002BB5A3 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
+		C5C6F6882F4D4374002BB5A3 /* ChemicalReading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChemicalReading.swift; sourceTree = "<group>"; };
+		C5C6F6892F4D4374002BB5A3 /* DetectionDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionDevice.swift; sourceTree = "<group>"; };
+		C5C6F68A2F4D4374002BB5A3 /* GeoSimShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeoSimShape.swift; sourceTree = "<group>"; };
+		C5C6F68B2F4D4374002BB5A3 /* GeoTrackingPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeoTrackingPoint.swift; sourceTree = "<group>"; };
+		C5C6F68C2F4D4374002BB5A3 /* Scenario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scenario.swift; sourceTree = "<group>"; };
+		C5C6F68D2F4D4374002BB5A3 /* ShapeChemicalReading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapeChemicalReading.swift; sourceTree = "<group>"; };
+		C5C6F68F2F4D4374002BB5A3 /* DataverseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataverseClient.swift; sourceTree = "<group>"; };
+		C5C6F6902F4D4374002BB5A3 /* DataverseHazmatRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataverseHazmatRepository.swift; sourceTree = "<group>"; };
+		C5C6F6912F4D4374002BB5A3 /* HazmatRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HazmatRepository.swift; sourceTree = "<group>"; };
+		C5C6F6922F4D4374002BB5A3 /* MockHazmatRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockHazmatRepository.swift; sourceTree = "<group>"; };
+		C5C6F6942F4D4374002BB5A3 /* MapKitPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapKitPanel.swift; sourceTree = "<group>"; };
+		C5C6F6952F4D4374002BB5A3 /* MapPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapPlaceholderView.swift; sourceTree = "<group>"; };
+		C5C6F6962F4D4374002BB5A3 /* PolygonDrawingMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolygonDrawingMapView.swift; sourceTree = "<group>"; };
+		C5C6F6982F4D4374002BB5A3 /* CreateScenarioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateScenarioView.swift; sourceTree = "<group>"; };
+		C5C6F6992F4D4374002BB5A3 /* EditScenarioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditScenarioView.swift; sourceTree = "<group>"; };
+		C5C6F69A2F4D4374002BB5A3 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		C5C6F69B2F4D4374002BB5A3 /* MapMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapMode.swift; sourceTree = "<group>"; };
+		C5C6F69C2F4D4374002BB5A3 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		C5C6F69D2F4D4374002BB5A3 /* ScenarioListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioListView.swift; sourceTree = "<group>"; };
+		C5C6F69E2F4D4374002BB5A3 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		C5C6F69F2F4D4374002BB5A3 /* WatchScenarioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchScenarioView.swift; sourceTree = "<group>"; };
+		C5C6F6A12F4D4374002BB5A3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C5C6F6A22F4D4374002BB5A3 /* HazmatToolkitIOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HazmatToolkitIOSApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		504EC3011FED79650016851F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
+				A1B2C3D4E5F6000000000091 /* HazMatDesignSystem in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		504EC2FB1FED79650016851F = {
+			isa = PBXGroup;
+			children = (
+				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
+				504EC3061FED79650016851F /* App */,
+				504EC3051FED79650016851F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		504EC3051FED79650016851F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				504EC3041FED79650016851F /* App.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		504EC3061FED79650016851F /* App */ = {
+			isa = PBXGroup;
+			children = (
+				C5C6F6A32F4D4374002BB5A3 /* HazmatToolkitIOS */,
+				50379B222058CBB4000EE86E /* capacitor.config.json */,
+				504EC3071FED79650016851F /* AppDelegate.swift */,
+				A1B2C3D4E5F6000000000002 /* HazmatToolboxShell.swift */,
+				A1B2C3D4E5F6000000000082 /* ToolboxMainApp.swift */,
+				A1B2C3D4E5F6000000000012 /* ToolboxFlaminatorModule.swift */,
+				A1B2C3D4E5F6000000000014 /* ToolboxPluminatorModule.swift */,
+				504EC30B1FED79650016851F /* Main.storyboard */,
+				504EC30E1FED79650016851F /* Assets.xcassets */,
+				A1B2C3D4E5F60000000000A2 /* Depressionist_3_Revisited_2010.ttf */,
+				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
+				504EC3131FED79650016851F /* Info.plist */,
+				2FAD9762203C412B000D30F8 /* config.xml */,
+				50B271D01FEDC1A000F3C39B /* public */,
+				C53FD65C2F4A19590088077B /* exportPdfHelper.js */,
+				C53FD65E2F4B94900088077B /* SceneDelegate.swift */,
+				C53FD6602F4B94930088077B /* Info 2.plist */,
+				C53FD6622F4BA2910088077B /* Info 3.plist */,
+				C53FD6642F4BA4C60088077B /* Info 4.plist */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		C5C6F6872F4D4374002BB5A3 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				C5C6F6852F4D4374002BB5A3 /* AppRoute.swift */,
+				C5C6F6862F4D4374002BB5A3 /* AppStore.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		C5C6F68E2F4D4374002BB5A3 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				C5C6F6882F4D4374002BB5A3 /* ChemicalReading.swift */,
+				C5C6F6892F4D4374002BB5A3 /* DetectionDevice.swift */,
+				C5C6F68A2F4D4374002BB5A3 /* GeoSimShape.swift */,
+				C5C6F68B2F4D4374002BB5A3 /* GeoTrackingPoint.swift */,
+				C5C6F68C2F4D4374002BB5A3 /* Scenario.swift */,
+				C5C6F68D2F4D4374002BB5A3 /* ShapeChemicalReading.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		C5C6F6932F4D4374002BB5A3 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				C5C6F68F2F4D4374002BB5A3 /* DataverseClient.swift */,
+				C5C6F6902F4D4374002BB5A3 /* DataverseHazmatRepository.swift */,
+				C5C6F6912F4D4374002BB5A3 /* HazmatRepository.swift */,
+				C5C6F6922F4D4374002BB5A3 /* MockHazmatRepository.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		C5C6F6972F4D4374002BB5A3 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				C5C6F6942F4D4374002BB5A3 /* MapKitPanel.swift */,
+				C5C6F6952F4D4374002BB5A3 /* MapPlaceholderView.swift */,
+				C5C6F6962F4D4374002BB5A3 /* PolygonDrawingMapView.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		C5C6F6A02F4D4374002BB5A3 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C5C6F6972F4D4374002BB5A3 /* Shared */,
+				C5C6F6982F4D4374002BB5A3 /* CreateScenarioView.swift */,
+				C5C6F6992F4D4374002BB5A3 /* EditScenarioView.swift */,
+				C5C6F69A2F4D4374002BB5A3 /* HomeView.swift */,
+				C5C6F69B2F4D4374002BB5A3 /* MapMode.swift */,
+				C5C6F69C2F4D4374002BB5A3 /* RootView.swift */,
+				C5C6F69D2F4D4374002BB5A3 /* ScenarioListView.swift */,
+				C5C6F69E2F4D4374002BB5A3 /* SplashView.swift */,
+				C5C6F69F2F4D4374002BB5A3 /* WatchScenarioView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		C5C6F6A32F4D4374002BB5A3 /* HazmatToolkitIOS */ = {
+			isa = PBXGroup;
+			children = (
+				C5C6F6872F4D4374002BB5A3 /* Core */,
+				C5C6F68E2F4D4374002BB5A3 /* Models */,
+				C5C6F6932F4D4374002BB5A3 /* Services */,
+				C5C6F6A02F4D4374002BB5A3 /* Views */,
+				C5C6F6A12F4D4374002BB5A3 /* Assets.xcassets */,
+				C5C6F6A22F4D4374002BB5A3 /* HazmatToolkitIOSApp.swift */,
+			);
+			path = HazmatToolkitIOS;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		504EC3031FED79650016851F /* App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 504EC3161FED79650016851F /* Build configuration list for PBXNativeTarget "App" */;
+			buildPhases = (
+				504EC3001FED79650016851F /* Sources */,
+				504EC3011FED79650016851F /* Frameworks */,
+				504EC3021FED79650016851F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = App;
+			packageProductDependencies = (
+				4D22ABE82AF431CB00220026 /* CapApp-SPM */,
+				A1B2C3D4E5F6000000000092 /* HazMatDesignSystem */,
+			);
+			productName = App;
+			productReference = 504EC3041FED79650016851F /* App.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		504EC2FC1FED79650016851F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastSwiftUpdateCheck = 0920;
+				LastUpgradeCheck = 2620;
+				TargetAttributes = {
+					504EC3031FED79650016851F = {
+						CreatedOnToolsVersion = 9.2;
+						LastSwiftMigration = 1100;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 504EC2FF1FED79650016851F /* Build configuration list for PBXProject "App" */;
+			compatibilityVersion = "Xcode 8.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 504EC2FB1FED79650016851F;
+			packageReferences = (
+				D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */,
+				A1B2C3D4E5F6000000000093 /* XCLocalSwiftPackageReference "HazMatDesignSystem" */,
+			);
+			productRefGroup = 504EC3051FED79650016851F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				504EC3031FED79650016851F /* App */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		504EC3021FED79650016851F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */,
+				50B271D11FEDC1A000F3C39B /* public in Resources */,
+				C5C6F6BC2F4D4374002BB5A3 /* Assets.xcassets in Resources */,
+				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
+				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
+				A1B2C3D4E5F60000000000A1 /* Depressionist_3_Revisited_2010.ttf in Resources */,
+				C53FD6632F4BA2910088077B /* Info 3.plist in Resources */,
+				C53FD6612F4B94930088077B /* Info 2.plist in Resources */,
+				504EC30D1FED79650016851F /* Main.storyboard in Resources */,
+				2FAD9763203C412B000D30F8 /* config.xml in Resources */,
+				C53FD6652F4BA4C60088077B /* Info 4.plist in Resources */,
+				C53FD65D2F4A19590088077B /* exportPdfHelper.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		504EC3001FED79650016851F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+				A1B2C3D4E5F6000000000001 /* HazmatToolboxShell.swift in Sources */,
+				A1B2C3D4E5F6000000000081 /* ToolboxMainApp.swift in Sources */,
+				A1B2C3D4E5F6000000000011 /* ToolboxFlaminatorModule.swift in Sources */,
+				A1B2C3D4E5F6000000000013 /* ToolboxPluminatorModule.swift in Sources */,
+				C5C6F6A42F4D4374002BB5A3 /* DataverseClient.swift in Sources */,
+				C5C6F6A52F4D4374002BB5A3 /* ShapeChemicalReading.swift in Sources */,
+				C5C6F6A62F4D4374002BB5A3 /* CreateScenarioView.swift in Sources */,
+				C5C6F6A72F4D4374002BB5A3 /* Scenario.swift in Sources */,
+				C5C6F6A82F4D4374002BB5A3 /* AppStore.swift in Sources */,
+				C5C6F6A92F4D4374002BB5A3 /* DataverseHazmatRepository.swift in Sources */,
+				C5C6F6AA2F4D4374002BB5A3 /* MapKitPanel.swift in Sources */,
+				C5C6F6AB2F4D4374002BB5A3 /* HazmatRepository.swift in Sources */,
+				C5C6F6AC2F4D4374002BB5A3 /* ChemicalReading.swift in Sources */,
+				C5C6F6AD2F4D4374002BB5A3 /* MapPlaceholderView.swift in Sources */,
+				C5C6F6AF2F4D4374002BB5A3 /* GeoSimShape.swift in Sources */,
+				C5C6F6B02F4D4374002BB5A3 /* RootView.swift in Sources */,
+				C5C6F6B12F4D4374002BB5A3 /* GeoTrackingPoint.swift in Sources */,
+				C5C6F6B22F4D4374002BB5A3 /* MockHazmatRepository.swift in Sources */,
+				C5C6F6B32F4D4374002BB5A3 /* SplashView.swift in Sources */,
+				C5C6F6B42F4D4374002BB5A3 /* PolygonDrawingMapView.swift in Sources */,
+				C5C6F6B52F4D4374002BB5A3 /* DetectionDevice.swift in Sources */,
+				C5C6F6B62F4D4374002BB5A3 /* EditScenarioView.swift in Sources */,
+				C5C6F6B72F4D4374002BB5A3 /* AppRoute.swift in Sources */,
+				C5C6F6B82F4D4374002BB5A3 /* WatchScenarioView.swift in Sources */,
+				C5C6F6B92F4D4374002BB5A3 /* ScenarioListView.swift in Sources */,
+				C5C6F6BA2F4D4374002BB5A3 /* HomeView.swift in Sources */,
+				C5C6F6BB2F4D4374002BB5A3 /* MapMode.swift in Sources */,
+				C53FD65F2F4B94900088077B /* SceneDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		504EC30B1FED79650016851F /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				504EC30C1FED79650016851F /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		504EC3101FED79650016851F /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				504EC3111FED79650016851F /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		504EC3141FED79650016851F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		504EC3151FED79650016851F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		504EC3171FED79650016851F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6N9T5NUU99;
+				INFOPLIST_FILE = App/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
+				PRODUCT_BUNDLE_IDENTIFIER = com.thmg.incidentmapper;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		504EC3181FED79650016851F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6N9T5NUU99;
+				INFOPLIST_FILE = App/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.thmg.incidentmapper;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		504EC2FF1FED79650016851F /* Build configuration list for PBXProject "App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				504EC3141FED79650016851F /* Debug */,
+				504EC3151FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		504EC3161FED79650016851F /* Build configuration list for PBXNativeTarget "App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				504EC3171FED79650016851F /* Debug */,
+				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "CapApp-SPM";
+		};
+		A1B2C3D4E5F6000000000093 /* XCLocalSwiftPackageReference "HazMatDesignSystem" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../../../HazMatDesignSystem";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A1B2C3D4E5F6000000000092 /* HazMatDesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1B2C3D4E5F6000000000093 /* XCLocalSwiftPackageReference "HazMatDesignSystem" */;
+			productName = HazMatDesignSystem;
+		};
+		4D22ABE82AF431CB00220026 /* CapApp-SPM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */;
+			productName = "CapApp-SPM";
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 504EC2FC1FED79650016851F /* Project object */;
+}
