@@ -1,0 +1,36 @@
+name: HazmatTrainee
+options:
+  minimumXcodeGenVersion: 2.38.0
+settings:
+  base:
+    SWIFT_VERSION: 5.0
+    IPHONEOS_DEPLOYMENT_TARGET: 17.0
+packages:
+  HazMatDesignSystem:
+    path: ../HazMatDesignSystem
+targets:
+  HazmatTrainee:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Sources
+      - path: Resources
+        buildPhase: resources
+        excludes:
+          - Info.plist
+          - AppIconSource
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.thmg.hazmattrainee
+        PRODUCT_NAME: "THMG Trainee"
+        INFOPLIST_FILE: Resources/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 1.0.0
+    dependencies:
+      - package: HazMatDesignSystem
+    scheme:
+      testTargets: []

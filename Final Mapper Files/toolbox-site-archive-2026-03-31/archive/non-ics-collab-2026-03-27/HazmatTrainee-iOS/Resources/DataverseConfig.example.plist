@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>BaseURL</key>
+  <string>https://YOUR_ORG.crm.dynamics.com</string>
+  <key>TenantID</key>
+  <string>YOUR_TENANT_ID</string>
+  <key>ClientID</key>
+  <string>YOUR_APP_REG_CLIENT_ID</string>
+  <key>GeoSimScenariosEntitySet</key>
+  <string>new_geosimscenarios</string>
+  <key>GeoSimsEntitySet</key>
+  <string>new_geosims</string>
+</dict>
+</plist>
