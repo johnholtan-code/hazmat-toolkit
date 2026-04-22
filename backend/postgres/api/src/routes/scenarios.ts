@@ -18,7 +18,7 @@ type ScenarioBody = {
   assigned_trainer_id?: string | null;
 };
 
-type ShapeBody = {
+export type ShapeBody = {
   description?: string;
   kind?: 'polygon' | 'circle' | 'point';
   sort_order?: number;
@@ -50,6 +50,26 @@ type ShapeBody = {
   pidHighFeatherPercent?: number | null;
   pidLowSamplingMode?: string | null;
   pidLowFeatherPercent?: number | null;
+  oxygen_high_sampling_mode?: string | null;
+  oxygen_high_feather_percent?: number | null;
+  oxygen_low_sampling_mode?: string | null;
+  oxygen_low_feather_percent?: number | null;
+  lel_high_sampling_mode?: string | null;
+  lel_high_feather_percent?: number | null;
+  lel_low_sampling_mode?: string | null;
+  lel_low_feather_percent?: number | null;
+  carbon_monoxide_high_sampling_mode?: string | null;
+  carbon_monoxide_high_feather_percent?: number | null;
+  carbon_monoxide_low_sampling_mode?: string | null;
+  carbon_monoxide_low_feather_percent?: number | null;
+  hydrogen_sulfide_high_sampling_mode?: string | null;
+  hydrogen_sulfide_high_feather_percent?: number | null;
+  hydrogen_sulfide_low_sampling_mode?: string | null;
+  hydrogen_sulfide_low_feather_percent?: number | null;
+  pid_high_sampling_mode?: string | null;
+  pid_high_feather_percent?: number | null;
+  pid_low_sampling_mode?: string | null;
+  pid_low_feather_percent?: number | null;
   chemical_readings?: unknown;
   dose_rate?: string | null;
   background?: string | null;
@@ -830,7 +850,7 @@ async function insertOrUpdateShape(
   }
 }
 
-function normalizeShapeBody(body: ShapeBody): ShapeBody {
+export function normalizeShapeBody(body: ShapeBody): ShapeBody {
   return {
     ...body,
     description: body.description ?? '',
@@ -840,6 +860,26 @@ function normalizeShapeBody(body: ShapeBody): ShapeBody {
     shape_geo_json: body.shape_geo_json ?? body.shapeGeoJSON,
     radius_m: body.radius_m ?? body.radiusM,
     chemical_readings: body.chemical_readings ?? body.chemicalReadings,
+    oxygenHighSamplingMode: body.oxygenHighSamplingMode ?? body.oxygen_high_sampling_mode,
+    oxygenHighFeatherPercent: body.oxygenHighFeatherPercent ?? body.oxygen_high_feather_percent,
+    oxygenLowSamplingMode: body.oxygenLowSamplingMode ?? body.oxygen_low_sampling_mode,
+    oxygenLowFeatherPercent: body.oxygenLowFeatherPercent ?? body.oxygen_low_feather_percent,
+    lelHighSamplingMode: body.lelHighSamplingMode ?? body.lel_high_sampling_mode,
+    lelHighFeatherPercent: body.lelHighFeatherPercent ?? body.lel_high_feather_percent,
+    lelLowSamplingMode: body.lelLowSamplingMode ?? body.lel_low_sampling_mode,
+    lelLowFeatherPercent: body.lelLowFeatherPercent ?? body.lel_low_feather_percent,
+    carbonMonoxideHighSamplingMode: body.carbonMonoxideHighSamplingMode ?? body.carbon_monoxide_high_sampling_mode,
+    carbonMonoxideHighFeatherPercent: body.carbonMonoxideHighFeatherPercent ?? body.carbon_monoxide_high_feather_percent,
+    carbonMonoxideLowSamplingMode: body.carbonMonoxideLowSamplingMode ?? body.carbon_monoxide_low_sampling_mode,
+    carbonMonoxideLowFeatherPercent: body.carbonMonoxideLowFeatherPercent ?? body.carbon_monoxide_low_feather_percent,
+    hydrogenSulfideHighSamplingMode: body.hydrogenSulfideHighSamplingMode ?? body.hydrogen_sulfide_high_sampling_mode,
+    hydrogenSulfideHighFeatherPercent: body.hydrogenSulfideHighFeatherPercent ?? body.hydrogen_sulfide_high_feather_percent,
+    hydrogenSulfideLowSamplingMode: body.hydrogenSulfideLowSamplingMode ?? body.hydrogen_sulfide_low_sampling_mode,
+    hydrogenSulfideLowFeatherPercent: body.hydrogenSulfideLowFeatherPercent ?? body.hydrogen_sulfide_low_feather_percent,
+    pidHighSamplingMode: body.pidHighSamplingMode ?? body.pid_high_sampling_mode,
+    pidHighFeatherPercent: body.pidHighFeatherPercent ?? body.pid_high_feather_percent,
+    pidLowSamplingMode: body.pidLowSamplingMode ?? body.pid_low_sampling_mode,
+    pidLowFeatherPercent: body.pidLowFeatherPercent ?? body.pid_low_feather_percent,
     dose_rate: body.dose_rate ?? body.doseRate,
     rad_latitude: body.rad_latitude ?? body.radLatitude,
     rad_longitude: body.rad_longitude ?? body.radLongitude,
