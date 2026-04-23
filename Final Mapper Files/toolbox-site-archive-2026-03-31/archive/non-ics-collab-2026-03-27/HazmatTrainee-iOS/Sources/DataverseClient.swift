@@ -68,6 +68,10 @@ final class DataverseClient {
     struct SessionState {
         var status: String
         var isLive: Bool
+        var scenario: Scenario?
+        var centerLatitude: Double?
+        var centerLongitude: Double?
+        var geoShapes: [JoinedSessionGeoShape]
     }
 
     func fetchGeoSimScenarios() async throws -> [Scenario] {
@@ -106,7 +110,7 @@ final class DataverseClient {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         decoder.dateDecodingStrategy = .iso8601
-        let joined = try decoder.decode(JoinSessionResponse.self, from: data)
+        let joined = try decodeWithDebug(JoinSessionResponse.self, from: data, decoder: decoder)
 
         return JoinedSession(
             scenario: joined.snapshot.toLegacyScenario(),
@@ -141,8 +145,17 @@ final class DataverseClient {
 
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
+        decoder.dateDecodingStrategy = .iso8601
         let payload = try decoder.decode(SessionMeResponse.self, from: data)
-        return SessionState(status: payload.status, isLive: payload.isLive)
+        let snapshot = payload.resolvedSnapshot
+        return SessionState(
+            status: payload.status,
+            isLive: payload.isLive,
+            scenario: snapshot?.toLegacyScenario(),
+            centerLatitude: snapshot?.scenario.latitude,
+            centerLongitude: snapshot?.scenario.longitude,
+            geoShapes: snapshot?.shapes.compactMap { $0.toJoinedGeoShape() } ?? []
+        )
     }
 
     func uploadTrackingBatch(
@@ -184,6 +197,83 @@ final class DataverseClient {
            let url = URL(string: value),
            !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return url
+        }
+        return nil
+    }
+}
+
+private func describeDecodingError(_ error: DecodingError) -> String {
+    func path(_ codingPath: [CodingKey]) -> String {
+        let resolved = codingPath.map { key in
+            if let index = key.intValue { return "[\(index)]" }
+            return key.stringValue
+        }
+        return resolved.isEmpty ? "<root>" : resolved.joined(separator: ".")
+    }
+
+    switch error {
+    case .typeMismatch(let type, let context):
+        return "typeMismatch(\(type)) at \(path(context.codingPath)): \(context.debugDescription)"
+    case .valueNotFound(let type, let context):
+        return "valueNotFound(\(type)) at \(path(context.codingPath)): \(context.debugDescription)"
+    case .keyNotFound(let key, let context):
+        return "keyNotFound(\(key.stringValue)) at \(path(context.codingPath)): \(context.debugDescription)"
+    case .dataCorrupted(let context):
+        return "dataCorrupted at \(path(context.codingPath)): \(context.debugDescription)"
+    @unknown default:
+        return "unknown DecodingError: \(error.localizedDescription)"
+    }
+}
+
+private func decodeWithDebug<T: Decodable>(
+    _ type: T.Type,
+    from data: Data,
+    decoder: JSONDecoder = JSONDecoder()
+) throws -> T {
+    do {
+        return try decoder.decode(T.self, from: data)
+    } catch let decodingError as DecodingError {
+        let body = String(data: data.prefix(2048), encoding: .utf8) ?? "<non-utf8>"
+        print("JOIN DECODE ERROR: \(describeDecodingError(decodingError))")
+        print("JOIN RAW BODY (first 2KB): \(body)")
+        throw decodingError
+    } catch {
+        let body = String(data: data.prefix(2048), encoding: .utf8) ?? "<non-utf8>"
+        print("JOIN NON-DECODE ERROR: \(error)")
+        print("JOIN RAW BODY (first 2KB): \(body)")
+        throw error
+    }
+}
+
+private extension KeyedDecodingContainer {
+    func decodeFlexibleStringIfPresent(forKey key: Key) throws -> String? {
+        guard contains(key), try !decodeNil(forKey: key) else { return nil }
+        if let value = try? decode(String.self, forKey: key) {
+            return value
+        }
+        if let value = try? decode(Int.self, forKey: key) {
+            return String(value)
+        }
+        if let value = try? decode(Double.self, forKey: key) {
+            return String(value)
+        }
+        if let value = try? decode(Bool.self, forKey: key) {
+            return String(value)
+        }
+        return nil
+    }
+
+    func decodeFlexibleDoubleIfPresent(forKey key: Key) throws -> Double? {
+        guard contains(key), try !decodeNil(forKey: key) else { return nil }
+        if let value = try? decode(Double.self, forKey: key) {
+            return value
+        }
+        if let value = try? decode(Int.self, forKey: key) {
+            return Double(value)
+        }
+        if let value = try? decode(String.self, forKey: key) {
+            let cleaned = value.filter { "0123456789.-".contains($0) }
+            return Double(cleaned)
         }
         return nil
     }
@@ -293,6 +383,47 @@ private struct JoinSessionResponse: Decodable {
                 case radLatitude
                 case radLongitude
                 case pH = "pH"
+            }
+
+            init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                id = try container.decode(String.self, forKey: .id)
+                description = try container.decode(String.self, forKey: .description)
+                kind = try container.decode(String.self, forKey: .kind)
+                sortOrder = try container.decode(Int.self, forKey: .sortOrder)
+                shapeGeoJSON = try container.decodeFlexibleStringIfPresent(forKey: .shapeGeoJSON)
+                radiusM = try container.decodeFlexibleDoubleIfPresent(forKey: .radiusM)
+                oxygen = try container.decodeFlexibleStringIfPresent(forKey: .oxygen)
+                lel = try container.decodeFlexibleStringIfPresent(forKey: .lel)
+                carbonMonoxide = try container.decodeFlexibleStringIfPresent(forKey: .carbonMonoxide)
+                hydrogenSulfide = try container.decodeFlexibleStringIfPresent(forKey: .hydrogenSulfide)
+                pid = try container.decodeFlexibleStringIfPresent(forKey: .pid)
+                oxygenHighSamplingMode = try container.decodeFlexibleStringIfPresent(forKey: .oxygenHighSamplingMode)
+                oxygenHighFeatherPercent = try container.decodeFlexibleStringIfPresent(forKey: .oxygenHighFeatherPercent)
+                oxygenLowSamplingMode = try container.decodeFlexibleStringIfPresent(forKey: .oxygenLowSamplingMode)
+                oxygenLowFeatherPercent = try container.decodeFlexibleStringIfPresent(forKey: .oxygenLowFeatherPercent)
+                lelHighSamplingMode = try container.decodeFlexibleStringIfPresent(forKey: .lelHighSamplingMode)
+                lelHighFeatherPercent = try container.decodeFlexibleStringIfPresent(forKey: .lelHighFeatherPercent)
+                lelLowSamplingMode = try container.decodeFlexibleStringIfPresent(forKey: .lelLowSamplingMode)
+                lelLowFeatherPercent = try container.decodeFlexibleStringIfPresent(forKey: .lelLowFeatherPercent)
+                carbonMonoxideHighSamplingMode = try container.decodeFlexibleStringIfPresent(forKey: .carbonMonoxideHighSamplingMode)
+                carbonMonoxideHighFeatherPercent = try container.decodeFlexibleStringIfPresent(forKey: .carbonMonoxideHighFeatherPercent)
+                carbonMonoxideLowSamplingMode = try container.decodeFlexibleStringIfPresent(forKey: .carbonMonoxideLowSamplingMode)
+                carbonMonoxideLowFeatherPercent = try container.decodeFlexibleStringIfPresent(forKey: .carbonMonoxideLowFeatherPercent)
+                hydrogenSulfideHighSamplingMode = try container.decodeFlexibleStringIfPresent(forKey: .hydrogenSulfideHighSamplingMode)
+                hydrogenSulfideHighFeatherPercent = try container.decodeFlexibleStringIfPresent(forKey: .hydrogenSulfideHighFeatherPercent)
+                hydrogenSulfideLowSamplingMode = try container.decodeFlexibleStringIfPresent(forKey: .hydrogenSulfideLowSamplingMode)
+                hydrogenSulfideLowFeatherPercent = try container.decodeFlexibleStringIfPresent(forKey: .hydrogenSulfideLowFeatherPercent)
+                pidHighSamplingMode = try container.decodeFlexibleStringIfPresent(forKey: .pidHighSamplingMode)
+                pidHighFeatherPercent = try container.decodeFlexibleStringIfPresent(forKey: .pidHighFeatherPercent)
+                pidLowSamplingMode = try container.decodeFlexibleStringIfPresent(forKey: .pidLowSamplingMode)
+                pidLowFeatherPercent = try container.decodeFlexibleStringIfPresent(forKey: .pidLowFeatherPercent)
+                doseRate = try container.decodeFlexibleStringIfPresent(forKey: .doseRate)
+                background = try container.decodeFlexibleStringIfPresent(forKey: .background)
+                shielding = try container.decodeFlexibleStringIfPresent(forKey: .shielding)
+                radLatitude = try container.decodeFlexibleStringIfPresent(forKey: .radLatitude)
+                radLongitude = try container.decodeFlexibleStringIfPresent(forKey: .radLongitude)
+                pH = try container.decodeFlexibleDoubleIfPresent(forKey: .pH)
             }
 
             func toJoinedGeoShape() -> DataverseClient.JoinedSessionGeoShape? {
@@ -525,6 +656,24 @@ private struct JoinSessionResponse: Decodable {
 private struct SessionMeResponse: Decodable {
     var status: String
     var isLive: Bool
+    var snapshot: JoinSessionResponse.SnapshotDTO?
+    var session: JoinSessionResponse.SessionInfo?
+    var scenario: JoinSessionResponse.SnapshotDTO.ScenarioDTO?
+    var shapes: [JoinSessionResponse.SnapshotDTO.ShapeDTO]?
+
+    var resolvedSnapshot: JoinSessionResponse.SnapshotDTO? {
+        if let snapshot {
+            return snapshot
+        }
+        if let scenario, let shapes {
+            return JoinSessionResponse.SnapshotDTO(
+                sessionID: session?.id ?? "",
+                scenario: scenario,
+                shapes: shapes
+            )
+        }
+        return nil
+    }
 }
 
 struct TrackingPointUpload {

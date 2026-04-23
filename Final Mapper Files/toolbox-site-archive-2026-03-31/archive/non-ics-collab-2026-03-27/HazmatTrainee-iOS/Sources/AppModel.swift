@@ -357,6 +357,16 @@ final class AppModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             let oldActive = isSessionActiveForTracking
             joinedSessionStatus = state.status
             joinedSessionIsLive = state.isLive
+
+            if let refreshedScenario = state.scenario {
+                applyRefreshedSessionSnapshot(
+                    scenario: refreshedScenario,
+                    centerLatitude: state.centerLatitude,
+                    centerLongitude: state.centerLongitude,
+                    geoShapes: state.geoShapes
+                )
+            }
+
             let nowActive = isSessionActiveForTracking
             if nowActive != oldActive {
                 refreshLocationTrackingState()
@@ -367,6 +377,39 @@ final class AppModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         } catch {
             // Keep previous state if polling fails; avoid noisy user-facing errors.
         }
+    }
+
+    private func applyRefreshedSessionSnapshot(
+        scenario: Scenario,
+        centerLatitude: Double?,
+        centerLongitude: Double?,
+        geoShapes: [DataverseClient.JoinedSessionGeoShape]
+    ) {
+        let previousZoneName = selectedZoneName
+
+        selectedScenario = scenario
+        joinedSessionCenterLatitude = centerLatitude
+        joinedSessionCenterLongitude = centerLongitude
+        joinedSessionGeoShapes = geoShapes.sorted { lhs, rhs in
+            if lhs.sortOrder != rhs.sortOrder { return lhs.sortOrder < rhs.sortOrder }
+            return lhs.description < rhs.description
+        }
+
+        if scenario.zones.contains(where: { $0.name == previousZoneName }) {
+            selectedZoneName = previousZoneName
+        } else {
+            selectedZoneName = scenario.zones.first?.name ?? "OUT"
+        }
+
+        if let zone = currentZone {
+            gasReadings = adjustedGasReadings(for: zone)
+            beginPHTransition(to: zone.ph)
+        }
+
+        doseAt1mRph = scenario.radiationSource.doseAt1mRph
+        backgroundRph = scenario.radiationSource.backgroundRph
+        shielding = scenario.radiationSource.shielding
+
     }
 
     func sendTestTrackingPing() async {
