@@ -319,6 +319,26 @@ private struct JoinSessionResponse: Decodable {
             var carbonMonoxide: String?
             var hydrogenSulfide: String?
             var pid: String?
+            var oxygenHighSamplingMode: String?
+            var oxygenHighFeatherPercent: String?
+            var oxygenLowSamplingMode: String?
+            var oxygenLowFeatherPercent: String?
+            var lelHighSamplingMode: String?
+            var lelHighFeatherPercent: String?
+            var lelLowSamplingMode: String?
+            var lelLowFeatherPercent: String?
+            var carbonMonoxideHighSamplingMode: String?
+            var carbonMonoxideHighFeatherPercent: String?
+            var carbonMonoxideLowSamplingMode: String?
+            var carbonMonoxideLowFeatherPercent: String?
+            var hydrogenSulfideHighSamplingMode: String?
+            var hydrogenSulfideHighFeatherPercent: String?
+            var hydrogenSulfideLowSamplingMode: String?
+            var hydrogenSulfideLowFeatherPercent: String?
+            var pidHighSamplingMode: String?
+            var pidHighFeatherPercent: String?
+            var pidLowSamplingMode: String?
+            var pidLowFeatherPercent: String?
             var doseRate: String?
             var background: String?
             var shielding: String?
@@ -338,6 +358,26 @@ private struct JoinSessionResponse: Decodable {
                 case carbonMonoxide
                 case hydrogenSulfide
                 case pid
+                case oxygenHighSamplingMode
+                case oxygenHighFeatherPercent
+                case oxygenLowSamplingMode
+                case oxygenLowFeatherPercent
+                case lelHighSamplingMode
+                case lelHighFeatherPercent
+                case lelLowSamplingMode
+                case lelLowFeatherPercent
+                case carbonMonoxideHighSamplingMode
+                case carbonMonoxideHighFeatherPercent
+                case carbonMonoxideLowSamplingMode
+                case carbonMonoxideLowFeatherPercent
+                case hydrogenSulfideHighSamplingMode
+                case hydrogenSulfideHighFeatherPercent
+                case hydrogenSulfideLowSamplingMode
+                case hydrogenSulfideLowFeatherPercent
+                case pidHighSamplingMode
+                case pidHighFeatherPercent
+                case pidLowSamplingMode
+                case pidLowFeatherPercent
                 case doseRate
                 case background
                 case shielding
@@ -465,23 +505,30 @@ private struct JoinSessionResponse: Decodable {
 
         func toLegacyScenario() -> Scenario {
             let sortedShapes = shapes.sorted { $0.sortOrder < $1.sortOrder }
-            let zones = sortedShapes.map { shape in
+            let zones = sortedShapes.compactMap { shape -> ScenarioZone? in
+                guard Self.isTrainerZoneShape(shape) else { return nil }
+                let sampling = Self.makeAirMonitorSampling(from: shape)
+
                 ScenarioZone(
                     name: shape.description,
-                    oxygen: Self.parseDouble(shape.oxygen, default: 20.8),
-                    lel: Self.parseDouble(shape.lel, default: 0),
-                    co: Self.parseDouble(shape.carbonMonoxide, default: 0),
-                    h2s: Self.parseDouble(shape.hydrogenSulfide, default: 0),
-                    pid: Self.parseDouble(shape.pid, default: 0),
-                    ph: shape.pH ?? 7.0
+                    oxygen: Self.parseDoubleOptional(shape.oxygen) ?? 20.8,
+                    lel: Self.parseDoubleOptional(shape.lel) ?? 0,
+                    co: Self.parseDoubleOptional(shape.carbonMonoxide) ?? 0,
+                    h2s: Self.parseDoubleOptional(shape.hydrogenSulfide) ?? 0,
+                    pid: Self.parseDoubleOptional(shape.pid) ?? 0,
+                    ph: shape.pH ?? 7.0,
+                    airMonitorSampling: sampling
                 )
             }
-            let zonesWithBaseline = ([ScenarioZone(name: "OUT", oxygen: 20.8, lel: 0, co: 0, h2s: 0, pid: 0, ph: 7)] + zones)
-                .reduce(into: [ScenarioZone]()) { acc, zone in
-                    if !acc.contains(where: { $0.name == zone.name }) {
-                        acc.append(zone)
-                    }
+            var zonesWithLatestValuesByName: [ScenarioZone] = []
+            for zone in zones {
+                if let existingIndex = zonesWithLatestValuesByName.firstIndex(where: { $0.name == zone.name }) {
+                    zonesWithLatestValuesByName[existingIndex] = zone
+                } else {
+                    zonesWithLatestValuesByName.append(zone)
                 }
+            }
+            let zonesWithBaseline = [ScenarioZone(name: "OUT", oxygen: 20.8, lel: 0, co: 0, h2s: 0, pid: 0, ph: 7, airMonitorSampling: nil)] + zonesWithLatestValuesByName
 
             // Prefer the latest configured radiation shape in case older duplicates exist.
             let firstRad = sortedShapes.reversed().first {
@@ -516,6 +563,81 @@ private struct JoinSessionResponse: Decodable {
             guard let text else { return fallback }
             let cleaned = text.filter { "0123456789.-".contains($0) }
             return Double(cleaned) ?? fallback
+        }
+
+        private static func makeAirMonitorSampling(from shape: ShapeDTO) -> ScenarioZoneAirMonitorSampling? {
+            let oxygen = makeChannelAdjustment(
+                highMode: shape.oxygenHighSamplingMode,
+                highFeather: shape.oxygenHighFeatherPercent,
+                lowMode: shape.oxygenLowSamplingMode,
+                lowFeather: shape.oxygenLowFeatherPercent
+            )
+            let lel = makeChannelAdjustment(
+                highMode: shape.lelHighSamplingMode,
+                highFeather: shape.lelHighFeatherPercent,
+                lowMode: shape.lelLowSamplingMode,
+                lowFeather: shape.lelLowFeatherPercent
+            )
+            let co = makeChannelAdjustment(
+                highMode: shape.carbonMonoxideHighSamplingMode,
+                highFeather: shape.carbonMonoxideHighFeatherPercent,
+                lowMode: shape.carbonMonoxideLowSamplingMode,
+                lowFeather: shape.carbonMonoxideLowFeatherPercent
+            )
+            let h2s = makeChannelAdjustment(
+                highMode: shape.hydrogenSulfideHighSamplingMode,
+                highFeather: shape.hydrogenSulfideHighFeatherPercent,
+                lowMode: shape.hydrogenSulfideLowSamplingMode,
+                lowFeather: shape.hydrogenSulfideLowFeatherPercent
+            )
+            let pid = makeChannelAdjustment(
+                highMode: shape.pidHighSamplingMode,
+                highFeather: shape.pidHighFeatherPercent,
+                lowMode: shape.pidLowSamplingMode,
+                lowFeather: shape.pidLowFeatherPercent
+            )
+
+            guard oxygen != nil || lel != nil || co != nil || h2s != nil || pid != nil else {
+                return nil
+            }
+
+            return ScenarioZoneAirMonitorSampling(oxygen: oxygen, lel: lel, co: co, h2s: h2s, pid: pid)
+        }
+
+        private static func makeChannelAdjustment(
+            highMode: String?,
+            highFeather: String?,
+            lowMode: String?,
+            lowFeather: String?
+        ) -> AirMonitorSamplingChannelAdjustment? {
+            let high = makeBandAdjustment(mode: highMode, feather: highFeather)
+            let low = makeBandAdjustment(mode: lowMode, feather: lowFeather)
+
+            guard high != .unchanged || low != .unchanged else { return nil }
+            return AirMonitorSamplingChannelAdjustment(high: high, low: low)
+        }
+
+        private static func makeBandAdjustment(mode: String?, feather: String?) -> AirMonitorSamplingBandAdjustment {
+            let normalizedMode = (mode ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            let usesLowering = !normalizedMode.isEmpty
+                && normalizedMode != "normal"
+                && normalizedMode != "none"
+                && normalizedMode != "off"
+            let resolvedMode: AirMonitorSamplingAdjustmentMode = usesLowering ? .lower : .normal
+
+            let percent = min(max(parseDoubleOptional(feather) ?? 0, 0), 100)
+            guard resolvedMode != .normal, percent > 0 else { return .unchanged }
+            return AirMonitorSamplingBandAdjustment(mode: resolvedMode, featherPercent: percent)
+        }
+
+        private static func isTrainerZoneShape(_ shape: ShapeDTO) -> Bool {
+            parseDoubleOptional(shape.oxygen) != nil ||
+            parseDoubleOptional(shape.lel) != nil ||
+            parseDoubleOptional(shape.carbonMonoxide) != nil ||
+            parseDoubleOptional(shape.hydrogenSulfide) != nil ||
+            parseDoubleOptional(shape.pid) != nil ||
+            shape.pH != nil ||
+            makeAirMonitorSampling(from: shape) != nil
         }
 
         private static func parseDoubleOptional(_ text: String?) -> Double? {
