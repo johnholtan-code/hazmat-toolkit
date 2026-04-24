@@ -1,0 +1,8 @@
+{
+	"appId": "com.thmg.incidentmapper",
+	"appName": "Hazmat ToolK.I.T.",
+	"webDir": "public",
+	"packageClassList": [
+		"CAPNetworkPlugin"
+	]
+}

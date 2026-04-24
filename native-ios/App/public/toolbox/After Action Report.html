@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>The HazMat Guys – After Action Reporter</title>
+<!-- Add Leaflet CSS and JS for maps -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/KFQN2E3k/VnkasWQM="
+     crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+<!-- Styles match last working UI; only redundant CSS removed -->
+<style>
+  :root{
+    /* Colors */
+    --bg:#0b0b0b; --panel:#141414; --muted:#8a8a8a; --text:#f2f2f2;
+    --accent:#FFCC00; --accent-2:#ffc400a8; --danger:#ff3b30; --ok:#2ecc71;
+    --chip:#1d1d1d; --border:#222; --shadow: 0 8px 30px rgba(0,0,0,.35);
+    
+    /* Typography Scale */
+    --font-size-base: 16px;
+    --font-size-small: 14px;
+    --font-size-badge: var(--font-size-small);
+    --line-height-base: 1.5;
+  }
+  *{ box-sizing:border-box } html,body{ height:100% }
+  body{ margin:0; background:var(--bg); color:var(--text);
+        font:var(--font-size-base)/var(--line-height-base) system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"; }
+  .app{ display:grid; grid-template-columns: 360px 1fr; gap:16px; padding:16px; max-width:1600px; margin:0 auto; }
+  header.appbar{ grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between;
+                 padding:14px 16px; background:var(--panel); border:1px solid var(--border);
+                 border-radius:12px; box-shadow:var(--shadow); }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px; }
+  .brand .dot{ width:10px; height:10px; border-radius:50%; background:var(--accent); display:inline-block }
+  .brand small{ display:block; font-weight:600; color:var(--muted); margin-top:2px; letter-spacing:.2px }
+  .row{ display:flex; gap:8px } .grow{ flex:1 }
+  .panel{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:14px; box-shadow:var(--shadow); min-height:120px; }
+  .section{ margin-top:10px } .section-title{ font-weight:700; letter-spacing:.3px; color:var(--accent); margin:4px 0 6px; }
+  .hint{ color:var(--muted); margin:6px 0 0 }
+  select, input[type="text"], input[type="time"], textarea{ width:100%; background:#0f0f0f; color:var(--text);
+    border:1px solid var(--border); border-radius:10px; padding:10px 12px; outline:none; }
+  input[type="range"] { 
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    height:10px;
+    padding:0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: none;
+  }
+  textarea{ resize:vertical; min-height:80px; } label{ display:block; color:var(--muted); margin:8px 0 4px; font-size: var(--font-size-base) }
+  .btn{ background:#111; color:var(--text); border:1px solid var(--border); padding:10px 12px; border-radius:10px;
+        cursor:pointer; transition:.15s ease; user-select:none; white-space:nowrap; }
+  .btn:hover{ border-color:#2a2a2a; transform:translateY(-1px) } .btn:active{ transform:translateY(0) }
+  .btn.yellow{ background:var(--accent); color:#111; border-color:#b38f00 } .btn.yellow:hover{ background:#ffd84a }
+  .btn.ghost{ background:transparent } .btn.red{ background:var(--danger); border-color:#cc2c25 } .btn.small{ padding:7px 10px; font-size: var(--font-size-base); border-radius:8px }
+  .chipbar{ display:flex; flex-wrap:wrap; gap:8px; background:var(--chip); border:1px dashed var(--border); padding:10px; border-radius:12px; }
+  .chip{ background:#121212; border:1px solid #262626; color:#f5f5f5; padding:7px 10px; border-radius:999px; font-size: var(--font-size-base); cursor:pointer; }
+  .chip:hover{ border-color:#3a3a3a; background:#161616 } .chip:active{ background:#1a1a1a }
+
+  /* Keep Export/Import buttons in DOM but hidden from the UI. Toggle here if needed. */
+  #btnExport, #btnImport { display: none !important; }
+
+  /* Timeline (deduped; this is the final, ultra-compact version) */
+  .timeline{ 
+    display:flex; 
+    flex-direction:column; 
+    gap:10px; 
+    background:var(--panel); 
+    border:1px solid var(--border); 
+    border-radius:12px; 
+    padding:12px; 
+    min-height:300px;
+    max-height: calc(100vh - 200px); /* Set a max height relative to viewport */
+    overflow-y: auto; /* Enable vertical scrolling */
+    overflow-x: hidden; /* Hide horizontal scrollbar */
+  }
+  .timeline-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--panel);
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  }
+  .timeline {
+    padding-top: 6px;
+  }
+  
+  .timeline .card{
+    background:#0f0f0f;
+    border:1px solid var(--accent);
+    border-radius:8px;
+    padding:8px 10px;
+    margin:6px 0;
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+    box-shadow:0 0 6px rgba(255,204,0,0.09);
+    /* Keep markup whitespace normal so template indentation/newlines don't
+       appear as blank lines - user-entered line breaks are handled on the
+       .title element itself (see .timeline .title below). */
+    white-space: normal;
+    word-break: break-word;       /* break long words if needed */
+    overflow-wrap: anywhere;      /* allow breaks anywhere as a last resort */
+  }
+  .timeline .card > div {
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:8px;
+    flex-wrap: nowrap;
+  }
+  .timeline .badge{
+    display:inline-block;
+    padding:0 4px;
+    border-radius:999px;
+    background:var(--accent-2);
+    color:#111;
+    font-weight:700;
+    font-size: var(--font-size-badge);
+    line-height:1;
+  }
+  .timeline .meta{ font-size: var(--font-size-base); color: var(--accent); }
+  .timeline .title{ font-size: var(--font-size-base); font-weight:700; margin:0; white-space: pre-wrap; }
+
+  .toast{ position:fixed; right:16px; bottom:16px; background:#111; border:1px solid var(--border); padding:10px 12px; color:var(--text);
+          border-radius:10px; box-shadow:var(--shadow); opacity:0; transform:translateY(8px); transition:.2s ease; }
+  .toast.show{ opacity:1; transform:translateY(0) }
+
+  @media print {
+    /* Prevent blank first page */
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      height: auto !important;
+    }
+
+    /* Avoid full-height flex containers pushing content */
+    #map {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      height: 400px;
+      min-height: 320px;
+      max-height: 520px;
+      border-radius: 8px;
+      background: #0f0f0f;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    #mapModal .modal-header,
+    #mapModal .row > .btn,
+    #mapModal .section > .row {
+      z-index: 100;
+      position: relative;
+    }
+      transform: none !important;
+      white-space: normal !important;
+    }
+
+    /* Optional: scale for print layout */
+    @page {
+      size: A4 portrait;
+      margin: 0.5in;
+    }
+  }
+  
+    /* Simple footer */
+    @page {
+      margin: 0.5in;
+    }
+
+    body::after {
+      content: "Generated with The HazMat Guys – After Action Reporter";
+      display: block;
+      margin-top: 2em;
+      font-size: 9pt;
+      color: #444;
+      text-align: center;
+    }
+  
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none !important; z-index:9990; transition: opacity 0.2s ease-in-out; }
+  .modal{ position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:min(720px,92vw); max-height:88vh; overflow:auto;
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:14px; opacity:0; pointer-events:none !important; z-index:10000; transition: opacity 0.2s ease-in-out; }
+  .modal.show{ opacity:1; pointer-events:auto !important; } 
+  .modal-backdrop.show{ opacity:1; pointer-events:auto !important; } 
+  .modal-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+   /* Map modal tweaks: maintain button visibility while allowing full tile loading */
+   #mapModal { 
+    max-height: 85vh; 
+    width: min(900px,96vw);
+    display: flex;
+    flex-direction: column;
+   }
+  /* Removed duplicate relative #map block. Only absolute version below remains. */
+  /* Ensure the action row stays above map */
+  #mapModal .section {
+    position: relative;
+    z-index: 2;
+    margin-top: 0;
+    min-height: 320px;
+    max-height: 520px;
+    width: 100%;
+    display: block;
+  }
+
+  /* Ensure map container doesn't overflow */
+  #mapModal .section > #map {
+    width: 100%;
+    height: 100%;
+    min-height: 320px;
+    max-height: 520px;
+    overflow: hidden;
+    display: block;
+  }
+  /* Keep map elements properly stacked within the map container */
+  #map .leaflet-pane { z-index: 1 !important; }
+  #map .leaflet-tile-pane { z-index: 1 !important; }
+  #map .leaflet-overlay-pane { z-index: 1 !important; }
+  #map .leaflet-shadow-pane { z-index: 1 !important; }
+  #map .leaflet-marker-pane { z-index: 1 !important; }
+  /* Keep map controls visible but contained */
+  #map .leaflet-control { z-index: 2 !important; }
+  /* Make map modal buttons render above the map panes which Leaflet creates */
+  #mapModal .row > .btn { position: relative; z-index: 10001 !important; }
+  /* Ensure the action row (buttons) sits visually below the map area inside the modal */
+  #mapModal .section { display:flex; flex-direction:column; gap:12px; }
+  #mapModal .section > .row { margin-top: 6px; }
+    /* Ensure modal itself sits above other content */
+    #mapModal { z-index: 10000; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header class="appbar">
+      <div class="brand">
+        <span class="dot" aria-hidden="true"></span>
+        <div>The HazMat Guys<br /><small>After Action Reporter</small></div>
+      </div>
+      <div class="row">
+        <button id="btnStart" class="btn red" style="min-width: 360px; padding-left:24px; padding-right:24px;">Start Log</button>
+        <button id="btnPrint" class="btn yellow">Download PDF</button>
+        <button id="btnExport" class="btn ghost">Export JSON</button>
+        <button id="btnImport" class="btn ghost">Import JSON</button>
+        <button id="btnClear" class="btn red">Clear Log</button>
+        <button id="settingsToggle" class="btn ghost">Settings</button>
+        <button id="adminToggle" class="btn ghost">Admin</button>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="section-title">Incident Details</div>
+      <div class="row">
+        <div class="grow">
+          <label for="callType">Call Type</label>
+          <select id="callType">
+            <option value="">— Select —</option>
+            <option>Hazmat</option><option>Motor Vehicle</option><option>Structure Fire</option>
+            <option>Industrial Fire</option><option>Medical</option><option>Rescue / Technical</option>
+            <option>Wildland</option><option>Other</option>
+          </select>
+        </div>
+        <div class="grow">
+          <label for="incidentId">Incident ID (optional)</label>
+          <input id="incidentId" placeholder="e.g., 25-10-31-Alpha" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="grow">
+          <label for="cat">Category</label>
+          <select id="cat"></select>
+        </div>
+        <div>
+          <label for="stampTime">Override Time</label>
+          <input id="stampTime" type="time" />
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Category (optional) quick actions</div>
+        <div id="categoryChips" class="chipbar" aria-label="Category Actions"></div>
+        <p class="hint">Tap a chip to append a timestamped entry. Uses current time unless “Override Time” is set.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Add Note</div>
+        <div class="row">
+          <input id="noteText" class="grow" placeholder="Short note (e.g., 'Water on', 'RIC established')" />
+          <button id="btnAddNote" class="btn yellow">Add</button>
+        </div>
+        <p class="hint">Pro tip: Keep notes short and specific. You can add more context in the narrative later.</p>
+      </div>
+
+       <div class="section">
+         <div class="section-title">Narrative (optional)</div>
+         <div class="row">
+           <textarea id="narrative" class="grow" placeholder="DATA narrative or summary notes here..."></textarea>
+           <button id="btnNarrativeToTimeline" class="btn yellow">Save to Timeline</button>
+         </div>
+         <p class="hint">Add your D-A-T-A narrative or summary here. Click “Save to Timeline” to timestamp it as an event.</p>
+       </div>
+     </section>
+
+     <section class="panel">
+      <div class="row" style="align-items:center; justify-content:space-between">
+        <div class="section-title" style="margin:0">Timeline</div>
+        <div class="row no-print">
+          <button id="btnUndo" class="btn ghost">Undo</button>
+          <button id="btnNow" class="btn ghost">Now</button>
+        </div>
+      </div>
+<!-- Sticky Timeline Header -->
+<div id="timelineSticky" class="timeline-sticky">
+  <button id="tlUndo" class="btn ghost small">Undo</button>
+  <button id="tlNow" class="btn ghost small">Now</button>
+  <button id="tlPrint" class="btn ghost small">Print</button>
+  <button id="tlTop" class="btn ghost small">⬆ Top</button>
+  <button id="tlBottom" class="btn ghost small">⬇ Bottom</button>
+</div>
+
+      <div id="printSummary" class="print-summary" style="display:none; border:1px dashed #ccc; border-radius:10px; padding:8px; margin-bottom:8px; background:#fff; color:#000;">
+        <div><strong>Call Type:</strong> <span id="pr_callType">—</span></div>
+        <div><strong>Incident ID:</strong> <span id="pr_incidentId">—</span></div>
+        <div><strong>Category:</strong> <span id="pr_category">—</span></div>
+      </div>
+
+      <div id="timeline" class="timeline" aria-live="polite"></div>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <!-- Settings modal -->
+  <div id="settingsBackdrop" class="modal-backdrop"></div>
+  <div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-header">
+      <div>
+        <div id="settingsTitle" class="section-title" style="margin:0">Display Settings</div>
+        <div class="hint">Customize the appearance of your AAR interface</div>
+      </div>
+      <button id="settingsClose" class="btn ghost small" aria-label="Close Settings">Close</button>
+    </div>
+
+    <div class="section">
+      <label for="fontSizeRange">Text Size</label>
+      <div class="row" style="align-items: center;">
+        <input type="range" id="fontSizeRange" min="12" max="24" step="1" style="flex:1">
+        <div style="min-width:4em; text-align:right;" id="fontSizeLabel">16px</div>
+      </div>
+      <p class="hint">Move the slider to adjust the text size throughout the application.</p>
+    </div>
+
+    <div class="row" style="margin-top:16px; justify-content:flex-end">
+      <button id="settingsReset" class="btn ghost">Reset to Default</button>
+      <button id="settingsSave" class="btn yellow">Save Changes</button>
+    </div>
+  </div>
+
+  <!-- Edit Entry modal -->
+  <div id="editBackdrop" class="modal-backdrop"></div>
+  <div id="editModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <div class="modal-header">
+      <div>
+        <div id="editTitle" class="section-title" style="margin:0">Edit Timeline Entry</div>
+        <div class="hint">Modify the entry text or category, or delete the entry.</div>
+      </div>
+      <button id="editClose" class="btn ghost small" aria-label="Close Edit">Close</button>
+    </div>
+
+    <div class="section">
+      <label for="editLabel">Entry Text</label>
+      <textarea id="editLabel" style="width:100%;min-height:80px"></textarea>
+    </div>
+
+    <div class="section">
+      <label for="editCategory">Category</label>
+      <select id="editCategory"></select>
+    </div>
+
+    <div class="row" style="margin-top:12px; justify-content:flex-end">
+      <button id="editDelete" class="btn red">Delete</button>
+      <button id="editCancel" class="btn ghost">Cancel</button>
+      <button id="editSave" class="btn yellow">Save</button>
+    </div>
+  </div>
+
+  <!-- Admin modal -->
+  <div id="adminBackdrop" class="modal-backdrop"></div>
+  <div id="adminModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminTitle" aria-describedby="adminDesc">
+    <div class="modal-header">
+      <div>
+        <div id="adminTitle" class="section-title" style="margin:0">Admin – Categories & Actions</div>
+        <div id="adminDesc" class="hint">Add/edit the buttons that appear under each Category. Saved to this browser only.</div>
+      </div>
+      <button id="adminClose" class="btn ghost small" aria-label="Close Admin">Close</button>
+    </div>
+
+    <div>
+      <div class="section-title">Category</div>
+      <div class="row">
+        <select id="adminCategorySelect" style="flex:1"></select>
+        <input id="adminNewCategory" placeholder="New category name" style="flex:1" />
+        <button class="btn yellow" id="adminAddCategory">+ Add Category</button>
+      </div>
+
+      <div class="section-title" style="margin-top:10px">Actions in Category</div>
+      <div class="row">
+        <input id="adminNewAction" placeholder="e.g., Product Identified" style="flex:1" />
+        <button class="btn yellow" id="adminAddAction">+ Add Action</button>
+        <button class="btn red" id="adminRemoveAction">Remove Selected</button>
+      </div>
+
+      <select id="adminActionList" size="8" style="width:100%;margin-top:8px"></select>
+
+      <div class="row" style="margin-top:10px">
+        <button class="btn ghost" id="adminExport">Export JSON</button>
+        <button class="btn ghost" id="adminImport">Import JSON</button>
+        <button class="btn red"   id="adminReset">Reset to Defaults</button>
+        <button class="btn yellow" id="adminSaveAll" title="Save & refresh the chip bar">Save Changes</button>
+      </div>
+
+      <p class="hint" style="margin-top:8px">
+        Tip: Export before major edits. Import accepts JSON like:
+        {"Safety":["RIC Established","Mayday"],"Decon":["Decon Start"]}.
+      </p>
+    </div>
+  </div>
+
+  <!-- Clear Log confirmation modal -->
+  <div id="confirmBackdrop" class="modal-backdrop"></div>
+  <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmDesc">
+    <div class="modal-header">
+      <div>
+        <div id="confirmTitle" class="section-title" style="margin:0">Clear Log?</div>
+        <div id="confirmDesc" class="hint">This will clear all the logs from this session.</div>
+      </div>
+    </div>
+    <div class="row" style="justify-content:flex-end">
+      <button id="confirmNo" class="btn ghost">No</button>
+      <button id="confirmYes" class="btn red">Yes, clear</button>
+    </div>
+  </div>
+
+  <!-- Map modal -->
+  <div id="mapBackdrop" class="modal-backdrop"></div>
+  <div id="mapModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="mapTitle">
+    <div class="modal-header">
+      <div>
+        <div id="mapTitle" class="section-title" style="margin:0">Location</div>
+        <div class="hint">View or set the location for this entry</div>
+      </div>
+      <button id="mapClose" class="btn ghost small" aria-label="Close Map">Close</button>
+    </div>
+    <div class="section">
+      <div id="map" style="width:100%;height:300px;background:#0f0f0f;border-radius:8px;margin-bottom:12px;"></div>
+      <div class="row">
+        <button id="mapGetLocation" class="btn yellow">Get Current Location</button>
+        <div class="grow" style="text-align:right">
+          <button id="mapSave" class="btn yellow">Save Location</button>
+          <button id="mapCancel" class="btn ghost">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- jsPDF for reliable PDF export without invoking the browser print pipeline -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+/* ---------- Data & Defaults ---------- */
+const CATEGORY_ACTIONS_DEFAULT = {
+  'Notifications':[ 'Incident Start','Enroute','On Scene','Update Sent','Under Control','All Clear','Fire Out','Public Alert Issued','PIO Update','Utility Notified','Law Notified','Owner Notified','State Notified','Fed Notified' ],
+  'Command/Arrival':[ 'IC Established','BIR Given','Arrival','360 Started','360 Complete','Strategy: Offensive','Strategy: Defensive','IAP Set','Transfer of Cmd','Divisions/Sectors Established','Staging Established','Accountability Started','PAR Complete' ],
+  'Operations':[ 'Entry Start','Entry End','Water On','Water Off','Fire Attack Started','Primary Search Started','Primary Search Complete','Secondary Search Complete','Vent Start','Vent Complete','Overhaul Started','Utilities Secured (Elec)','Gas Shutoff','Ladder Placed','Exposure Protection' ],
+  'Safety':[ 'Safety Officer Assigned','RIC Established','Evacuate','Mayday','PAR','Withdraw Ordered','Hot Zone Established','Warm Zone Established','Cold Zone Established','Accountability Check' ],
+  'Decon':[ 'Corridor Established','Gross Decon Start','Gross Decon End','Technical Decon Start','Technical Decon End','Decon Complete','Waste Secured','Water Runoff Controlled' ],
+  'Medical':[ 'Patient Contact','Triage Start','Triage Complete','Treatment Started','Transport Requested','Transporting','TOC to EMS','MCI Declared','MCI Cleared' ],
+  'Resources':[ 'Staging Established','Mutual Aid Requested','Mutual Aid Arrived','Additional Alarm','Rehab Established','Air Truck On Scene','Red Cross Notified','Tow Requested','Public Works Requested' ]
+};
+const ACTIONS_KEY='AAR_CATEGORY_ACTIONS';
+const TL_KEY='AAR_TIMELINE_V1';
+const START_KEY='AAR_STARTED'; // session flag: one-time Start Log
+
+/* ---------- Storage helpers ---------- */
+function loadCategoryActions(){
+  try{
+    const raw=localStorage.getItem(ACTIONS_KEY);
+    if(!raw) return structuredClone(CATEGORY_ACTIONS_DEFAULT);
+    const parsed=JSON.parse(raw);
+    if(parsed && typeof parsed==='object'){
+      for(const k of Object.keys(parsed)){ if(!Array.isArray(parsed[k])) parsed[k]=[]; parsed[k]=parsed[k].map(x=>String(x)); }
+      return parsed;
+    }
+  }catch(_){}
+  return structuredClone(CATEGORY_ACTIONS_DEFAULT);
+}
+function saveCategoryActions(obj){ localStorage.setItem(ACTIONS_KEY, JSON.stringify(obj)); }
+
+/* ---------- State ---------- */
+let CATEGORY_ACTIONS = loadCategoryActions();
+let timeline = [];
+
+/* ---------- DOM ---------- */
+const callType=document.getElementById('callType');
+const incidentId=document.getElementById('incidentId');
+const cat=document.getElementById('cat');
+const stampTime=document.getElementById('stampTime');
+const chips=document.getElementById('categoryChips');
+const noteText=document.getElementById('noteText');
+
+const btnStart=document.getElementById('btnStart'); // NEW
+const btnAddNote=document.getElementById('btnAddNote');
+const btnNow=document.getElementById('btnNow');
+const btnUndo=document.getElementById('btnUndo');
+const btnExport=document.getElementById('btnExport');
+const btnImport=document.getElementById('btnImport');
+const btnClear=document.getElementById('btnClear');
+const btnPrint=document.getElementById('btnPrint');
+
+const timelineEl=document.getElementById('timeline');
+const toastEl=document.getElementById('toast');
+const pr_callType=document.getElementById('pr_callType');
+const pr_incidentId=document.getElementById('pr_incidentId');
+const pr_category=document.getElementById('pr_category');
+
+/* Admin modal */
+const adminToggle=document.getElementById('adminToggle');
+const adminBackdrop=document.getElementById('adminBackdrop');
+const adminModal=document.getElementById('adminModal');
+const adminClose=document.getElementById('adminClose');
+const adminCatSelect=document.getElementById('adminCategorySelect');
+const adminNewCategory=document.getElementById('adminNewCategory');
+const adminAddCategory=document.getElementById('adminAddCategory');
+const adminNewAction=document.getElementById('adminNewAction');
+const adminAddAction=document.getElementById('adminAddAction');
+const adminActionList=document.getElementById('adminActionList');
+const adminRemoveAction=document.getElementById('adminRemoveAction');
+const adminExportBtn=document.getElementById('adminExport');
+const adminImportBtn=document.getElementById('adminImport');
+const adminResetBtn=document.getElementById('adminReset');
+const adminSaveAllBtn=document.getElementById('adminSaveAll');
+
+/* NEW: Clear Log confirmation modal */
+const confirmBackdrop=document.getElementById('confirmBackdrop');
+const confirmModal=document.getElementById('confirmModal');
+const confirmYes=document.getElementById('confirmYes');
+const confirmNo=document.getElementById('confirmNo');
+
+/* ---------- UI helpers ---------- */
+function toast(msg, ms=1500){ toastEl.textContent=msg; toastEl.classList.add('show'); setTimeout(()=>toastEl.classList.remove('show'), ms); }
+function pad2(n){ return String(n).padStart(2,'0') }
+function getStamp(){
+  const v=(stampTime.value||'').trim();
+  if(!v) return new Date();
+  const [H,M]=v.split(':').map(x=>parseInt(x,10));
+  const d=new Date(); d.setHours(H||0,M||0,0,0); return d;
+}
+function fmtTime(d){ return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}` }
+
+/* ---------- TL storage ---------- */
+function saveTL(){
+  localStorage.setItem(TL_KEY, JSON.stringify({
+    timeline,
+    meta:{ callType:callType.value||'', incidentId:incidentId.value||'', category:cat.value||'' }
+  }));
+}
+function loadTL(){
+  try{
+    const raw=localStorage.getItem(TL_KEY); if(!raw) return;
+    const obj=JSON.parse(raw);
+    if(obj?.timeline && Array.isArray(obj.timeline)) {
+      timeline=obj.timeline;
+      // ensure legacy entries have ids so they can be edited
+      ensureEntryIds();
+    }
+    if(obj?.meta){
+      if(obj.meta.callType) callType.value=obj.meta.callType;
+      if(obj.meta.incidentId) incidentId.value=obj.meta.incidentId;
+      if(obj.meta.category && CATEGORY_ACTIONS[obj.meta.category]) cat.value=obj.meta.category;
+    }
+  }catch(_){}
+}
+
+function ensureEntryIds(){
+  for(let i=0;i<timeline.length;i++){
+    const e = timeline[i];
+    if(!e.id){
+      e.id = `${Date.now()}-${Math.random().toString(36).slice(2,9)}`;
+    }
+  }
+}
+
+/* ---------- Render ---------- */
+function render(){
+  const current = cat.value;
+  cat.innerHTML = '';
+  Object.keys(CATEGORY_ACTIONS).sort().forEach(k=>{
+    const op = document.createElement('option');
+    op.value = k; op.textContent = k;
+    if(k === current) op.selected = true;
+    cat.appendChild(op);
+  });
+  if(!cat.value && cat.options.length) cat.selectedIndex = 0;
+
+  pr_callType.textContent = callType.value || '—';
+  pr_incidentId.textContent = incidentId.value || '—';
+  pr_category.textContent = cat.value || '—';
+
+  timelineEl.innerHTML = '';
+  if(!timeline.length){
+    const empty = document.createElement('div');
+    empty.className = 'card';
+    empty.innerHTML = `<div class="meta">No entries yet — tap chips on the left or add a note.</div>`;
+    timelineEl.appendChild(empty);
+  } else {
+    // sort a shallow copy but preserve ids on each row
+    timeline.slice().sort((a,b)=> new Date(a.t)-new Date(b.t)).forEach(row=>{
+      const d = new Date(row.t);
+      const card = document.createElement('div');
+      card.className = 'card';
+      // attach the entry id so clicks can resolve which entry to edit
+      if (row.id) card.setAttribute('data-id', row.id);
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;justify-content:flex-start;">
+          <div style="display:flex;align-items:center;gap:6px;min-width:140px;">
+            <div class="badge">${fmtTime(d)}</div>
+            ${row.meta.category ? `<div class="meta" style="font-weight:600;color:var(--accent);">${row.meta.category}</div>` : ''}
+          </div>
+          <div class="title" style="flex:1; font-weight:700;">${row.label}</div>
+          <div class="meta" style="flex-shrink:0;display:flex;align-items:center;gap:8px;">
+            ${row.meta.callType ? `Type: ${row.meta.callType}` : ''}
+            ${row.meta.incidentId ? ` • ID: ${row.meta.incidentId}` : ''}
+            ${row.meta.location ? ` • Location: ${row.meta.location.lat.toFixed(6)}, ${row.meta.location.lng.toFixed(6)}` : ''}
+            <div class="row" style="gap:4px;">
+              <button class="btn ghost small edit-btn" data-id="${row.id}" title="Edit entry">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                </svg>
+              </button>
+              <button class="btn ghost small map-btn" data-id="${row.id}" title="${row.meta.location ? 'View location' : 'Set location'}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                </svg>
+                ${row.meta.location ? 'View' : 'Set Location'}
+              </button>
+            </div>
+          </div>
+        </div>`;
+      timelineEl.appendChild(card);
+    });
+  }
+}
+
+function populateCategoryButtons(){
+  chips.innerHTML='';
+  const k=cat.value; const arr=CATEGORY_ACTIONS[k]||[];
+  arr.forEach(txt=>{
+    const c=document.createElement('button');
+    c.className='chip'; c.type='button'; c.textContent=txt;
+    c.addEventListener('click',()=>addEntry(txt));
+    chips.appendChild(c);
+  });
+}
+function addEntry(label){
+  const d=getStamp();
+  // normalize label and prevent empty entries
+  label = String(label||'').trim(); if(!label) return;
+  // ensure each entry has a stable id for editing
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2,9)}`;
+  const row={ id, t:d.toISOString(), label, meta:{ callType:callType.value||'', incidentId:incidentId.value||'', category:cat.value||'' } };
+  timeline.push(row); saveTL(); render();
+}
+
+/* ---------- Controls ---------- */
+btnNow.addEventListener('click', ()=>{
+  const d=new Date(); stampTime.value=`${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+});
+btnUndo.addEventListener('click', ()=>{
+  if(!timeline.length) return; timeline.pop(); saveTL(); render();
+});
+btnExport.addEventListener('click', ()=>{
+  const payload={ meta:{ app:'The HazMat Guys – After Action Reporter', exportedAt:new Date().toISOString() }, actions:CATEGORY_ACTIONS, timeline };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='AAR_export.json'; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },0);
+});
+btnImport.addEventListener('click', ()=>{
+  const i=document.createElement('input'); i.type='file'; i.accept='application/json';
+  i.onchange=()=>{
+    const f=i.files?.[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{
+      try{
+        const obj=JSON.parse(String(r.result||'{}'));
+        if(obj?.actions && typeof obj.actions==='object'){
+          for(const k of Object.keys(obj.actions)){ if(!Array.isArray(obj.actions[k])) obj.actions[k]=[]; obj.actions[k]=obj.actions[k].map(x=>String(x)); }
+          CATEGORY_ACTIONS=obj.actions; saveCategoryActions(CATEGORY_ACTIONS); toast('Actions imported');
+        }
+  if(Array.isArray(obj?.timeline)){ timeline=obj.timeline; ensureEntryIds(); toast('Timeline imported'); }
+  render(); populateCategoryButtons(); saveTL();
+      }catch(e){ toast('Import failed'); }
+    };
+    r.readAsText(f);
+  };
+  i.click();
+});
+/* NEW: Replace simple confirm() with custom modal */
+btnClear.addEventListener('click', openConfirmModal);
+
+btnPrint.addEventListener('click', ()=>{
+  // Generate a true PDF (text/table) instead of invoking the browser print pipeline (avoids Safari print crashes)
+  try{
+    if(!window.jspdf || !window.jspdf.jsPDF){
+      toast('PDF library failed to load. Check network / content blockers.');
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit:'pt', format:'letter' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 40;
+
+    const title = 'After Action Reporter – Timeline Log';
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(16);
+    doc.text(title, margin, 50);
+
+    // Incident meta
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(11);
+    const metaLines = [
+      `Call Type: ${callType.value || '—'}`,
+      `Incident ID: ${incidentId.value || '—'}`,
+      `Category: ${cat.value || '—'}`,
+      `Exported: ${new Date().toLocaleString()}`
+    ];
+    let y = 72;
+    metaLines.forEach(line => { doc.text(line, margin, y); y += 14; });
+
+    // Build rows (sorted ascending)
+    const rows = timeline
+      .slice()
+      .sort((a,b)=> new Date(a.t) - new Date(b.t))
+      .map(e=>{
+        const d = new Date(e.t);
+        const timeStr = (typeof fmtTime === 'function') ? fmtTime(d) : d.toLocaleTimeString();
+        const categoryStr = e?.meta?.category || '';
+        const entryStr = e?.label || '';
+        const loc = e?.meta?.location;
+        const locStr = loc && typeof loc.lat === 'number' && typeof loc.lng === 'number'
+          ? `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`
+          : '';
+        return [timeStr, categoryStr, entryStr, locStr];
+      });
+
+    // If empty, still export a small PDF
+    if(!rows.length){
+      doc.text('No timeline entries to export.', margin, y + 30);
+      const fname = `AAR_${(incidentId.value||'log').replace(/[^a-z0-9_-]+/gi,'_')}.pdf`;
+      doc.save(fname);
+      return;
+    }
+
+    // Table
+    doc.autoTable({
+      startY: y + 14,
+      head: [['Time', 'Category', 'Entry', 'Location']],
+      body: rows,
+      styles: { font:'helvetica', fontSize: 9, cellPadding: 4, overflow: 'linebreak' },
+      headStyles: { fillColor: [20,20,20], textColor: 255 },
+      alternateRowStyles: { fillColor: [245,245,245] },
+      columnStyles: {
+        0: { cellWidth: 70 },
+        1: { cellWidth: 110 },
+        2: { cellWidth: pageW - margin*2 - 70 - 110 - 140 },
+        3: { cellWidth: 140 }
+      },
+      margin: { left: margin, right: margin }
+    });
+
+    const fname = `AAR_${(incidentId.value||'log').replace(/[^a-z0-9_-]+/gi,'_')}.pdf`;
+    doc.save(fname);
+  }catch(err){
+    console.error(err);
+    toast('PDF export failed. See console.');
+  }
+});
+btnAddNote.addEventListener('click', ()=>{
+  const v=(noteText.value||'').trim(); if(!v){ toast('Enter a note'); return; }
+  addEntry(v); noteText.value='';
+});
+callType.addEventListener('change', ()=>{ saveTL(); render(); });
+incidentId.addEventListener('input', ()=>{ saveTL(); render(); });
+cat.addEventListener('change', ()=>{ saveTL(); render(); populateCategoryButtons(); });
+
+/* ---------- Admin ---------- */
+function openAdmin(){ adminBackdrop.classList.add('show'); adminModal.classList.add('show'); refreshAdminCategories(cat.value || Object.keys(CATEGORY_ACTIONS)[0]); }
+function closeAdmin(){ adminBackdrop.classList.remove('show'); adminModal.classList.remove('show'); }
+adminToggle.addEventListener('click', openAdmin); adminClose.addEventListener('click', closeAdmin); adminBackdrop.addEventListener('click', closeAdmin);
+document.addEventListener('keydown',(e)=>{ if(e.key==='Escape' && adminModal.classList.contains('show')) closeAdmin(); });
+
+function refreshAdminCategories(selected=null){
+  adminCatSelect.innerHTML='';
+  Object.keys(CATEGORY_ACTIONS).sort().forEach(k=>{
+    const opt=document.createElement('option'); opt.value=k; opt.textContent=k; if(selected && selected===k) opt.selected=true; adminCatSelect.appendChild(opt);
+  });
+  if(!selected && adminCatSelect.options.length) adminCatSelect.selectedIndex = 0;
+  refreshAdminActions();
+}
+function refreshAdminActions(){
+  adminActionList.innerHTML='';
+  const catVal=adminCatSelect?.value||''; const arr=CATEGORY_ACTIONS[catVal]||[];
+  arr.forEach(txt=>{
+    const opt=document.createElement('option'); opt.value=txt; opt.textContent=txt; adminActionList.appendChild(opt);
+  });
+}
+adminCatSelect.addEventListener('change', refreshAdminActions);
+
+adminAddCategory.addEventListener('click', ()=>{
+  const name=(adminNewCategory.value||'').trim(); if(!name){ toast('Enter a category name'); return; }
+  if(!CATEGORY_ACTIONS[name]) CATEGORY_ACTIONS[name]=[];
+  adminNewCategory.value=''; refreshAdminCategories(name); toast('Category added');
+});
+adminAddAction.addEventListener('click', ()=>{
+  const c=adminCatSelect.value; if(!c){ toast('Pick a category'); return; }
+  const a=(adminNewAction.value||'').trim(); if(!a){ toast('Enter an action'); return; }
+  if(!CATEGORY_ACTIONS[c]) CATEGORY_ACTIONS[c]=[];
+  if(!CATEGORY_ACTIONS[c].includes(a)) CATEGORY_ACTIONS[c].push(a);
+  adminNewAction.value=''; refreshAdminActions(); if(cat.value===c) populateCategoryButtons(); toast('Action added');
+});
+adminRemoveAction.addEventListener('click', ()=>{
+  const c=adminCatSelect.value; if(!c) return;
+  const selected=Array.from(adminActionList.selectedOptions).map(o=>o.value);
+  if(!selected.length){ toast('Select action(s) to remove'); return; }
+  CATEGORY_ACTIONS[c]=(CATEGORY_ACTIONS[c]||[]).filter(x=>!selected.includes(x));
+  refreshAdminActions(); if(cat.value===c) populateCategoryButtons(); toast('Action(s) removed');
+});
+adminExportBtn.addEventListener('click', ()=>{
+  const data=JSON.stringify(CATEGORY_ACTIONS,null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='AAR_CATEGORY_ACTIONS.json';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },0);
+});
+adminImportBtn.addEventListener('click', ()=>{
+  const i=document.createElement('input'); i.type='file'; i.accept='application/json';
+  i.onchange=()=>{
+    const f=i.files?.[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{
+      try{
+        const obj=JSON.parse(String(r.result||'{}'));
+        if(!obj || typeof obj!=='object') throw new Error('Invalid JSON');
+        for(const k of Object.keys(obj)){ if(!Array.isArray(obj[k])) obj[k]=[]; obj[k]=obj[k].map(x=>String(x)); }
+        CATEGORY_ACTIONS=obj;
+        refreshAdminCategories(); populateCategoryButtons(); toast('Imported');
+      }catch(e){ toast('Import failed'); }
+    };
+    r.readAsText(f);
+  };
+  i.click();
+});
+adminResetBtn.addEventListener('click', ()=>{
+  CATEGORY_ACTIONS=structuredClone(CATEGORY_ACTIONS_DEFAULT);
+  localStorage.removeItem(ACTIONS_KEY);
+  refreshAdminCategories(); populateCategoryButtons(); toast('Reset to defaults');
+});
+adminSaveAllBtn.addEventListener('click', ()=>{
+  saveCategoryActions(CATEGORY_ACTIONS); populateCategoryButtons(); toast('Saved changes');
+});
+
+/* ---------- NEW: Start Log (one-time per session) ---------- */
+function updateStartState(){
+  const started = sessionStorage.getItem(START_KEY)==='1';
+  btnStart.disabled = !!started;
+  if (started && timeline.length === 0) {
+    // Recovery: If we're marked as started but have no entries, add the start entry
+    addEntry('Log Started');
+  }
+}
+
+btnStart.addEventListener('click', ()=>{
+  if(sessionStorage.getItem(START_KEY)==='1') return;      // already started
+  
+  // Ensure timeline is initialized
+  if (!Array.isArray(timeline)) {
+    timeline = [];
+  }
+  
+  // Add start entry and save immediately
+  addEntry('Log Started');                                  // first timestamped entry
+  saveTL();                                                // explicitly save to localStorage
+  sessionStorage.setItem(START_KEY,'1');                    // lock until clear or reload
+  updateStartState();
+  
+  // Verify the entry was added
+  if (timeline.length === 0) {
+    console.error('Failed to add start entry to timeline');
+    toast('Error starting log. Please try again.');
+    sessionStorage.removeItem(START_KEY);
+    return;
+  }
+  
+  toast('Log started successfully');
+});
+
+/* ---------- NEW: Clear Log custom modal ---------- */
+function openConfirmModal(){
+  confirmBackdrop.classList.add('show');
+  confirmModal.classList.add('show');
+}
+function closeConfirmModal(){
+  confirmBackdrop.classList.remove('show');
+  confirmModal.classList.remove('show');
+}
+confirmBackdrop.addEventListener('click', closeConfirmModal);
+confirmNo.addEventListener('click', closeConfirmModal);
+confirmYes.addEventListener('click', ()=>{
+  timeline=[]; saveTL(); render();
+  sessionStorage.removeItem(START_KEY); updateStartState(); // re-enable Start Log after clearing
+  closeConfirmModal();
+  toast('Log cleared');
+});
+
+/* ---------- Init & lifecycle ---------- */
+/* Keep original sequence to avoid any subtle side-effects */
+function init(){
+  // Ensure timeline is initialized
+  if (!Array.isArray(timeline)) {
+    timeline = [];
+  }
+
+  // Load saved timeline first
+  loadTL();
+  
+  // Initialize UI
+  render();
+  populateCategoryButtons();
+  
+  // Check start state after loading timeline
+  updateStartState();
+  
+  // Ensure modals are hidden initially
+  mapBackdrop.classList.remove('show');
+  mapModal.classList.remove('show');
+  
+  // Final render to ensure everything is in sync
+  render();
+  populateCategoryButtons();
+  
+  toast('AAR ready');
+}
+/* When the app/tab closes, clear the timeline (unchanged behavior) */
+window.addEventListener('beforeunload', ()=>{
+  try{ localStorage.removeItem(TL_KEY); }catch(_){}
+});
+
+/* ---------- NEW: Save Narrative to Timeline ---------- */
+const btnNarrativeToTimeline = document.getElementById('btnNarrativeToTimeline');
+const narrativeEl = document.getElementById('narrative');
+btnNarrativeToTimeline.addEventListener('click', () => {
+  const text = (narrativeEl.value || '').trim();
+  if (!text) { toast('Enter a narrative first'); return; }
+  addEntry(`Narrative: ${text}`);
+  narrativeEl.value = '';
+  toast('Narrative added to timeline');
+});
+
+/* ---------- Settings Panel ---------- */
+const FONT_SIZE_KEY = 'AAR_FONT_SIZE';
+const DEFAULT_FONT_SIZE = 16;
+
+const settingsToggle = document.getElementById('settingsToggle');
+const settingsBackdrop = document.getElementById('settingsBackdrop');
+const settingsModal = document.getElementById('settingsModal');
+const settingsClose = document.getElementById('settingsClose');
+const fontSizeRange = document.getElementById('fontSizeRange');
+const fontSizeLabel = document.getElementById('fontSizeLabel');
+const settingsReset = document.getElementById('settingsReset');
+const settingsSave = document.getElementById('settingsSave');
+
+// Load saved font size or use default
+function loadFontSize() {
+  const v = localStorage.getItem(FONT_SIZE_KEY);
+  return v ? parseInt(v, 10) : DEFAULT_FONT_SIZE;
+}
+
+function applyFontSize(size) {
+  if (typeof size !== 'number' || Number.isNaN(size)) size = DEFAULT_FONT_SIZE;
+  document.documentElement.style.setProperty('--font-size-base', `${size}px`);
+  document.documentElement.style.setProperty('--font-size-small', `${Math.max(12, size - 2)}px`);
+  document.documentElement.style.setProperty('--font-size-badge', `${Math.max(12, size - 2)}px`);
+  if (fontSizeLabel) fontSizeLabel.textContent = `${size}px`;
+  if (fontSizeRange) fontSizeRange.value = size;
+}
+
+function openSettings() {
+  settingsBackdrop.classList.add('show');
+  settingsModal.classList.add('show');
+  // Initialize range with current value
+  const currentSize = loadFontSize();
+  if (fontSizeRange) fontSizeRange.value = currentSize;
+  if (fontSizeLabel) fontSizeLabel.textContent = `${currentSize}px`;
+}
+
+function closeSettings() {
+  settingsBackdrop.classList.remove('show');
+  settingsModal.classList.remove('show');
+}
+
+// Event Listeners
+settingsToggle.addEventListener('click', openSettings);
+settingsClose.addEventListener('click', closeSettings);
+settingsBackdrop.addEventListener('click', closeSettings);
+
+fontSizeRange.addEventListener('input', (e) => {
+  const size = parseInt(e.target.value, 10);
+  if (fontSizeLabel) fontSizeLabel.textContent = `${size}px`;
+  applyFontSize(size);
+});
+
+settingsReset.addEventListener('click', () => {
+  applyFontSize(DEFAULT_FONT_SIZE);
+  localStorage.removeItem(FONT_SIZE_KEY);
+  toast('Settings reset to default');
+});
+
+settingsSave.addEventListener('click', () => {
+  const size = parseInt(fontSizeRange.value, 10);
+  localStorage.setItem(FONT_SIZE_KEY, size.toString());
+  applyFontSize(size);
+  closeSettings();
+  toast('Settings saved');
+});
+
+// Initialize font size from storage
+applyFontSize(loadFontSize());
+
+/* ---------- Edit Entry panel logic ---------- */
+const editBackdrop = document.getElementById('editBackdrop');
+const editModal = document.getElementById('editModal');
+const editClose = document.getElementById('editClose');
+const editLabel = document.getElementById('editLabel');
+const editCategory = document.getElementById('editCategory');
+const editDelete = document.getElementById('editDelete');
+const editCancel = document.getElementById('editCancel');
+const editSave = document.getElementById('editSave');
+
+let editingId = null;
+
+function openEditModal(id){
+  const entry = timeline.find(e=>e.id===id);
+  if(!entry) return;
+  editingId = id;
+  editLabel.value = entry.label;
+  // populate category select
+  editCategory.innerHTML = '';
+  Object.keys(CATEGORY_ACTIONS).sort().forEach(k=>{
+    const op = document.createElement('option'); op.value=k; op.textContent=k; if(k===entry.meta.category) op.selected=true; editCategory.appendChild(op);
+  });
+  editBackdrop.classList.add('show'); editModal.classList.add('show');
+}
+
+function closeEditModal(){ editingId = null; editBackdrop.classList.remove('show'); editModal.classList.remove('show'); }
+
+// Use delegated listener on the timeline container so clicks on SVGs/children resolve to the button
+timelineEl.addEventListener('click', (e)=>{
+  let el = e.target;
+  // Traverse up to find .edit-btn or .map-btn but stop at timelineEl
+  while (el && el !== timelineEl) {
+    if (el.classList && el.classList.contains('edit-btn')) {
+      // prefer data-id on the button, fallback to nearest ancestor with data-id
+      const id = el.getAttribute('data-id') || el.closest('[data-id]')?.getAttribute('data-id');
+      if (id) openEditModal(id);
+      return;
+    }
+    if (el.classList && el.classList.contains('map-btn')) {
+      const id = el.getAttribute('data-id') || el.closest('[data-id]')?.getAttribute('data-id');
+      if (id) openMapModal(id);
+      return;
+    }
+    el = el.parentElement;
+  }
+});
+
+editClose.addEventListener('click', closeEditModal);
+editCancel.addEventListener('click', closeEditModal);
+editBackdrop.addEventListener('click', closeEditModal);
+
+editSave.addEventListener('click', ()=>{
+  if(!editingId) return; const entry = timeline.find(e=>e.id===editingId); if(!entry) return;
+  const newText = (editLabel.value||'').trim(); if(!newText){ toast('Entry cannot be empty'); return; }
+  entry.label = newText;
+  entry.meta.category = editCategory.value || '';
+  saveTL(); render(); closeEditModal(); toast('Entry updated');
+});
+
+editDelete.addEventListener('click', ()=>{
+  if(!editingId) return; if(!confirm('Delete this entry?')) return;
+  timeline = timeline.filter(e=>e.id!==editingId); saveTL(); render(); closeEditModal(); toast('Entry deleted');
+});
+
+/* ---------- Map Panel ---------- */
+const mapBackdrop = document.getElementById('mapBackdrop');
+const mapModal = document.getElementById('mapModal');
+const mapClose = document.getElementById('mapClose');
+const mapGetLocation = document.getElementById('mapGetLocation');
+const mapSave = document.getElementById('mapSave');
+const mapCancel = document.getElementById('mapCancel');
+
+let map = null;
+let marker = null;
+let activeLocationId = null;
+
+function initMap() {
+  // If a previous map exists, remove it to avoid leftover panes/tiles
+  if (map) {
+    try { map.remove(); } catch(_) {}
+    map = null;
+    marker = null;
+    // Clear any leftover DOM inside the container
+    const mapEl = document.getElementById('map'); if(mapEl) mapEl.innerHTML = '';
+  }
+
+  // Initialize map with simplified options for reliable tile loading
+  map = L.map('map', { 
+    preferCanvas: true,
+    fadeAnimation: false,
+    zoomAnimation: false,
+    markerZoomAnimation: false,
+    maxZoom: 19,
+    minZoom: 2,
+    updateWhenZooming: false,
+    updateWhenIdle: true,
+    attributionControl: false,
+    zoomControl: false
+  }).setView([0, 0], 2);
+  
+  // Add zoom control in a better position
+  L.control.zoom({
+    position: 'topright'
+  }).addTo(map);
+  
+  // Use OpenStreetMap for reliable tile loading
+  L.tileLayer('https://tiles.openfreemap.org/liberty/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors | Tiles: OpenFreeMap Liberty',
+    maxZoom: 19,
+    minZoom: 2,
+    tileSize: 256,
+    crossOrigin: true
+  }).addTo(map);
+
+  // Add click handler to set marker
+  map.on('click', (e) => {
+    setMarker(e.latlng.lat, e.latlng.lng);
+  });
+}
+
+function setMarker(lat, lng) {
+  if (marker) {
+    marker.setLatLng([lat, lng]);
+  } else {
+    marker = L.marker([lat, lng]).addTo(map);
+  }
+  map.setView([lat, lng], 16);
+}
+
+function openMapModal(id) {
+  const entry = timeline.find(e => e.id === id);
+  if (!entry) return;
+
+  activeLocationId = id;
+  mapBackdrop.classList.add('show');
+  mapModal.classList.add('show');
+
+  // Wait for modal to be visible before initializing map
+  setTimeout(() => {
+    initMap();
+    if (entry.meta.location) {
+      setMarker(entry.meta.location.lat, entry.meta.location.lng);
+    } else {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setMarker(position.coords.latitude, position.coords.longitude);
+        },
+        () => {
+          map.setView([0, 0], 2);
+          if (marker) {
+            map.removeLayer(marker);
+            marker = null;
+          }
+        }
+      );
+    }
+    // Force redraw after modal is visible
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+  }, 200);
+}
+
+function closeMapModal() {
+  activeLocationId = null;
+  mapBackdrop.classList.remove('show');
+  mapModal.classList.remove('show');
+}
+
+  // (Removed duplicate map click listener; map button handling is done by the
+  // single delegated listener earlier which handles both edit and map buttons.)
+
+mapGetLocation.addEventListener('click', () => {
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      setMarker(position.coords.latitude, position.coords.longitude);
+    },
+    () => {
+      toast('Could not get location');
+    }
+  );
+});
+
+mapClose.addEventListener('click', closeMapModal);
+mapCancel.addEventListener('click', closeMapModal);
+mapBackdrop.addEventListener('click', closeMapModal);
+
+mapSave.addEventListener('click', () => {
+  if (!activeLocationId || !marker) return;
+  
+  const entry = timeline.find(e => e.id === activeLocationId);
+  if (!entry) return;
+  
+  const position = marker.getLatLng();
+  entry.meta.location = {
+    lat: position.lat,
+    lng: position.lng
+  };
+  
+  saveTL();
+  render();
+  closeMapModal();
+  toast('Location saved');
+});
+
+init();
+</script>
+</body>
+</html>
