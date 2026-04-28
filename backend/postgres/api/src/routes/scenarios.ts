@@ -12,7 +12,7 @@ type ScenarioBody = {
   scenario_date?: string;
   latitude?: number | null;
   longitude?: number | null;
-  detection_device?: 'air_monitor' | 'radiation_detection' | 'ph_paper';
+  detection_device?: 'air_monitor' | 'radiation_detection' | 'ph_paper' | 'wet_chemistry_paper';
   notes?: string | null;
   visibility?: 'private' | 'org_shared' | 'assigned';
   assigned_trainer_id?: string | null;
@@ -79,6 +79,16 @@ export type ShapeBody = {
   rad_dose_unit?: string | null;
   rad_exposure_unit?: string | null;
   p_h?: number | null;
+  oxidizer_enabled?: boolean | null;
+  oxidizer_target_type?: string | null;
+  oxidizer_concentration_ppm?: number | null;
+  oxidizer_concentration_PPM?: number | null;
+  oxidizer_sample_ph?: number | null;
+  oxidizer_sample_pH?: number | null;
+  oxidizer_reaction_result?: string | null;
+  oxidizer_reaction_pattern?: string | null;
+  oxidizer_reaction_duration_seconds?: number | null;
+  oxidizer_fact_text_override?: string | null;
   // camelCase compatibility
   sortOrder?: number;
   displayColorHex?: string | null;
@@ -91,6 +101,16 @@ export type ShapeBody = {
   radDoseUnit?: string | null;
   radExposureUnit?: string | null;
   pH?: number | null;
+  oxidizerEnabled?: boolean | null;
+  oxidizerTargetType?: string | null;
+  oxidizerConcentrationPpm?: number | null;
+  oxidizerConcentrationPPM?: number | null;
+  oxidizerSamplePh?: number | null;
+  oxidizerSamplePH?: number | null;
+  oxidizerReactionResult?: string | null;
+  oxidizerReactionPattern?: string | null;
+  oxidizerReactionDurationSeconds?: number | null;
+  oxidizerFactTextOverride?: string | null;
 };
 
 type ScenarioRow = {
@@ -100,7 +120,7 @@ type ScenarioRow = {
   scenario_date: string;
   latitude: number | null;
   longitude: number | null;
-  detection_device: 'air_monitor' | 'radiation_detection' | 'ph_paper';
+  detection_device: 'air_monitor' | 'radiation_detection' | 'ph_paper' | 'wet_chemistry_paper';
   version: number;
   organization_id: string | null;
   organization_name: string | null;
@@ -146,6 +166,7 @@ type ShapeRow = {
   pid_low_sampling_mode: string | null;
   pid_low_feather_percent: number | null;
   chemical_readings: unknown;
+  properties_json: unknown;
   dose_rate: string | null;
   background: string | null;
   shielding: string | null;
@@ -521,6 +542,7 @@ export const scenariosRoutes: FastifyPluginAsync = async (app) => {
           ss.pid_low_sampling_mode,
           ss.pid_low_feather_percent::float8 as pid_low_feather_percent,
           coalesce(ss.properties_json -> 'chemicalReadings', '[]'::jsonb) as chemical_readings,
+          ss.properties_json,
           ss.dose_rate,
           ss.background,
           ss.shielding,
@@ -639,6 +661,7 @@ function mapScenarioRow(row: ScenarioRow) {
 }
 
 function mapShapeRow(row: ShapeRow) {
+  const oxidizer = extractOxidizerShapeFields(row.properties_json);
   return {
     id: row.id,
     scenarioId: row.scenario_id,
@@ -673,6 +696,14 @@ function mapShapeRow(row: ShapeRow) {
     pidHighFeatherPercent: row.pid_high_feather_percent,
     pidLowSamplingMode: row.pid_low_sampling_mode,
     pidLowFeatherPercent: row.pid_low_feather_percent,
+    oxidizerEnabled: oxidizer.oxidizerEnabled,
+    oxidizerTargetType: oxidizer.oxidizerTargetType,
+    oxidizerConcentrationPpm: oxidizer.oxidizerConcentrationPpm,
+    oxidizerSamplePh: oxidizer.oxidizerSamplePh,
+    oxidizerReactionResult: oxidizer.oxidizerReactionResult,
+    oxidizerReactionPattern: oxidizer.oxidizerReactionPattern,
+    oxidizerReactionDurationSeconds: oxidizer.oxidizerReactionDurationSeconds,
+    oxidizerFactTextOverride: oxidizer.oxidizerFactTextOverride,
     chemicalReadings: Array.isArray(row.chemical_readings) ? row.chemical_readings : [],
     doseRate: row.dose_rate,
     background: row.background,
@@ -783,8 +814,25 @@ async function insertOrUpdateShape(
   }
 
   const chemicalReadings = Array.isArray(normalized.chemical_readings) ? normalized.chemical_readings : [];
+  const oxidizer = normalizeOxidizerFromShapeBody(normalized);
   const propertiesJSON = JSON.stringify({
-    chemicalReadings
+    chemicalReadings,
+    oxidizerEnabled: oxidizer.oxidizerEnabled,
+    oxidizer_enabled: oxidizer.oxidizerEnabled,
+    oxidizerTargetType: oxidizer.oxidizerTargetType,
+    oxidizer_target_type: oxidizer.oxidizerTargetType,
+    oxidizerConcentrationPpm: oxidizer.oxidizerConcentrationPpm,
+    oxidizer_concentration_ppm: oxidizer.oxidizerConcentrationPpm,
+    oxidizerSamplePh: oxidizer.oxidizerSamplePh,
+    oxidizer_sample_ph: oxidizer.oxidizerSamplePh,
+    oxidizerReactionResult: oxidizer.oxidizerReactionResult,
+    oxidizer_reaction_result: oxidizer.oxidizerReactionResult,
+    oxidizerReactionPattern: oxidizer.oxidizerReactionPattern,
+    oxidizer_reaction_pattern: oxidizer.oxidizerReactionPattern,
+    oxidizerReactionDurationSeconds: oxidizer.oxidizerReactionDurationSeconds,
+    oxidizer_reaction_duration_seconds: oxidizer.oxidizerReactionDurationSeconds,
+    oxidizerFactTextOverride: oxidizer.oxidizerFactTextOverride,
+    oxidizer_fact_text_override: oxidizer.oxidizerFactTextOverride
   });
 
   const params = [
@@ -885,7 +933,23 @@ export function normalizeShapeBody(body: ShapeBody): ShapeBody {
     rad_longitude: body.rad_longitude ?? body.radLongitude,
     rad_dose_unit: body.rad_dose_unit ?? body.radDoseUnit,
     rad_exposure_unit: body.rad_exposure_unit ?? body.radExposureUnit,
-    p_h: body.p_h ?? body.pH
+    p_h: body.p_h ?? body.pH,
+    oxidizerEnabled: body.oxidizerEnabled ?? body.oxidizer_enabled,
+    oxidizerTargetType: body.oxidizerTargetType ?? body.oxidizer_target_type,
+    oxidizerConcentrationPpm:
+      body.oxidizerConcentrationPpm ??
+      body.oxidizerConcentrationPPM ??
+      body.oxidizer_concentration_ppm ??
+      body.oxidizer_concentration_PPM,
+    oxidizerSamplePh:
+      body.oxidizerSamplePh ??
+      body.oxidizerSamplePH ??
+      body.oxidizer_sample_ph ??
+      body.oxidizer_sample_pH,
+    oxidizerReactionResult: body.oxidizerReactionResult ?? body.oxidizer_reaction_result,
+    oxidizerReactionPattern: body.oxidizerReactionPattern ?? body.oxidizer_reaction_pattern,
+    oxidizerReactionDurationSeconds: body.oxidizerReactionDurationSeconds ?? body.oxidizer_reaction_duration_seconds,
+    oxidizerFactTextOverride: body.oxidizerFactTextOverride ?? body.oxidizer_fact_text_override
   };
 }
 
@@ -925,6 +989,7 @@ const shapeReturningColumns = `
     pid_low_sampling_mode,
     pid_low_feather_percent::float8 as pid_low_feather_percent,
     coalesce(properties_json -> 'chemicalReadings', '[]'::jsonb) as chemical_readings,
+    properties_json,
     dose_rate,
     background,
     shielding,
@@ -1053,4 +1118,141 @@ function normalizeNumericString(value: string | null | undefined): string | null
 function normalizePercent(value: number | null | undefined): number | null {
   if (value == null || !Number.isFinite(value)) return null;
   return Math.min(100, Math.max(0, value));
+}
+
+const OXIDIZER_TARGET_TYPES = new Set(['freeChlorine', 'nitrite', 'iodine', 'peroxide', 'genericOxidizer']);
+const OXIDIZER_REACTION_RESULTS = new Set(['negative', 'lowPositive', 'highPositive', 'invalidPH', 'unknown']);
+const OXIDIZER_REACTION_PATTERNS = new Set(['none', 'blueVioletRing', 'blueVioletSpot', 'fullStripDarkening']);
+
+type OxidizerShapeFields = {
+  oxidizerEnabled: boolean;
+  oxidizerTargetType: string | null;
+  oxidizerConcentrationPpm: number | null;
+  oxidizerSamplePh: number | null;
+  oxidizerReactionResult: string | null;
+  oxidizerReactionPattern: string | null;
+  oxidizerReactionDurationSeconds: number | null;
+  oxidizerFactTextOverride: string | null;
+};
+
+function normalizeOxidizerFromShapeBody(body: ShapeBody): OxidizerShapeFields {
+  const hasOxidizerPayload =
+    body.oxidizerTargetType != null ||
+    body.oxidizerConcentrationPpm != null ||
+    body.oxidizerSamplePh != null ||
+    body.oxidizerReactionResult != null ||
+    body.oxidizerReactionPattern != null ||
+    body.oxidizerReactionDurationSeconds != null ||
+    body.oxidizerFactTextOverride != null;
+  const enabled = body.oxidizerEnabled === true || hasOxidizerPayload;
+  if (!enabled) {
+    return {
+      oxidizerEnabled: false,
+      oxidizerTargetType: null,
+      oxidizerConcentrationPpm: null,
+      oxidizerSamplePh: null,
+      oxidizerReactionResult: null,
+      oxidizerReactionPattern: null,
+      oxidizerReactionDurationSeconds: null,
+      oxidizerFactTextOverride: null
+    };
+  }
+
+  return {
+    oxidizerEnabled: true,
+    oxidizerTargetType: normalizeEnumValue(body.oxidizerTargetType, OXIDIZER_TARGET_TYPES),
+    oxidizerConcentrationPpm: normalizeFiniteNumber(body.oxidizerConcentrationPpm),
+    oxidizerSamplePh: normalizeFiniteNumber(body.oxidizerSamplePh),
+    oxidizerReactionResult: normalizeEnumValue(body.oxidizerReactionResult, OXIDIZER_REACTION_RESULTS),
+    oxidizerReactionPattern: normalizeEnumValue(body.oxidizerReactionPattern, OXIDIZER_REACTION_PATTERNS),
+    oxidizerReactionDurationSeconds: normalizeFiniteNumber(body.oxidizerReactionDurationSeconds),
+    oxidizerFactTextOverride: normalizeOptionalText(body.oxidizerFactTextOverride)
+  };
+}
+
+function extractOxidizerShapeFields(value: unknown): OxidizerShapeFields {
+  const object = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  const enabledValue = object.oxidizerEnabled ?? object.oxidizer_enabled;
+  const enabled =
+    enabledValue === true ||
+    (typeof enabledValue === 'string' &&
+      enabledValue.trim().length > 0 &&
+      enabledValue.trim().toLowerCase() === 'true');
+  if (!enabled) {
+    return {
+      oxidizerEnabled: false,
+      oxidizerTargetType: null,
+      oxidizerConcentrationPpm: null,
+      oxidizerSamplePh: null,
+      oxidizerReactionResult: null,
+      oxidizerReactionPattern: null,
+      oxidizerReactionDurationSeconds: null,
+      oxidizerFactTextOverride: null
+    };
+  }
+
+  return {
+    oxidizerEnabled: true,
+    oxidizerTargetType: normalizeEnumValue(
+      object.oxidizerTargetType ?? object.oxidizer_target_type,
+      OXIDIZER_TARGET_TYPES
+    ),
+    oxidizerConcentrationPpm: normalizeUnknownNumber(
+      object.oxidizerConcentrationPpm ??
+        object.oxidizer_concentration_ppm ??
+        object.oxidizerConcentrationPPM ??
+        object.oxidizer_concentration_PPM
+    ),
+    oxidizerSamplePh: normalizeUnknownNumber(
+      object.oxidizerSamplePh ??
+        object.oxidizer_sample_ph ??
+        object.oxidizerSamplePH ??
+        object.oxidizer_sample_pH
+    ),
+    oxidizerReactionResult: normalizeEnumValue(
+      object.oxidizerReactionResult ?? object.oxidizer_reaction_result,
+      OXIDIZER_REACTION_RESULTS
+    ),
+    oxidizerReactionPattern: normalizeEnumValue(
+      object.oxidizerReactionPattern ?? object.oxidizer_reaction_pattern,
+      OXIDIZER_REACTION_PATTERNS
+    ),
+    oxidizerReactionDurationSeconds: normalizeUnknownNumber(
+      object.oxidizerReactionDurationSeconds ?? object.oxidizer_reaction_duration_seconds
+    ),
+    oxidizerFactTextOverride: normalizeOptionalText(
+      typeof object.oxidizerFactTextOverride === 'string'
+        ? object.oxidizerFactTextOverride
+        : typeof object.oxidizer_fact_text_override === 'string'
+          ? object.oxidizer_fact_text_override
+          : null
+    )
+  };
+}
+
+function normalizeEnumValue(value: unknown, allowed: Set<string>): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed.length) return null;
+  return allowed.has(trimmed) ? trimmed : null;
+}
+
+function normalizeFiniteNumber(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  return value;
+}
+
+function normalizeUnknownNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value.trim());
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function normalizeOptionalText(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
 }

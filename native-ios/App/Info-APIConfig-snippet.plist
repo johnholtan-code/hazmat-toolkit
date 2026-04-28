@@ -1,0 +1,5 @@
+<!-- Paste these keys inside your target Info.plist <dict> to enable API-backed Hazmat repository mode. -->
+<key>HazmatDataSource</key>
+<string>api</string>
+<key>HazmatAPIBaseURL</key>
+<string>https://your-api-host.example.com</string>

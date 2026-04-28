@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>LightsOn Safety Solutions Pluminator 9000</title>
+<style>
+  @font-face{
+    font-family:"Depressionist 3 Revisited";
+    src:url("fonts/Depressionist_3_Revisited_2010.ttf") format("truetype");
+    font-weight:normal;
+    font-style:normal;
+    font-display:swap;
+  }
+  :root { --bg:#0b1220; --panel:#101826; --muted:#5f728a; --text:#e8eef8; --accent:#ff7b00; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid #1c2838;background:linear-gradient(180deg,#1a0e00,#0f0600)}
+  header h1{margin:0;font-size:18px;font-family:"Depressionist 3 Revisited","Times New Roman",serif}
+  h2,h3,legend,label{
+    font-family:"Depressionist 3 Revisited","Times New Roman",serif;
+  }
+  header p{margin:4px 0 0;color:var(--muted)}
+  .wrap{display:grid;grid-template-columns:360px 1fr;gap:14px;padding:14px;min-height:calc(100vh - 70px)}
+  .panel{background:var(--panel);border:1px solid #1b2738;border-radius:14px;padding:14px}
+  fieldset{border:1px solid #243349;border-radius:12px;margin:10px 0;padding:10px}
+  legend{padding:0 8px;color:#b9c7db}
+  label{display:block;margin:8px 0 4px;color:#b7c7dd}
+  input[type="range"]{width:100%}
+  input[type="text"],button{background:#0d1927;color:var(--text);border:1px solid #243349;border-radius:10px;padding:8px}
+  input[type="color"]{border:2px solid var(--accent);background:#18283a;border-radius:10px;cursor:pointer;height:42px;width:100%;padding:0}
+  .colorRow{display:grid;grid-template-columns:1fr 120px;gap:8px;align-items:center}
+  .hint{color:#8ea2bb;font-size:12px}
+  .stage{position:relative;display:grid;place-items:center;background:#0a0f18;border-radius:14px;border:1px solid #1b2738;min-height:60vh;overflow:hidden}
+  canvas{max-width:100%;height:auto;border-radius:12px;background:#000}
+  .hotspot{position:absolute;width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.35);pointer-events:none;transform:translate(-50%,-50%)}
+  #hotspotA{background:#ff3b30;display:none;}
+  #hotspotB{background:#007bff;}
+
+  /* Emitter switcher UX */
+  .emitter-controls{display:flex;gap:8px;margin-top:6px;align-items:flex-end;}
+  .emitter-switch{flex:1;display:flex;flex-direction:column;gap:6px;}
+  .emitter-label{font-size:12px;color:#ffe88a;letter-spacing:0.2px;}
+  .emitter-segmented{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:4px;
+    background:#0c121c;
+    border:1px solid rgba(255,212,0,0.2);
+    border-radius:10px;
+    padding:3px;
+  }
+  .emitter-segmented input{position:absolute;opacity:0;pointer-events:none;}
+  .emitter-segmented label{
+    text-align:center;
+    padding:6px 8px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+    color:var(--text);
+    transition:background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .emitter-segmented input:checked + label{
+    background:rgba(255,212,0,0.22);
+    color:var(--text);
+    box-shadow:inset 0 0 0 1px rgba(255,212,0,0.35);
+  }
+  .emitter-segmented label:hover{
+    background:rgba(255,212,0,0.12);
+  }
+  .emitter-add{
+    flex:1;
+    height:34px;
+    font-size:13px;
+    border-radius:10px;
+  }
+</style>
+<!-- ===== APPENDED THEME OVERRIDES (Black + Yellow) — APPEND ONLY ===== -->
+<style>
+  /* Match Flaminator 9000 theme refinements */
+  :root {
+    --bg:#000000;
+    --panel:#0a0a0a;
+    --text:#f5f5f5;
+    --muted:#c9b458;
+    --accent:#ffd400;
+  }
+
+  header{
+    border-bottom:1px solid rgba(255,212,0,0.25);
+    background:linear-gradient(180deg,#0a0a0a,#000000);
+  }
+  .panel{
+    border-color:rgba(255,212,0,0.15);
+    box-shadow:0 0 0 1px rgba(255,212,0,0.05), 0 8px 24px rgba(0,0,0,0.6);
+  }
+  fieldset{
+    border:1px solid rgba(255,212,0,0.25);
+  }
+  legend{
+    color:#ffd400;
+    font-weight:600;
+    letter-spacing:.2px;
+  }
+  label{
+    color:#ffe88a;
+  }
+  .hint{
+    color:#c9b458;
+  }
+
+  button.primary{
+    background:var(--accent) !important;
+    color:#000 !important;
+    border-color:var(--accent) !important;
+    box-shadow:0 2px 10px rgba(255,212,0,0.2) !important;
+  }
+  button.primary:hover{
+    filter:brightness(1.05);
+  }
+
+  input[type="range"]:focus,
+  select:focus,
+  input[type="number"]:focus,
+  input[type="text"]:focus,
+  input[type="color"]:focus,
+  button:focus{
+    outline:2px solid rgba(255,212,0,0.45);
+    outline-offset:1px;
+  }
+</style>
+<style id="atlas-theme-append-v1">
+/* === APPEND-ONLY THEME OVERRIDES (Black/Yellow) ===
+   - Non-destructive: does not delete/replace existing rules; only overrides via specificity/vars.
+   - Matches the Flaminator9000 look & feel.
+*/
+:root {
+  --bg:#000000;            /* deep black background */
+  --panel:#0a0a0a;         /* near-black panel surface */
+  --muted:#c9b458;         /* paragraph yellow */
+  --text:#f5f5f5;          /* primary text */
+  --accent:#ffd400;        /* bright safety yellow */
+  --border:rgba(255,212,0,0.15);
+}
+
+/* Base application surface */
+body {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* Common containers/panels that often appear in these simulators */
+aside, .sidebar, .sidepanel, .left-panel, #sidebar, #settingsPanel, [data-role="sidebar"] {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-right: 1px solid var(--border);
+}
+
+/* Headers / toolbars */
+header, .topbar, .toolbar, #topbar {
+  background: linear-gradient(180deg,#0a0a0a,#000000) !important;
+  color: var(--text) !important;
+  border-bottom: 1px solid rgba(255,212,0,0.25);
+}
+
+/* Cards / boxes */
+.card, .panel, .box, .group, .fieldset, fieldset, .controls, .settings, .module {
+  background: #0a0a0a !important;
+  border: 1px solid rgba(255,212,0,0.15) !important;
+  box-shadow: 0 0 0 1px rgba(255,212,0,0.05), 0 8px 24px rgba(0,0,0,.6) !important;
+  border-radius: 14px !important;
+  color: var(--text) !important;
+}
+
+/* Inputs */
+input[type="text"], input[type="number"], input[type="range"], input[type="color"], input[type="file"],
+select, textarea {
+  background: #0d1524 !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(255,212,0,0.15) !important;
+  border-radius: 10px !important;
+  outline: none !important;
+}
+input::placeholder, textarea::placeholder { color: var(--muted) !important; }
+
+/* Buttons – primary and subtle variants */
+button, .btn, input[type="button"], input[type="submit"] {
+  background: #182335 !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(255,212,0,0.15) !important;
+  border-radius: 12px !important;
+  padding: .55rem .9rem !important;
+  cursor: pointer;
+  transition: transform .08s ease, box-shadow .2s ease, border-color .2s ease;
+}
+button:hover, .btn:hover, input[type="button"]:hover, input[type="submit"]:hover {
+  border-color: rgba(255, 193, 7, 0.65) !important; /* accent hover */
+  box-shadow: 0 6px 18px rgba(255, 193, 7, .12) !important;
+  transform: translateY(-1px);
+}
+button.primary, .btn-primary, [data-variant="primary"] {
+  background: var(--accent) !important;
+  color: #111 !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 10px 20px rgba(255,212,0,.18) !important;
+}
+button.primary:hover, .btn-primary:hover, [data-variant="primary"]:hover {
+  box-shadow: 0 12px 26px rgba(255,212,0,.26) !important;
+}
+
+/* Toggles / labels that convey active state */
+.active, .selected, [aria-pressed="true"], [data-active="true"] {
+  outline: 2px solid rgba(255,193,7,.35) !important;
+  outline-offset: 1px;
+}
+
+/* Accent text & badges */
+a, .link, .accent, .badge, .pill {
+  color: var(--accent) !important;
+}
+.badge, .pill {
+  background: rgba(255,212,0,.12) !important;
+  border: 1px solid rgba(255,212,0,.35) !important;
+  border-radius: 999px !important;
+  padding: .2rem .5rem !important;
+}
+
+/* Sliders */
+input[type="range"]::-webkit-slider-thumb { background: var(--accent); }
+input[type="range"]::-moz-range-thumb { background: var(--accent); }
+input[type="range"] { accent-color: var(--accent); }
+
+/* Color pickers often need a visible frame on dark UI */
+input[type="color"] {
+  border: 1px solid var(--border) !important;
+}
+
+/* Canvas / stage wrapper – keep neutral; the visual content sits here */
+#stage, .stage, #canvasWrap, .canvas-wrap, .canvas, canvas {
+  background-color: #000000 !important;
+}
+
+/* Fine line separators */
+hr, .divider {
+  border: none;
+  height: 1px;
+  background: var(--border) !important;
+  opacity: .75;
+}
+
+/* Tables (if any) */
+table { border-color: var(--border) !important; color: var(--text) !important; }
+th { background: #121b2b !important; }
+td, th { border: 1px solid var(--border) !important; }
+</style></head>
+<body>
+<header>
+  <div>
+    <h1>The Hazmat Guys - Pluminator 9000</h1>
+    <p>Train hard. Break nothing. Learn everything.</p>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <button class="primary" id="exportGif" title="Export a 3-second looping GIF from the current canvas">🎞️ Export GIF</button>
+  </div>
+</header>
+<div class="wrap">
+<aside class="panel">
+<fieldset>
+<legend>Base Photo</legend>
+<input accept="image/*" id="photoInput" type="file"/>
+<div class="hint">Click to move the active plume.</div>
+<div class="emitter-controls">
+  <div class="emitter-switch">
+    <div class="emitter-label">Active Emitter</div>
+    <div class="emitter-segmented" role="group" aria-label="Active Emitter">
+      <input type="radio" id="emitterA" name="activeEmitter" value="A" checked />
+      <label for="emitterA">Emitter A</label>
+      <input type="radio" id="emitterB" name="activeEmitter" value="B" disabled />
+      <label for="emitterB">Emitter B</label>
+    </div>
+  </div>
+  <button id="addEmitterB" class="emitter-add">➕ Add Emitter B</button>
+</div>
+</fieldset>
+<fieldset>
+<legend>Color &amp; Intensity</legend>
+<div class="colorRow">
+<input id="plumeColor" type="color" value="#ffffff"/>
+<input id="plumeHex" maxlength="7" type="text" value="#ffffff"/>
+</div>
+<label>Intensity <span id="amountVal">50</span></label>
+<input id="amount" max="100" min="0" type="range" value="50"/>
+<label>Opacity <span id="opacityVal">0.65</span></label>
+<input id="opacity" max="100" min="0" type="range" value="65"/>
+<label>Size <span id="sizeVal">1.2</span></label>
+<input id="size" max="300" min="5" type="range" value="120"/>
+</fieldset>
+<fieldset>
+<legend>Direction &amp; Shape</legend>
+<label>Angle (0–360°) <span id="angleVal">0</span></label>
+<input id="angle" max="360" min="0" type="range" value="0"/>
+<label>Tilt (depth) <span id="tiltVal">90</span>°</label>
+<input id="tilt" max="135" min="45" type="range" value="90"/>
+<label>Length (distance) <span id="lengthVal">1.0</span>x</label>
+<input id="length" max="3" min="0.2" step="0.1" type="range" value="1"/>
+<label>Width (spread) <span id="widthVal">1.0</span>x</label>
+<input id="width" max="3" min="0.3" step="0.1" type="range" value="1"/>
+<label>Rise speed <span id="riseVal">28</span></label>
+<input id="rise" max="80" min="5" type="range" value="28"/>
+</fieldset>
+<fieldset>
+<legend>Controls</legend>
+<button id="reset">Reset</button>
+</fieldset>
+</aside>
+<main class="panel">
+<div class="stage" id="stage">
+<canvas height="600" id="c" width="800"></canvas>
+<div class="hotspot" id="hotspotA"></div>
+<div class="hotspot" id="hotspotB" style="display:none"></div>
+</div>
+</main>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const c=$('c'),ctx=c.getContext('2d'),stage=$('stage');
+const hotspotA=$('hotspotA'),hotspotB=$('hotspotB');
+let bgImg=new Image(),bgLoaded=false;
+
+let enableB=false,activeEmitter='A';
+let leakA={x:300,y:500},leakB={x:600,y:500};
+const makeState=()=>({color:'#ffffff',amount:50,opacity:0.65,size:1.2,rise:28,angle:0,tilt:90,length:1,width:1});
+let stateA=makeState();
+let stateB=makeState();
+const getState=()=>activeEmitter==='B'?stateB:stateA;
+const particles=[];
+let oc=document.createElement('canvas'),octx=oc.getContext('2d');
+oc.width=c.width;oc.height=c.height;
+
+function setActiveEmitter(val){
+  if(val==='B' && !enableB){val='A';}
+  activeEmitter=val;
+  const radio=document.querySelector(`input[name="activeEmitter"][value="${val}"]`);
+  if(radio)radio.checked=true;
+  applyStateToUI(getState());
+}
+document.querySelectorAll('input[name="activeEmitter"]').forEach(r=>{
+  r.addEventListener('change',e=>setActiveEmitter(e.target.value));
+});
+$('addEmitterB').onclick=()=>{
+  enableB=!enableB;
+  const b=$('emitterB');
+  if(b)b.disabled=!enableB;
+  $('addEmitterB').textContent=enableB?'➖ Remove Emitter B':'➕ Add Emitter B';
+  if(!enableB) setActiveEmitter('A');
+};
+$('reset').onclick=()=>{stateA=makeState();stateB=makeState();applyStateToUI(getState());particles.length=0;leakA={x:300,y:500};leakB={x:600,y:500};enableB=false;const b=$('emitterB');if(b)b.disabled=true;$('addEmitterB').textContent='➕ Add Emitter B';setActiveEmitter('A');draw();};
+
+function applyStateToUI(s){
+  $('plumeColor').value=s.color;
+  $('plumeHex').value=s.color;
+  $('amount').value=s.amount;
+  $('amountVal').textContent=s.amount.toFixed(0);
+  $('opacity').value=Math.round(s.opacity*100);
+  $('opacityVal').textContent=s.opacity.toFixed(2);
+  $('size').value=Math.round(s.size*100);
+  $('sizeVal').textContent=s.size.toFixed(2);
+  $('rise').value=s.rise;
+  $('riseVal').textContent=s.rise.toFixed(0);
+  $('angle').value=s.angle;
+  $('angleVal').textContent=s.angle.toFixed(0);
+  $('tilt').value=s.tilt;
+  $('tiltVal').textContent=s.tilt.toFixed(0);
+  $('length').value=s.length;
+  $('lengthVal').textContent=s.length.toFixed(1);
+  $('width').value=s.width;
+  $('widthVal').textContent=s.width.toFixed(1);
+}
+$('plumeColor').oninput=e=>setColor(e.target.value);
+$('plumeHex').oninput=e=>{const v=e.target.value;if(/^#([0-9a-fA-F]{6})$/.test(v))setColor(v);};
+function setColor(hex){
+  if(!/^#([0-9a-fA-F]{6})$/.test(hex))return;
+  const s=getState();
+  s.color=hex.toLowerCase();
+  applyStateToUI(s);
+}
+function bindRange(id,key,out,xf=v=>v){
+  const el=$(id),o=$(out);
+  el.oninput=()=>{
+    const s=getState();
+    s[key]=xf(parseFloat(el.value));
+    if(o)o.textContent=s[key].toFixed?s[key].toFixed(2):s[key];
+  };
+}
+bindRange('amount','amount','amountVal');
+bindRange('opacity','opacity','opacityVal',v=>v/100);
+bindRange('size','size','sizeVal',v=>v/100);
+bindRange('rise','rise','riseVal');
+bindRange('angle','angle','angleVal');
+bindRange('tilt','tilt','tiltVal');
+bindRange('length','length','lengthVal');
+bindRange('width','width','widthVal');
+applyStateToUI(getState());
+
+$('photoInput').addEventListener('change',e=>{
+ const f=e.target.files[0];if(!f)return;
+ const url=URL.createObjectURL(f);
+ bgImg.onload=()=>{bgLoaded=true;resizeAll(bgImg.width,bgImg.height);draw();};
+ bgImg.src=url;
+});
+
+stage.addEventListener('mousedown',e=>{
+ const p=toCanvasCoords(e);
+ if(activeEmitter==='A')leakA=p;else if(enableB)leakB=p;
+ updateHotspots();
+});
+
+function toCanvasCoords(e){const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*(c.width/r.width),y:(e.clientY-r.top)*(c.height/r.height)};}
+function updateHotspots(){const r=c.getBoundingClientRect();hotspotA.style.left=(r.left+leakA.x*(r.width/c.width))+'px';hotspotA.style.top=(r.top+leakA.y*(r.height/c.height))+'px';hotspotB.style.left=(r.left+leakB.x*(r.width/c.width))+'px';hotspotB.style.top=(r.top+leakB.y*(r.height/c.height))+'px';}
+
+const rnd=(a,b)=>a+Math.random()*(b-a);
+function spawnFrom(leak,dt,s){
+ const rate=s.amount*0.4;
+ const expect=rate*dt;
+ let n=Math.floor(expect)+(Math.random()<(expect%1)?1:0);
+ const baseAng=(s.angle-90)*Math.PI/180;
+ const tiltAng=(s.tilt-90)*Math.PI/180;
+ const baseSp=(s.rise/60)*s.length;
+ for(let i=0;i<n;i++){
+   const spread=(s.width-1)*40;
+   const offsetAng=baseAng+(Math.random()-0.5)*(spread*Math.PI/180);
+   const sp=baseSp*rnd(.7,1.4);
+   const vx=Math.cos(offsetAng)*sp;
+   const vy=Math.sin(offsetAng)*sp*Math.cos(tiltAng);
+   const vz=Math.sin(tiltAng);
+   particles.push({x:leak.x+rnd(-2,2)*s.width,y:leak.y+rnd(-2,2)*s.width,vx,vy,life:rnd(1.8,3.4),age:0,size:(s.size*18)*rnd(.7,1.6)*(1-0.4*vz),color:s.color,opacity:s.opacity});
+ }
+}
+function spawn(dt){spawnFrom(leakA,dt,stateA);if(enableB)spawnFrom(leakB,dt,stateB);}
+function step(dt){for(let p of particles){p.x+=p.vx*60*dt;p.y+=p.vy*60*dt;p.age+=dt;}for(let i=particles.length-1;i>=0;i--)if(particles[i].age>particles[i].life)particles.splice(i,1);}
+function draw(){
+ ctx.clearRect(0,0,c.width,c.height);
+ if(bgLoaded)ctx.drawImage(bgImg,0,0,c.width,c.height);
+ octx.clearRect(0,0,oc.width,oc.height);
+ octx.globalCompositeOperation='source-over';
+ for(let p of particles){
+   const t=Math.min(1,p.age/p.life);
+   const a=p.opacity*(1-t);
+   const g=octx.createRadialGradient(p.x,p.y,p.size*0.1,p.x,p.y,p.size);
+   const col=p.color||'#ffffff';
+   g.addColorStop(0,`rgba(${parseInt(col.slice(1,3),16)},${parseInt(col.slice(3,5),16)},${parseInt(col.slice(5,7),16)},${a})`);
+   g.addColorStop(0.5,`rgba(${parseInt(col.slice(1,3),16)},${parseInt(col.slice(3,5),16)},${parseInt(col.slice(5,7),16)},${a*0.5})`);
+   g.addColorStop(1,`rgba(${parseInt(col.slice(1,3),16)},${parseInt(col.slice(3,5),16)},${parseInt(col.slice(5,7),16)},0)`);
+   octx.fillStyle=g;
+   octx.beginPath();octx.arc(p.x,p.y,p.size,0,Math.PI*2);octx.fill();
+ }
+ ctx.drawImage(oc,0,0,oc.width,oc.height);
+}
+function resizeAll(w,h){c.width=w;c.height=h;oc.width=w;oc.height=h;updateHotspots();draw();}
+let last=performance.now();
+function tick(now){
+ const dt=Math.min(.05,(now-last)/1000);
+ last=now;
+ spawn(dt);step(dt);draw();
+ requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+new ResizeObserver(()=>updateHotspots()).observe(stage);
+</script>
+<!-- ===== APPENDED ONLY: GIF export support ===== -->
+<script src="https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.js"></script>
+<script>
+(() => {
+  const exportBtn = document.getElementById('exportGif');
+  if (!exportBtn) return;
+  let workerScriptUrl;
+
+  function setButtonState(isBusy, label) {
+    exportBtn.disabled = isBusy;
+    exportBtn.textContent = label;
+  }
+
+  async function getWorkerScriptUrl() {
+    if (workerScriptUrl) return workerScriptUrl;
+    const workerSrc = 'https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.worker.js';
+    const response = await fetch(workerSrc);
+    if (!response.ok) throw new Error('Failed to load GIF worker.');
+    const workerText = await response.text();
+    const blob = new Blob([workerText], { type: 'text/javascript' });
+    workerScriptUrl = URL.createObjectURL(blob);
+    return workerScriptUrl;
+  }
+
+  exportBtn.addEventListener('click', async () => {
+    if (typeof GIF === 'undefined') {
+      alert('GIF export library failed to load. Please check your connection and try again.');
+      return;
+    }
+
+    const canvas = document.getElementById('c');
+    const fps = 20;
+    const durationMs = 3000;
+    const frameDelay = 1000 / fps;
+    const totalFrames = Math.round((durationMs / 1000) * fps);
+
+    setButtonState(true, 'Capturing…');
+
+    let gif;
+    try {
+      const workerUrl = await getWorkerScriptUrl();
+      gif = new GIF({
+        workers: 2,
+        quality: 12,
+        repeat: 0,
+        width: canvas.width,
+        height: canvas.height,
+        workerScript: workerUrl
+      });
+    } catch (err) {
+      console.warn(err);
+      gif = new GIF({
+        workers: 0,
+        quality: 12,
+        repeat: 0,
+        width: canvas.width,
+        height: canvas.height
+      });
+    }
+
+    let renderTimeout;
+    const startRenderTimeout = () => {
+      clearTimeout(renderTimeout);
+      renderTimeout = setTimeout(() => {
+        gif.abort();
+        alert('GIF rendering is taking too long. Please try again or reduce the canvas size.');
+      }, 20000);
+    };
+
+    for (let captured = 1; captured <= totalFrames; captured += 1) {
+      gif.addFrame(canvas, { copy: true, delay: frameDelay });
+      setButtonState(true, `Capturing… ${captured}/${totalFrames}`);
+      await new Promise(resolve => setTimeout(resolve, frameDelay));
+    }
+
+    setButtonState(true, 'Rendering…');
+    startRenderTimeout();
+    gif.render();
+
+    gif.on('progress', (p) => {
+      const pct = Math.max(0, Math.min(100, Math.round(p * 100)));
+      setButtonState(true, `Rendering… ${pct}%`);
+      startRenderTimeout();
+    });
+
+    gif.on('error', (err) => {
+      clearTimeout(renderTimeout);
+      console.warn(err);
+      alert('GIF rendering failed. Please try again or reduce the canvas size.');
+      setButtonState(false, '🎞️ Export GIF');
+    });
+
+    gif.on('finished', (blob) => {
+      clearTimeout(renderTimeout);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'pluminator-loop.gif';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setButtonState(false, '🎞️ Export GIF');
+    });
+
+    gif.on('abort', () => {
+      clearTimeout(renderTimeout);
+      setButtonState(false, '🎞️ Export GIF');
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
