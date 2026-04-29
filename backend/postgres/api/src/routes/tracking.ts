@@ -12,6 +12,12 @@ type TrackingBatchBody = {
     accuracyM?: number;
     speedMps?: number;
     headingDeg?: number;
+    monitorType?: string;
+    monitorProfileId?: string;
+    monitorDeviceName?: string;
+    monitorSensorLayout?: string[];
+    samplingBand?: 'high' | 'normal' | 'low' | 'none';
+    secondsInCurrentBand?: number;
     activeShapeId?: string;
     activeShapeSortOrder?: number;
   }>;
@@ -80,6 +86,7 @@ async function ingestTrackingBatch(
     for (let i = 0; i < params.points.length; i += 1) {
       const point = params.points[i];
       const isBackfilled = now - new Date(point.recordedAt).getTime() > 30_000;
+      const metaJson = buildTrackingMeta(point);
 
       const inserted = await client.query<{ inserted: number }>(
         `
@@ -92,6 +99,7 @@ async function ingestTrackingBatch(
             accuracy_m,
             speed_mps,
             heading_deg,
+            meta_json,
             active_shape_id,
             active_shape_sort_order,
             is_backfilled,
@@ -107,11 +115,12 @@ async function ingestTrackingBatch(
             $7::float8,
             $8::float8,
             $9::float8,
-            $10::uuid,
-            $11::int,
-            $12::boolean,
-            $13::uuid,
-            $14::int
+            $10::jsonb,
+            $11::uuid,
+            $12::int,
+            $13::boolean,
+            $14::uuid,
+            $15::int
           )
           on conflict (participant_id, client_point_id) do nothing
           returning 1 as inserted
@@ -126,6 +135,7 @@ async function ingestTrackingBatch(
           point.accuracyM ?? null,
           point.speedMps ?? null,
           point.headingDeg ?? null,
+          JSON.stringify(metaJson),
           point.activeShapeId ?? null,
           point.activeShapeSortOrder ?? null,
           isBackfilled,
@@ -208,5 +218,28 @@ function validateTrackingPoints(points: TrackingBatchBody['points']) {
     if (Number.isNaN(recorded.getTime())) {
       throw new TrackingValidationError('recordedAt must be a valid ISO timestamp.');
     }
+    if (
+      point.samplingBand !== undefined &&
+      !['high', 'normal', 'low', 'none'].includes(point.samplingBand)
+    ) {
+      throw new TrackingValidationError('samplingBand must be one of: high, normal, low, none.');
+    }
+    if (point.secondsInCurrentBand !== undefined && !Number.isFinite(point.secondsInCurrentBand)) {
+      throw new TrackingValidationError('secondsInCurrentBand must be numeric when provided.');
+    }
   }
+}
+
+function buildTrackingMeta(point: TrackingBatchBody['points'][number]) {
+  return {
+    monitorType: point.monitorType ?? null,
+    monitorProfileId: point.monitorProfileId ?? null,
+    monitorDeviceName: point.monitorDeviceName ?? null,
+    monitorSensorLayout: point.monitorSensorLayout ?? [],
+    samplingBand: point.samplingBand ?? 'none',
+    secondsInCurrentBand: point.secondsInCurrentBand ?? 0,
+    headingDeg: point.headingDeg ?? 0,
+    accuracyM: point.accuracyM ?? 0,
+    speedMps: point.speedMps ?? 0
+  };
 }
