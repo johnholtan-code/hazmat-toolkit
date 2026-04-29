@@ -8,6 +8,13 @@ struct GeoTrackingPoint: Identifiable, Codable, Hashable {
     var longitude: Double
     var detectionDevice: DetectionDevice?
     var createdAt: Date
+    var monitorType: String?
+    var monitorProfileID: String?
+    var monitorDeviceName: String?
+    var monitorSensorLayout: [String]
+    var samplingBand: String?
+    var samplingBandLabel: String?
+    var secondsInCurrentBand: Double?
 
     init(
         id: UUID = UUID(),
@@ -16,7 +23,14 @@ struct GeoTrackingPoint: Identifiable, Codable, Hashable {
         latitude: Double,
         longitude: Double,
         detectionDevice: DetectionDevice? = nil,
-        createdAt: Date = .now
+        createdAt: Date = .now,
+        monitorType: String? = nil,
+        monitorProfileID: String? = nil,
+        monitorDeviceName: String? = nil,
+        monitorSensorLayout: [String] = [],
+        samplingBand: String? = nil,
+        samplingBandLabel: String? = nil,
+        secondsInCurrentBand: Double? = nil
     ) {
         self.id = id
         self.scenarioName = scenarioName
@@ -25,6 +39,13 @@ struct GeoTrackingPoint: Identifiable, Codable, Hashable {
         self.longitude = longitude
         self.detectionDevice = detectionDevice
         self.createdAt = createdAt
+        self.monitorType = monitorType
+        self.monitorProfileID = monitorProfileID
+        self.monitorDeviceName = monitorDeviceName
+        self.monitorSensorLayout = monitorSensorLayout
+        self.samplingBand = samplingBand
+        self.samplingBandLabel = samplingBandLabel
+        self.secondsInCurrentBand = secondsInCurrentBand
     }
 }
 

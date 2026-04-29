@@ -179,8 +179,14 @@ struct WatchScenarioView: View {
                                 .foregroundStyle(.secondary)
                         }
                         ForEach(traineeIDs, id: \.self) { trainee in
-                            Text(trainee)
-                                .font(.headline)
+                            let latest = latestPoint(for: trainee)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(trainee)
+                                    .font(.headline)
+                                Text("Band: \(samplingBandLabel(for: latest))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
@@ -299,6 +305,28 @@ struct WatchScenarioView: View {
         let transformed = output.transformed(by: CGAffineTransform(scaleX: 8, y: 8))
         guard let cgImage = context.createCGImage(transformed, from: transformed.extent) else { return nil }
         return UIImage(cgImage: cgImage)
+    }
+
+    private func latestPoint(for traineeID: String) -> GeoTrackingPoint? {
+        allPoints
+            .filter { $0.traineeID == traineeID }
+            .max { $0.createdAt < $1.createdAt }
+    }
+
+    private func samplingBandLabel(for point: GeoTrackingPoint?) -> String {
+        if let label = point?.samplingBandLabel?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty {
+            return label.uppercased()
+        }
+        switch point?.samplingBand?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "high":
+            return "HIGH"
+        case "normal":
+            return "NORMAL"
+        case "low":
+            return "LOW"
+        default:
+            return "N/A"
+        }
     }
 
     @ViewBuilder
