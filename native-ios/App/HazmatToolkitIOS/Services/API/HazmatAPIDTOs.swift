@@ -7,12 +7,14 @@ enum APIDeviceType: String, Codable, Sendable {
     case airMonitor = "air_monitor"
     case radiationDetection = "radiation_detection"
     case phPaper = "ph_paper"
+    case wetChemistryPaper = "wet_chemistry_paper"
 
     init?(domain: DetectionDevice) {
         switch domain {
         case .airMonitor: self = .airMonitor
         case .radiationDetection: self = .radiationDetection
         case .phPaper: self = .phPaper
+        case .wetChemistry: self = .wetChemistryPaper
         default: return nil
         }
     }
@@ -22,6 +24,7 @@ enum APIDeviceType: String, Codable, Sendable {
         case .airMonitor: return .airMonitor
         case .radiationDetection: return .radiationDetection
         case .phPaper: return .phPaper
+        case .wetChemistryPaper: return .wetChemistry
         }
     }
 }
@@ -354,7 +357,7 @@ struct APIWatchParticipantDTO: Codable, Hashable, Sendable, Identifiable {
     }
 }
 
-struct APIWatchTrackingPointDTO: Codable, Hashable, Sendable {
+struct APIWatchTrackingPointDTO: Decodable, Hashable, Sendable {
     var participantID: UUID
     var recordedAt: Date
     var receivedAt: Date?
@@ -363,7 +366,29 @@ struct APIWatchTrackingPointDTO: Codable, Hashable, Sendable {
     var accuracyM: Double?
     var activeShapeID: UUID?
     var activeShapeSortOrder: Int?
+    var samplingBand: String?
+    var secondsInCurrentBand: Double?
     var isBackfilled: Bool
+
+    private struct MetaFields: Decodable, Hashable, Sendable {
+        var samplingBand: String?
+        var secondsInCurrentBand: Double?
+
+        private enum CodingKeys: String, CodingKey {
+            case samplingBand
+            case samplingBandSnake = "sampling_band"
+            case secondsInCurrentBand
+            case secondsInCurrentBandSnake = "seconds_in_current_band"
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            samplingBand = try container.decodeIfPresent(String.self, forKey: .samplingBand)
+                ?? container.decodeIfPresent(String.self, forKey: .samplingBandSnake)
+            secondsInCurrentBand = try container.decodeIfPresent(Double.self, forKey: .secondsInCurrentBand)
+                ?? container.decodeIfPresent(Double.self, forKey: .secondsInCurrentBandSnake)
+        }
+    }
 
     private enum CodingKeys: String, CodingKey {
         case participantID = "participantId"
@@ -374,7 +399,43 @@ struct APIWatchTrackingPointDTO: Codable, Hashable, Sendable {
         case accuracyM
         case activeShapeID = "activeShapeId"
         case activeShapeSortOrder
+        case samplingBand
+        case secondsInCurrentBand
+        case metaJSON = "meta_json"
+        case metaJson
         case isBackfilled
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        participantID = try container.decode(UUID.self, forKey: .participantID)
+        recordedAt = try container.decode(Date.self, forKey: .recordedAt)
+        receivedAt = try container.decodeIfPresent(Date.self, forKey: .receivedAt)
+        lat = try container.decode(Double.self, forKey: .lat)
+        lon = try container.decode(Double.self, forKey: .lon)
+        accuracyM = try container.decodeIfPresent(Double.self, forKey: .accuracyM)
+        activeShapeID = try container.decodeIfPresent(UUID.self, forKey: .activeShapeID)
+        activeShapeSortOrder = try container.decodeIfPresent(Int.self, forKey: .activeShapeSortOrder)
+        isBackfilled = try container.decode(Bool.self, forKey: .isBackfilled)
+
+        let topLevelBand = try container.decodeIfPresent(String.self, forKey: .samplingBand)
+        let topLevelSeconds = try container.decodeIfPresent(Double.self, forKey: .secondsInCurrentBand)
+        let metaObject = try container.decodeIfPresent(MetaFields.self, forKey: .metaJSON)
+            ?? container.decodeIfPresent(MetaFields.self, forKey: .metaJson)
+        let metaString = try container.decodeIfPresent(String.self, forKey: .metaJSON)
+            ?? container.decodeIfPresent(String.self, forKey: .metaJson)
+        let metaFromString = Self.decodeMetaFields(from: metaString)
+        let meta = metaObject ?? metaFromString
+
+        samplingBand = topLevelBand ?? meta?.samplingBand
+        secondsInCurrentBand = topLevelSeconds ?? meta?.secondsInCurrentBand
+    }
+
+    private static func decodeMetaFields(from jsonString: String?) -> MetaFields? {
+        guard let jsonString, let data = jsonString.data(using: .utf8) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(MetaFields.self, from: data)
     }
 
     func toDomain(participantNamesByID: [UUID: String]) -> GeoTrackingPoint {
@@ -383,6 +444,8 @@ struct APIWatchTrackingPointDTO: Codable, Hashable, Sendable {
             traineeID: participantNamesByID[participantID] ?? participantID.uuidString,
             latitude: lat,
             longitude: lon,
+            samplingBand: samplingBand,
+            secondsInCurrentBand: secondsInCurrentBand,
             createdAt: recordedAt
         )
     }
