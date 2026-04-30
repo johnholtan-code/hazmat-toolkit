@@ -169,7 +169,7 @@ final class TrainerMapViewModel: ObservableObject {
                 let shapes = (try? await repository.fetchShapes(for: scenarioID)) ?? []
 
                 if let sessionID {
-                    let review = try await repository.loadSessionTrackingReview(for: sessionID)
+                    let review = try await repository.fetchTrackingReview(for: sessionID)
                     let participants = review.participants
                     let zoneEvents = review.zoneEvents
                     let points = review.points.map { pt in

@@ -57,6 +57,7 @@ final class AppStore: ObservableObject {
     private let repository: any HazmatRepository
     private let authTokenProvider = AppStoreAccessTokenProvider()
     private static let trainerAuthStorageKey = "hazmatToolkitTrainerAuth.v1"
+    var hazmatRepository: any HazmatRepository { repository }
 
     init(repository: (any HazmatRepository)? = nil) {
         let persistedAuth = Self.loadPersistedTrainerAuth()

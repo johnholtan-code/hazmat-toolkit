@@ -7,14 +7,14 @@ struct GeoTrackingPoint: Identifiable, Codable, Hashable {
     var latitude: Double
     var longitude: Double
     var detectionDevice: DetectionDevice?
+    var samplingBand: String?
+    var secondsInCurrentBand: Double?
     var createdAt: Date
     var monitorType: String?
     var monitorProfileID: String?
     var monitorDeviceName: String?
     var monitorSensorLayout: [String]
-    var samplingBand: String?
     var samplingBandLabel: String?
-    var secondsInCurrentBand: Double?
 
     init(
         id: UUID = UUID(),
@@ -38,14 +38,14 @@ struct GeoTrackingPoint: Identifiable, Codable, Hashable {
         self.latitude = latitude
         self.longitude = longitude
         self.detectionDevice = detectionDevice
+        self.samplingBand = samplingBand
+        self.secondsInCurrentBand = secondsInCurrentBand
         self.createdAt = createdAt
         self.monitorType = monitorType
         self.monitorProfileID = monitorProfileID
         self.monitorDeviceName = monitorDeviceName
         self.monitorSensorLayout = monitorSensorLayout
-        self.samplingBand = samplingBand
         self.samplingBandLabel = samplingBandLabel
-        self.secondsInCurrentBand = secondsInCurrentBand
     }
 }
 

@@ -29,42 +29,45 @@ struct TrainerMapReviewView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Section {
-                if #available(iOS 17.0, *) {
-                    MapKitPanel(
-                        title: "Session Review Map",
-                        subtitle: "Current trainee positions for playback.",
-                        pins: currentPins,
-                        polygons: reviewPolygons,
-                        paths: playbackPaths,
-                        fallbackCenter: reviewFallbackCenter,
-                        preferFallbackCenterWhenAvailable: true,
-                        recenterOnPinsChange: false,
-                        recenterOnMyLocationChange: false
-                    )
-                    .frame(height: 460)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                } else {
-                    Text("Map review requires iOS 17 or newer.")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .hazmatPanel()
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Session Controls")
+                    .font(.subheadline.weight(.semibold))
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    statCard(title: "Mode", value: sessionID == nil ? "Scenario history" : "Session review")
-                    statCard(title: "Participants", value: "\(viewModel.allParticipants.count)")
-                    statCard(title: "Points", value: "\(viewModel.allPoints.count)")
-                    statCard(title: "Zone Events", value: "\(viewModel.allZoneEvents.count)")
-                }
-                .padding(.horizontal, 16)
-            }
+                HStack {
+                    Button(viewModel.isPlaying ? "Pause" : "Play") {
+                        viewModel.isPlaying ? viewModel.pause() : viewModel.play()
+                    }
+                    .buttonStyle(.borderedProminent)
 
-            if !viewModel.allParticipants.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
+                    Spacer()
+
+                    Text("\(Int(viewModel.playbackSpeed))x")
+                }
+
+                Text(viewModel.selectedSamplingStatusText)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Slider(
+                    value: $viewModel.currentTime,
+                    in: 0...max(viewModel.sessionDuration, 1)
+                )
+
+                HStack {
+                    Text("\(Int(viewModel.currentTime))s")
+                    Spacer()
+                    Text("\(Int(viewModel.sessionDuration))s")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+                if !viewModel.allParticipants.isEmpty {
+                    Divider().padding(.vertical, 2)
+
                     Text("Participant Playback")
                         .font(.subheadline.weight(.semibold))
+
                     ScrollView(.horizontal, showsIndicators: true) {
                         HStack(spacing: 8) {
                             let allSelected = viewModel.selectionMode == .all
@@ -111,46 +114,42 @@ struct TrainerMapReviewView: View {
                                 .buttonStyle(.plain)
                             }
                         }
-                        .padding(.horizontal, 16)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 10)
-                .hazmatPanel()
-            }
-
-            VStack(spacing: 10) {
-                HStack {
-                    Button(viewModel.isPlaying ? "Pause" : "Play") {
-                        viewModel.isPlaying ? viewModel.pause() : viewModel.play()
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Spacer()
-
-                    Text("\(Int(viewModel.playbackSpeed))x")
-                }
-
-                Text(viewModel.selectedSamplingStatusText)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Slider(
-                    value: $viewModel.currentTime,
-                    in: 0...max(viewModel.sessionDuration, 1)
-                )
-
-                HStack {
-                    Text("\(Int(viewModel.currentTime))s")
-                    Spacer()
-                    Text("\(Int(viewModel.sessionDuration))s")
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
             }
             .padding(16)
             .hazmatPanel()
+
+            Section {
+                if #available(iOS 17.0, *) {
+                    MapKitPanel(
+                        title: "Session Review Map",
+                        subtitle: "Current trainee positions for playback.",
+                        pins: currentPins,
+                        polygons: reviewPolygons,
+                        fallbackCenter: reviewFallbackCenter,
+                        preferFallbackCenterWhenAvailable: true,
+                        recenterOnPinsChange: false,
+                        recenterOnMyLocationChange: false
+                    )
+                    .frame(height: 460)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                } else {
+                    Text("Map review requires iOS 17 or newer.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .hazmatPanel()
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    statCard(title: "Mode", value: sessionID == nil ? "Scenario history" : "Session review")
+                    statCard(title: "Participants", value: "\(viewModel.allParticipants.count)")
+                    statCard(title: "Points", value: "\(viewModel.allPoints.count)")
+                    statCard(title: "Zone Events", value: "\(viewModel.allZoneEvents.count)")
+                }
+                .padding(.horizontal, 16)
+            }
         }
         .hazmatBackground()
         .navigationTitle("Scenario Review")
@@ -198,34 +197,9 @@ struct TrainerMapReviewView: View {
             MapPinItem(
                 title: marker.title,
                 coordinate: marker.coordinate,
-                tint: .red,
-                statusText: marker.samplingLabel
+                tint: .red
             )
         }
-    }
-
-    private var playbackPaths: [MapPathItem] {
-        let grouped = Dictionary(grouping: viewModel.visiblePoints, by: \.traineeName)
-        return grouped.keys.sorted().compactMap { traineeName in
-            guard let points = grouped[traineeName], points.count >= 2 else { return nil }
-            let sortedPoints = points.sorted(by: { $0.timestamp < $1.timestamp })
-            let coordinates = sortedPoints.map {
-                CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
-            }
-
-            return MapPathItem(
-                title: traineeName,
-                coordinates: coordinates,
-                strokeColor: pathColor(for: traineeName),
-                lineWidth: 3
-            )
-        }
-    }
-
-    private func pathColor(for traineeName: String) -> Color {
-        let palette: [Color] = [.red, .blue, .green, .orange, .teal, .pink, .indigo, .mint]
-        let index = abs(traineeName.hashValue) % palette.count
-        return palette[index]
     }
 
     private var reviewFallbackCenter: CLLocationCoordinate2D? {
