@@ -39,6 +39,9 @@ type WatchTrackingRow = {
   accuracy_m: number | null;
   active_shape_id: string | null;
   active_shape_sort_order: number | null;
+  meta_json: Record<string, unknown> | null;
+  sampling_band: string | null;
+  seconds_in_current_band: number | null;
   is_backfilled: boolean;
   meta_json: unknown;
 };

@@ -126,7 +126,7 @@ test('POST then GET shapes round-trips wet chemistry oxidizer fields', async () 
         };
       }
       if (sql.includes('insert into scenario_shapes')) {
-        const propertiesJson = JSON.parse(String(params?.[41] ?? '{}')) as Record<string, unknown>;
+        const propertiesJson = JSON.parse(String(params?.[49] ?? '{}')) as Record<string, unknown>;
         persistedShape = {
           id: shapeId,
           scenario_id: scenarioId,
@@ -170,7 +170,15 @@ test('POST then GET shapes round-trips wet chemistry oxidizer fields', async () 
           rad_longitude: null,
           rad_dose_unit: null,
           rad_exposure_unit: null,
-          ph: null
+          ph: null,
+          oxidizer_enabled: params?.[41] ?? null,
+          oxidizer_target_type: params?.[42] ?? null,
+          oxidizer_concentration_ppm: params?.[43] ?? null,
+          oxidizer_sample_ph: params?.[44] ?? null,
+          oxidizer_reaction_result: params?.[45] ?? null,
+          oxidizer_reaction_pattern: params?.[46] ?? null,
+          oxidizer_reaction_duration_seconds: params?.[47] ?? null,
+          oxidizer_fact_text_override: params?.[48] ?? null
         };
         return { rows: [persistedShape], rowCount: 1 };
       }
@@ -246,6 +254,9 @@ test('POST then GET shapes round-trips wet chemistry oxidizer fields', async () 
   assert.equal(created.oxidizerReactionPattern, 'blueVioletRing');
   assert.equal(created.oxidizerReactionDurationSeconds, 5);
   assert.equal(created.oxidizerFactTextOverride, 'ring observed');
+  const createdProperties = ((persistedShape as Record<string, unknown> | null)?.properties_json ?? {}) as Record<string, unknown>;
+  assert.equal(createdProperties.oxidizer_target_type, 'iodine');
+  assert.equal(createdProperties.oxidizerTargetType, undefined);
 
   const getResponse = await app.inject({
     method: 'GET',
@@ -327,7 +338,7 @@ test('PUT shape returns wet chemistry oxidizer fields for existing shape', async
         };
       }
       if (sql.includes('update scenario_shapes')) {
-        const propertiesJson = JSON.parse(String(params?.[41] ?? '{}')) as Record<string, unknown>;
+        const propertiesJson = JSON.parse(String(params?.[49] ?? '{}')) as Record<string, unknown>;
         persistedShape = {
           id: shapeId,
           scenario_id: scenarioId,
@@ -371,7 +382,15 @@ test('PUT shape returns wet chemistry oxidizer fields for existing shape', async
           rad_longitude: null,
           rad_dose_unit: null,
           rad_exposure_unit: null,
-          ph: null
+          ph: null,
+          oxidizer_enabled: params?.[41] ?? null,
+          oxidizer_target_type: params?.[42] ?? null,
+          oxidizer_concentration_ppm: params?.[43] ?? null,
+          oxidizer_sample_ph: params?.[44] ?? null,
+          oxidizer_reaction_result: params?.[45] ?? null,
+          oxidizer_reaction_pattern: params?.[46] ?? null,
+          oxidizer_reaction_duration_seconds: params?.[47] ?? null,
+          oxidizer_fact_text_override: params?.[48] ?? null
         };
         return { rows: [persistedShape], rowCount: 1 };
       }
@@ -446,6 +465,9 @@ test('PUT shape returns wet chemistry oxidizer fields for existing shape', async
   assert.equal(updated.oxidizerReactionPattern, 'blueVioletRing');
   assert.equal(updated.oxidizerReactionDurationSeconds, 5);
   assert.equal(updated.oxidizerFactTextOverride, 'ring observed');
+  const updatedProperties = ((persistedShape as Record<string, unknown> | null)?.properties_json ?? {}) as Record<string, unknown>;
+  assert.equal(updatedProperties.oxidizer_target_type, 'iodine');
+  assert.equal(updatedProperties.oxidizerTargetType, undefined);
 
   await app.close();
 });

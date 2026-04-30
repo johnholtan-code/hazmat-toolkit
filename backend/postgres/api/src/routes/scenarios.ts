@@ -175,6 +175,14 @@ type ShapeRow = {
   rad_dose_unit: string | null;
   rad_exposure_unit: string | null;
   ph: number | null;
+  oxidizer_enabled: boolean | null;
+  oxidizer_target_type: string | null;
+  oxidizer_concentration_ppm: number | null;
+  oxidizer_sample_ph: number | null;
+  oxidizer_reaction_result: string | null;
+  oxidizer_reaction_pattern: string | null;
+  oxidizer_reaction_duration_seconds: number | null;
+  oxidizer_fact_text_override: string | null;
 };
 
 export const scenariosRoutes: FastifyPluginAsync = async (app) => {
@@ -550,7 +558,15 @@ export const scenariosRoutes: FastifyPluginAsync = async (app) => {
           ss.rad_longitude::text as rad_longitude,
           ss.rad_dose_unit,
           ss.rad_exposure_unit,
-          ss.ph::float8 as ph
+          ss.ph::float8 as ph,
+          ss.oxidizer_enabled,
+          ss.oxidizer_target_type,
+          ss.oxidizer_concentration_ppm::float8 as oxidizer_concentration_ppm,
+          ss.oxidizer_sample_ph::float8 as oxidizer_sample_ph,
+          ss.oxidizer_reaction_result,
+          ss.oxidizer_reaction_pattern,
+          ss.oxidizer_reaction_duration_seconds::float8 as oxidizer_reaction_duration_seconds,
+          ss.oxidizer_fact_text_override
         from scenario_shapes ss
         where ss.scenario_id = $1::uuid
         order by ss.sort_order asc, ss.created_at asc
@@ -661,7 +677,18 @@ function mapScenarioRow(row: ScenarioRow) {
 }
 
 function mapShapeRow(row: ShapeRow) {
-  const oxidizer = extractOxidizerShapeFields(row.properties_json);
+  const oxidizerFromProperties = extractOxidizerShapeFields(row.properties_json);
+  const oxidizer = {
+    oxidizerEnabled: row.oxidizer_enabled ?? oxidizerFromProperties.oxidizerEnabled,
+    oxidizerTargetType: row.oxidizer_target_type ?? oxidizerFromProperties.oxidizerTargetType,
+    oxidizerConcentrationPpm: row.oxidizer_concentration_ppm ?? oxidizerFromProperties.oxidizerConcentrationPpm,
+    oxidizerSamplePh: row.oxidizer_sample_ph ?? oxidizerFromProperties.oxidizerSamplePh,
+    oxidizerReactionResult: row.oxidizer_reaction_result ?? oxidizerFromProperties.oxidizerReactionResult,
+    oxidizerReactionPattern: row.oxidizer_reaction_pattern ?? oxidizerFromProperties.oxidizerReactionPattern,
+    oxidizerReactionDurationSeconds:
+      row.oxidizer_reaction_duration_seconds ?? oxidizerFromProperties.oxidizerReactionDurationSeconds,
+    oxidizerFactTextOverride: row.oxidizer_fact_text_override ?? oxidizerFromProperties.oxidizerFactTextOverride
+  };
   return {
     id: row.id,
     scenarioId: row.scenario_id,
@@ -817,21 +844,13 @@ async function insertOrUpdateShape(
   const oxidizer = normalizeOxidizerFromShapeBody(normalized);
   const propertiesJSON = JSON.stringify({
     chemicalReadings,
-    oxidizerEnabled: oxidizer.oxidizerEnabled,
     oxidizer_enabled: oxidizer.oxidizerEnabled,
-    oxidizerTargetType: oxidizer.oxidizerTargetType,
     oxidizer_target_type: oxidizer.oxidizerTargetType,
-    oxidizerConcentrationPpm: oxidizer.oxidizerConcentrationPpm,
     oxidizer_concentration_ppm: oxidizer.oxidizerConcentrationPpm,
-    oxidizerSamplePh: oxidizer.oxidizerSamplePh,
     oxidizer_sample_ph: oxidizer.oxidizerSamplePh,
-    oxidizerReactionResult: oxidizer.oxidizerReactionResult,
     oxidizer_reaction_result: oxidizer.oxidizerReactionResult,
-    oxidizerReactionPattern: oxidizer.oxidizerReactionPattern,
     oxidizer_reaction_pattern: oxidizer.oxidizerReactionPattern,
-    oxidizerReactionDurationSeconds: oxidizer.oxidizerReactionDurationSeconds,
     oxidizer_reaction_duration_seconds: oxidizer.oxidizerReactionDurationSeconds,
-    oxidizerFactTextOverride: oxidizer.oxidizerFactTextOverride,
     oxidizer_fact_text_override: oxidizer.oxidizerFactTextOverride
   });
 
@@ -877,6 +896,14 @@ async function insertOrUpdateShape(
     normalized.rad_dose_unit ?? null,
     normalized.rad_exposure_unit ?? null,
     normalized.p_h ?? null,
+    oxidizer.oxidizerEnabled,
+    oxidizer.oxidizerTargetType,
+    oxidizer.oxidizerConcentrationPpm,
+    oxidizer.oxidizerSamplePh,
+    oxidizer.oxidizerReactionResult,
+    oxidizer.oxidizerReactionPattern,
+    oxidizer.oxidizerReactionDurationSeconds,
+    oxidizer.oxidizerFactTextOverride,
     propertiesJSON
   ];
 
@@ -997,7 +1024,15 @@ const shapeReturningColumns = `
     rad_longitude::text as rad_longitude,
     rad_dose_unit,
     rad_exposure_unit,
-    ph::float8 as ph
+    ph::float8 as ph,
+    oxidizer_enabled,
+    oxidizer_target_type,
+    oxidizer_concentration_ppm::float8 as oxidizer_concentration_ppm,
+    oxidizer_sample_ph::float8 as oxidizer_sample_ph,
+    oxidizer_reaction_result,
+    oxidizer_reaction_pattern,
+    oxidizer_reaction_duration_seconds::float8 as oxidizer_reaction_duration_seconds,
+    oxidizer_fact_text_override
 `;
 
 const updateShapeSQL = `
@@ -1042,7 +1077,15 @@ const updateShapeSQL = `
     rad_dose_unit = $39,
     rad_exposure_unit = $40,
     ph = $41::numeric,
-    properties_json = $42::jsonb
+    oxidizer_enabled = $42::boolean,
+    oxidizer_target_type = $43,
+    oxidizer_concentration_ppm = $44::numeric,
+    oxidizer_sample_ph = $45::numeric,
+    oxidizer_reaction_result = $46,
+    oxidizer_reaction_pattern = $47,
+    oxidizer_reaction_duration_seconds = $48::numeric,
+    oxidizer_fact_text_override = $49,
+    properties_json = $50::jsonb
   where id = $1::uuid and scenario_id = $2::uuid
   ${shapeReturningColumns}
 `;
@@ -1063,7 +1106,10 @@ const insertShapeSQL = `
     pid_low_sampling_mode, pid_low_feather_percent,
     dose_rate, background, shielding,
     rad_latitude, rad_longitude, rad_dose_unit, rad_exposure_unit,
-    ph, properties_json
+    ph,
+    oxidizer_enabled, oxidizer_target_type, oxidizer_concentration_ppm, oxidizer_sample_ph,
+    oxidizer_reaction_result, oxidizer_reaction_pattern, oxidizer_reaction_duration_seconds, oxidizer_fact_text_override,
+    properties_json
   ) values (
     $2::uuid, $3, $4::shape_kind, $5::int, $6,
     ST_SetSRID(ST_GeomFromGeoJSON($7), 4326), $8::float8,
@@ -1073,7 +1119,9 @@ const insertShapeSQL = `
     $30, $31::numeric, $32, $33::numeric,
     $34, $35, $36,
     $37::float8, $38::float8, $39, $40,
-    $41::numeric, $42::jsonb
+    $41::numeric,
+    $42::boolean, $43, $44::numeric, $45::numeric, $46, $47, $48::numeric, $49,
+    $50::jsonb
   )
   ${shapeReturningColumns}
 `;
@@ -1094,7 +1142,10 @@ const insertShapeWithIDSQL = `
     pid_low_sampling_mode, pid_low_feather_percent,
     dose_rate, background, shielding,
     rad_latitude, rad_longitude, rad_dose_unit, rad_exposure_unit,
-    ph, properties_json
+    ph,
+    oxidizer_enabled, oxidizer_target_type, oxidizer_concentration_ppm, oxidizer_sample_ph,
+    oxidizer_reaction_result, oxidizer_reaction_pattern, oxidizer_reaction_duration_seconds, oxidizer_fact_text_override,
+    properties_json
   ) values (
     $1::uuid, $2::uuid, $3, $4::shape_kind, $5::int, $6,
     ST_SetSRID(ST_GeomFromGeoJSON($7), 4326), $8::float8,
@@ -1104,7 +1155,9 @@ const insertShapeWithIDSQL = `
     $30, $31::numeric, $32, $33::numeric,
     $34, $35, $36,
     $37::float8, $38::float8, $39, $40,
-    $41::numeric, $42::jsonb
+    $41::numeric,
+    $42::boolean, $43, $44::numeric, $45::numeric, $46, $47, $48::numeric, $49,
+    $50::jsonb
   )
   ${shapeReturningColumns}
 `;

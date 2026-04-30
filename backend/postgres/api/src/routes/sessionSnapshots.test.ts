@@ -59,6 +59,16 @@ function makeShape(): DBShapeRow {
     pid_low_sampling_mode: null,
     pid_low_feather_percent: null,
     chemical_readings: [],
+    properties_json: {
+      oxidizerEnabled: true,
+      oxidizerTargetType: 'freeChlorine',
+      oxidizerConcentrationPpm: 5,
+      oxidizerSamplePh: 6.8,
+      oxidizerReactionResult: 'lowPositive',
+      oxidizerReactionPattern: 'blueVioletRing',
+      oxidizerReactionDurationSeconds: 5,
+      oxidizerFactTextOverride: 'A blue-violet ring indicates oxidizer presence.'
+    },
     dose_rate: null,
     background: null,
     shielding: null,
@@ -66,7 +76,15 @@ function makeShape(): DBShapeRow {
     rad_longitude: null,
     rad_dose_unit: null,
     rad_exposure_unit: null,
-    ph: null
+    ph: null,
+    oxidizer_enabled: null,
+    oxidizer_target_type: null,
+    oxidizer_concentration_ppm: null,
+    oxidizer_sample_ph: null,
+    oxidizer_reaction_result: null,
+    oxidizer_reaction_pattern: null,
+    oxidizer_reaction_duration_seconds: null,
+    oxidizer_fact_text_override: null
   };
 }
 
@@ -76,6 +94,9 @@ test('buildSessionSnapshot includes LEL feather fields in trainee payload shape'
   assert.equal(snapshot.shapes[0]?.lelHighFeatherPercent, 50);
   assert.equal(snapshot.shapes[0]?.lelLowSamplingMode, 'lower');
   assert.equal(snapshot.shapes[0]?.lelLowFeatherPercent, 50);
+  assert.equal(snapshot.shapes[0]?.oxidizerEnabled, true);
+  assert.equal(snapshot.shapes[0]?.oxidizerTargetType, 'freeChlorine');
+  assert.equal(snapshot.shapes[0]?.oxidizerReactionPattern, 'blueVioletRing');
 });
 
 test('refreshSessionSnapshotsForScenario rebuilds active and scheduled session snapshots with current shape settings', async () => {

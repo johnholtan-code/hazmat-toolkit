@@ -8,7 +8,7 @@ export type DBScenarioRow = {
   scenario_date: string | null;
   latitude: number | null;
   longitude: number | null;
-  detection_device: 'air_monitor' | 'radiation_detection' | 'ph_paper';
+  detection_device: 'air_monitor' | 'radiation_detection' | 'ph_paper' | 'wet_chemistry_paper';
   version: number;
   created_at: string;
   updated_at: string;
@@ -49,6 +49,7 @@ export type DBShapeRow = {
   pid_low_sampling_mode: string | null;
   pid_low_feather_percent: string | null;
   chemical_readings: unknown;
+  properties_json: unknown;
   dose_rate: string | null;
   background: string | null;
   shielding: string | null;
@@ -57,6 +58,14 @@ export type DBShapeRow = {
   rad_dose_unit: string | null;
   rad_exposure_unit: string | null;
   ph: number | null;
+  oxidizer_enabled: boolean | null;
+  oxidizer_target_type: string | null;
+  oxidizer_concentration_ppm: number | null;
+  oxidizer_sample_ph: number | null;
+  oxidizer_reaction_result: string | null;
+  oxidizer_reaction_pattern: string | null;
+  oxidizer_reaction_duration_seconds: number | null;
+  oxidizer_fact_text_override: string | null;
 };
 
 type SessionSnapshotRow = { id: string };
@@ -88,50 +97,72 @@ export function buildSessionSnapshot(sessionID: string, scenario: DBScenarioRow,
       createdAt: scenario.created_at,
       updatedAt: scenario.updated_at
     },
-    shapes: shapes.map((shape) => ({
-      id: shape.id,
-      scenarioId: shape.scenario_id,
-      description: shape.description,
-      kind: shape.kind,
-      sortOrder: shape.sort_order,
-      displayColorHex: shape.display_color_hex,
-      shapeGeoJSON: shape.shape_geojson,
-      radiusM: shape.radius_m,
-      oxygen: shape.oxygen,
-      lel: shape.lel,
-      carbonMonoxide: shape.carbon_monoxide,
-      hydrogenSulfide: shape.hydrogen_sulfide,
-      pid: shape.pid,
-      oxygenHighSamplingMode: shape.oxygen_high_sampling_mode,
-      oxygenHighFeatherPercent: shape.oxygen_high_feather_percent ? parseFloat(shape.oxygen_high_feather_percent) : null,
-      oxygenLowSamplingMode: shape.oxygen_low_sampling_mode,
-      oxygenLowFeatherPercent: shape.oxygen_low_feather_percent ? parseFloat(shape.oxygen_low_feather_percent) : null,
-      lelHighSamplingMode: shape.lel_high_sampling_mode,
-      lelHighFeatherPercent: shape.lel_high_feather_percent ? parseFloat(shape.lel_high_feather_percent) : null,
-      lelLowSamplingMode: shape.lel_low_sampling_mode,
-      lelLowFeatherPercent: shape.lel_low_feather_percent ? parseFloat(shape.lel_low_feather_percent) : null,
-      carbonMonoxideHighSamplingMode: shape.carbon_monoxide_high_sampling_mode,
-      carbonMonoxideHighFeatherPercent: shape.carbon_monoxide_high_feather_percent ? parseFloat(shape.carbon_monoxide_high_feather_percent) : null,
-      carbonMonoxideLowSamplingMode: shape.carbon_monoxide_low_sampling_mode,
-      carbonMonoxideLowFeatherPercent: shape.carbon_monoxide_low_feather_percent ? parseFloat(shape.carbon_monoxide_low_feather_percent) : null,
-      hydrogenSulfideHighSamplingMode: shape.hydrogen_sulfide_high_sampling_mode,
-      hydrogenSulfideHighFeatherPercent: shape.hydrogen_sulfide_high_feather_percent ? parseFloat(shape.hydrogen_sulfide_high_feather_percent) : null,
-      hydrogenSulfideLowSamplingMode: shape.hydrogen_sulfide_low_sampling_mode,
-      hydrogenSulfideLowFeatherPercent: shape.hydrogen_sulfide_low_feather_percent ? parseFloat(shape.hydrogen_sulfide_low_feather_percent) : null,
-      pidHighSamplingMode: shape.pid_high_sampling_mode,
-      pidHighFeatherPercent: shape.pid_high_feather_percent ? parseFloat(shape.pid_high_feather_percent) : null,
-      pidLowSamplingMode: shape.pid_low_sampling_mode,
-      pidLowFeatherPercent: shape.pid_low_feather_percent ? parseFloat(shape.pid_low_feather_percent) : null,
-      chemicalReadings: Array.isArray(shape.chemical_readings) ? shape.chemical_readings : [],
-      doseRate: shape.dose_rate,
-      background: shape.background,
-      shielding: shape.shielding,
-      radLatitude: shape.rad_latitude,
-      radLongitude: shape.rad_longitude,
-      radDoseUnit: shape.rad_dose_unit,
-      radExposureUnit: shape.rad_exposure_unit,
-      pH: shape.ph
-    })),
+    shapes: shapes.map((shape) => {
+      const oxidizerFromProperties = extractOxidizerShapeFields(shape.properties_json);
+      const oxidizer = {
+        oxidizerEnabled: shape.oxidizer_enabled ?? oxidizerFromProperties.oxidizerEnabled,
+        oxidizerTargetType: shape.oxidizer_target_type ?? oxidizerFromProperties.oxidizerTargetType,
+        oxidizerConcentrationPpm: shape.oxidizer_concentration_ppm ?? oxidizerFromProperties.oxidizerConcentrationPpm,
+        oxidizerSamplePh: shape.oxidizer_sample_ph ?? oxidizerFromProperties.oxidizerSamplePh,
+        oxidizerReactionResult: shape.oxidizer_reaction_result ?? oxidizerFromProperties.oxidizerReactionResult,
+        oxidizerReactionPattern: shape.oxidizer_reaction_pattern ?? oxidizerFromProperties.oxidizerReactionPattern,
+        oxidizerReactionDurationSeconds:
+          shape.oxidizer_reaction_duration_seconds ?? oxidizerFromProperties.oxidizerReactionDurationSeconds,
+        oxidizerFactTextOverride: shape.oxidizer_fact_text_override ?? oxidizerFromProperties.oxidizerFactTextOverride
+      };
+      return {
+        id: shape.id,
+        scenarioId: shape.scenario_id,
+        description: shape.description,
+        kind: shape.kind,
+        sortOrder: shape.sort_order,
+        displayColorHex: shape.display_color_hex,
+        shapeGeoJSON: shape.shape_geojson,
+        radiusM: shape.radius_m,
+        oxygen: shape.oxygen,
+        lel: shape.lel,
+        carbonMonoxide: shape.carbon_monoxide,
+        hydrogenSulfide: shape.hydrogen_sulfide,
+        pid: shape.pid,
+        oxygenHighSamplingMode: shape.oxygen_high_sampling_mode,
+        oxygenHighFeatherPercent: shape.oxygen_high_feather_percent ? parseFloat(shape.oxygen_high_feather_percent) : null,
+        oxygenLowSamplingMode: shape.oxygen_low_sampling_mode,
+        oxygenLowFeatherPercent: shape.oxygen_low_feather_percent ? parseFloat(shape.oxygen_low_feather_percent) : null,
+        lelHighSamplingMode: shape.lel_high_sampling_mode,
+        lelHighFeatherPercent: shape.lel_high_feather_percent ? parseFloat(shape.lel_high_feather_percent) : null,
+        lelLowSamplingMode: shape.lel_low_sampling_mode,
+        lelLowFeatherPercent: shape.lel_low_feather_percent ? parseFloat(shape.lel_low_feather_percent) : null,
+        carbonMonoxideHighSamplingMode: shape.carbon_monoxide_high_sampling_mode,
+        carbonMonoxideHighFeatherPercent: shape.carbon_monoxide_high_feather_percent ? parseFloat(shape.carbon_monoxide_high_feather_percent) : null,
+        carbonMonoxideLowSamplingMode: shape.carbon_monoxide_low_sampling_mode,
+        carbonMonoxideLowFeatherPercent: shape.carbon_monoxide_low_feather_percent ? parseFloat(shape.carbon_monoxide_low_feather_percent) : null,
+        hydrogenSulfideHighSamplingMode: shape.hydrogen_sulfide_high_sampling_mode,
+        hydrogenSulfideHighFeatherPercent: shape.hydrogen_sulfide_high_feather_percent ? parseFloat(shape.hydrogen_sulfide_high_feather_percent) : null,
+        hydrogenSulfideLowSamplingMode: shape.hydrogen_sulfide_low_sampling_mode,
+        hydrogenSulfideLowFeatherPercent: shape.hydrogen_sulfide_low_feather_percent ? parseFloat(shape.hydrogen_sulfide_low_feather_percent) : null,
+        pidHighSamplingMode: shape.pid_high_sampling_mode,
+        pidHighFeatherPercent: shape.pid_high_feather_percent ? parseFloat(shape.pid_high_feather_percent) : null,
+        pidLowSamplingMode: shape.pid_low_sampling_mode,
+        pidLowFeatherPercent: shape.pid_low_feather_percent ? parseFloat(shape.pid_low_feather_percent) : null,
+        oxidizerEnabled: oxidizer.oxidizerEnabled,
+        oxidizerTargetType: oxidizer.oxidizerTargetType,
+        oxidizerConcentrationPpm: oxidizer.oxidizerConcentrationPpm,
+        oxidizerSamplePh: oxidizer.oxidizerSamplePh,
+        oxidizerReactionResult: oxidizer.oxidizerReactionResult,
+        oxidizerReactionPattern: oxidizer.oxidizerReactionPattern,
+        oxidizerReactionDurationSeconds: oxidizer.oxidizerReactionDurationSeconds,
+        oxidizerFactTextOverride: oxidizer.oxidizerFactTextOverride,
+        chemicalReadings: Array.isArray(shape.chemical_readings) ? shape.chemical_readings : [],
+        doseRate: shape.dose_rate,
+        background: shape.background,
+        shielding: shape.shielding,
+        radLatitude: shape.rad_latitude,
+        radLongitude: shape.rad_longitude,
+        radDoseUnit: shape.rad_dose_unit,
+        radExposureUnit: shape.rad_exposure_unit,
+        pH: shape.ph
+      };
+    }),
     rules: {
       overlapPriority: 'LOWER_SORT_ORDER_WINS'
     }
@@ -200,6 +231,7 @@ export async function fetchScenarioShapesForSnapshot(client: Queryable, scenario
         ss.pid_low_sampling_mode,
         ss.pid_low_feather_percent::text as pid_low_feather_percent,
         coalesce(ss.properties_json -> 'chemicalReadings', '[]'::jsonb) as chemical_readings,
+        ss.properties_json,
         ss.dose_rate,
         ss.background,
         ss.shielding,
@@ -207,7 +239,15 @@ export async function fetchScenarioShapesForSnapshot(client: Queryable, scenario
         ss.rad_longitude::text as rad_longitude,
         ss.rad_dose_unit,
         ss.rad_exposure_unit,
-        ss.ph::float8 as ph
+        ss.ph::float8 as ph,
+        ss.oxidizer_enabled,
+        ss.oxidizer_target_type,
+        ss.oxidizer_concentration_ppm::float8 as oxidizer_concentration_ppm,
+        ss.oxidizer_sample_ph::float8 as oxidizer_sample_ph,
+        ss.oxidizer_reaction_result,
+        ss.oxidizer_reaction_pattern,
+        ss.oxidizer_reaction_duration_seconds::float8 as oxidizer_reaction_duration_seconds,
+        ss.oxidizer_fact_text_override
       from scenario_shapes ss
       where ss.scenario_id = $1::uuid
       order by ss.sort_order asc, ss.created_at asc
@@ -301,4 +341,101 @@ async function writeSessionSnapshot(
     `,
     [sessionID, snapshotJSONString, scenario.version, snapshotSHA256]
   );
+}
+
+const OXIDIZER_TARGET_TYPES = new Set(['freeChlorine', 'nitrite', 'iodine', 'peroxide', 'genericOxidizer']);
+const OXIDIZER_REACTION_RESULTS = new Set(['negative', 'lowPositive', 'highPositive', 'invalidPH', 'unknown']);
+const OXIDIZER_REACTION_PATTERNS = new Set(['none', 'blueVioletRing', 'blueVioletSpot', 'fullStripDarkening']);
+
+type OxidizerShapeFields = {
+  oxidizerEnabled: boolean;
+  oxidizerTargetType: string | null;
+  oxidizerConcentrationPpm: number | null;
+  oxidizerSamplePh: number | null;
+  oxidizerReactionResult: string | null;
+  oxidizerReactionPattern: string | null;
+  oxidizerReactionDurationSeconds: number | null;
+  oxidizerFactTextOverride: string | null;
+};
+
+function extractOxidizerShapeFields(value: unknown): OxidizerShapeFields {
+  const object = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  const enabledValue = object.oxidizerEnabled ?? object.oxidizer_enabled;
+  const enabled =
+    enabledValue === true ||
+    (typeof enabledValue === 'string' &&
+      enabledValue.trim().length > 0 &&
+      enabledValue.trim().toLowerCase() === 'true');
+  if (!enabled) {
+    return {
+      oxidizerEnabled: false,
+      oxidizerTargetType: null,
+      oxidizerConcentrationPpm: null,
+      oxidizerSamplePh: null,
+      oxidizerReactionResult: null,
+      oxidizerReactionPattern: null,
+      oxidizerReactionDurationSeconds: null,
+      oxidizerFactTextOverride: null
+    };
+  }
+
+  return {
+    oxidizerEnabled: true,
+    oxidizerTargetType: normalizeEnumValue(
+      object.oxidizerTargetType ?? object.oxidizer_target_type,
+      OXIDIZER_TARGET_TYPES
+    ),
+    oxidizerConcentrationPpm: normalizeUnknownNumber(
+      object.oxidizerConcentrationPpm ??
+        object.oxidizer_concentration_ppm ??
+        object.oxidizerConcentrationPPM ??
+        object.oxidizer_concentration_PPM
+    ),
+    oxidizerSamplePh: normalizeUnknownNumber(
+      object.oxidizerSamplePh ??
+        object.oxidizer_sample_ph ??
+        object.oxidizerSamplePH ??
+        object.oxidizer_sample_pH
+    ),
+    oxidizerReactionResult: normalizeEnumValue(
+      object.oxidizerReactionResult ?? object.oxidizer_reaction_result,
+      OXIDIZER_REACTION_RESULTS
+    ),
+    oxidizerReactionPattern: normalizeEnumValue(
+      object.oxidizerReactionPattern ?? object.oxidizer_reaction_pattern,
+      OXIDIZER_REACTION_PATTERNS
+    ),
+    oxidizerReactionDurationSeconds: normalizeUnknownNumber(
+      object.oxidizerReactionDurationSeconds ?? object.oxidizer_reaction_duration_seconds
+    ),
+    oxidizerFactTextOverride: normalizeOptionalText(
+      typeof object.oxidizerFactTextOverride === 'string'
+        ? object.oxidizerFactTextOverride
+        : typeof object.oxidizer_fact_text_override === 'string'
+          ? object.oxidizer_fact_text_override
+          : null
+    )
+  };
+}
+
+function normalizeEnumValue(value: unknown, allowed: Set<string>): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed.length) return null;
+  return allowed.has(trimmed) ? trimmed : null;
+}
+
+function normalizeUnknownNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value.trim());
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function normalizeOptionalText(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
 }
