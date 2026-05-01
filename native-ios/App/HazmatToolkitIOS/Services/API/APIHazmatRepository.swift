@@ -41,11 +41,22 @@ struct APIHazmatRepository: HazmatRepository {
     func fetchTrackingReview(for sessionID: UUID) async throws -> SessionTrackingReview {
         async let participantsTask = client.listSessionParticipants(sessionID: sessionID)
         async let trackingTask = client.listSessionTracking(sessionID: sessionID, since: nil, limit: nil)
-        async let zoneEventsTask = client.listSessionZoneEvents(sessionID: sessionID, since: nil, limit: nil)
 
         let participants = try await participantsTask
         let tracking = try await trackingTask
-        let zoneEvents = try await zoneEventsTask
+        let zoneEvents: APIWatchZoneEventEnvelopeDTO
+        do {
+            zoneEvents = try await client.listSessionZoneEvents(sessionID: sessionID, since: nil, limit: nil)
+        } catch let error as HazmatAPIError {
+            switch error {
+            case .httpStatus(let code, _) where code == 404:
+                zoneEvents = APIWatchZoneEventEnvelopeDTO(items: [], nextCursor: nil)
+            default:
+                throw error
+            }
+        } catch {
+            throw error
+        }
 
         let participantNamesByID = Dictionary(uniqueKeysWithValues: participants.map { ($0.id, $0.traineeName) })
 
