@@ -11,6 +11,7 @@ struct TrainerMapReviewView: View {
 
     @StateObject private var viewModel: TrainerMapViewModel
     @State private var hasStartedLoading = false
+    @Environment(\.dismiss) private var dismiss
 
     init(store: AppStore, sessionID: UUID?, scenarioID: UUID, scenarioName: String) {
         self.store = store
@@ -28,46 +29,103 @@ struct TrainerMapReviewView: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Session Controls")
-                    .font(.subheadline.weight(.semibold))
+        Group {
+            if horizontalSizeClass == .compact {
+                VStack(spacing: 12) {
+                    reviewControlsPanel
+                    reviewMapPanel
+                }
+            } else {
+                GeometryReader { proxy in
+                    HStack(alignment: .top, spacing: 16) {
+                        reviewControlsPanel
+                            .frame(width: proxy.size.width * 0.25, alignment: .topLeading)
 
-                HStack {
-                    Button(viewModel.isPlaying ? "Pause" : "Play") {
-                        viewModel.isPlaying ? viewModel.pause() : viewModel.play()
+                        reviewMapPanel
+                            .frame(width: proxy.size.width * 0.75, alignment: .topLeading)
                     }
-                    .buttonStyle(.borderedProminent)
-
-                    Spacer()
-
-                    Text("\(Int(viewModel.playbackSpeed))x")
                 }
-
-                Text(viewModel.selectedSamplingStatusText)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Slider(
-                    value: $viewModel.currentTime,
-                    in: 0...max(viewModel.sessionDuration, 1)
-                )
-
-                HStack {
-                    Text("\(Int(viewModel.currentTime))s")
-                    Spacer()
-                    Text("\(Int(viewModel.sessionDuration))s")
+                .frame(height: 820)
+            }
+        }
+        .hazmatBackground()
+        .navigationTitle("Scenario Review")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    Label("Back", systemImage: "chevron.left")
                 }
-                .font(.caption)
+            }
+        }
+        .task {
+            guard !hasStartedLoading else { return }
+            hasStartedLoading = true
+            await viewModel.loadSessionData()
+        }
+        .overlay {
+            if viewModel.isLoading {
+                ZStack {
+                    Color.black.opacity(0.15).ignoresSafeArea()
+                    ProgressView("Loading review data...")
+                        .padding(16)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+        }
+        .alert("Error", isPresented: .constant(viewModel.errorMessage != nil), presenting: viewModel.errorMessage) { _ in
+            Button("Dismiss") { viewModel.errorMessage = nil }
+        } message: { msg in
+            Text(msg)
+        }
+    }
+    
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    @ViewBuilder
+    private var reviewMapPanel: some View {
+        if #available(iOS 17.0, *) {
+            MapKitPanel(
+                title: "Session Review Map",
+                subtitle: "Current trainee positions for playback.",
+                pins: currentPins,
+                polygons: reviewPolygons,
+                paths: playbackPaths,
+                fallbackCenter: reviewFallbackCenter,
+                preferFallbackCenterWhenAvailable: true,
+                recenterOnPinsChange: false,
+                recenterOnMyLocationChange: false
+            )
+            .frame(height: 780)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .hazmatPanel()
+        } else {
+            Text("Map review requires iOS 17 or newer.")
                 .foregroundStyle(.secondary)
+        }
+    }
 
-                if !viewModel.allParticipants.isEmpty {
-                    Divider().padding(.vertical, 2)
+    private var reviewControlsPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    statCard(title: "Mode", value: sessionID == nil ? "Scenario history" : "Session review")
+                    statCard(title: "Participants", value: "\(viewModel.allParticipants.count)")
+                    statCard(title: "Points", value: "\(viewModel.allPoints.count)")
+                    statCard(title: "Zone Events", value: "\(viewModel.allZoneEvents.count)")
+                }
+                .padding(.horizontal, 16)
+            }
+            
+            sessionTimeSummaryCard
 
+            if !viewModel.allParticipants.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("Participant Playback")
                         .font(.subheadline.weight(.semibold))
-
                     ScrollView(.horizontal, showsIndicators: true) {
                         HStack(spacing: 8) {
                             let allSelected = viewModel.selectionMode == .all
@@ -114,66 +172,68 @@ struct TrainerMapReviewView: View {
                                 .buttonStyle(.plain)
                             }
                         }
+                        .padding(.horizontal, 16)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 10)
+            }
+
+            VStack(spacing: 10) {
+                HStack {
+                    Button {
+                        viewModel.isPlaying ? viewModel.pause() : viewModel.play()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                                .font(.caption.weight(.bold))
+                                .frame(width: 24, height: 24)
+                                .background(Color.white.opacity(0.22), in: Circle())
+                            Text(viewModel.isPlaying ? "Pause Playback" : "Start Playback")
+                                .font(.subheadline.weight(.bold))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.blue, Color.blue.opacity(0.84)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            in: Capsule()
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    Spacer()
+
+                    Text("Speed \(Int(viewModel.playbackSpeed))x")
+                        .font(.subheadline.weight(.semibold))
+                }
+
+                Text(viewModel.selectedSamplingStatusText)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Slider(
+                    value: $viewModel.currentTime,
+                    in: 0...max(viewModel.sessionDuration, 1)
+                )
+
+                HStack {
+                    Text(durationLabel(viewModel.currentTime))
+                    Spacer()
+                    Text(durationLabel(viewModel.sessionDuration))
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
             .padding(16)
             .hazmatPanel()
-
-            Section {
-                if #available(iOS 17.0, *) {
-                    MapKitPanel(
-                        title: "Session Review Map",
-                        subtitle: "Current trainee positions for playback.",
-                        pins: currentPins,
-                        polygons: reviewPolygons,
-                        fallbackCenter: reviewFallbackCenter,
-                        preferFallbackCenterWhenAvailable: true,
-                        recenterOnPinsChange: false,
-                        recenterOnMyLocationChange: false
-                    )
-                    .frame(height: 460)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                } else {
-                    Text("Map review requires iOS 17 or newer.")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .hazmatPanel()
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    statCard(title: "Mode", value: sessionID == nil ? "Scenario history" : "Session review")
-                    statCard(title: "Participants", value: "\(viewModel.allParticipants.count)")
-                    statCard(title: "Points", value: "\(viewModel.allPoints.count)")
-                    statCard(title: "Zone Events", value: "\(viewModel.allZoneEvents.count)")
-                }
-                .padding(.horizontal, 16)
-            }
         }
-        .hazmatBackground()
-        .navigationTitle("Scenario Review")
-        .navigationBarTitleDisplayMode(.inline)
-        .task {
-            guard !hasStartedLoading else { return }
-            hasStartedLoading = true
-            await viewModel.loadSessionData()
-        }
-        .overlay {
-            if viewModel.isLoading {
-                ZStack {
-                    Color.black.opacity(0.15).ignoresSafeArea()
-                    ProgressView("Loading review data...")
-                        .padding(16)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-            }
-        }
-        .alert("Error", isPresented: .constant(viewModel.errorMessage != nil), presenting: viewModel.errorMessage) { _ in
-            Button("Dismiss") { viewModel.errorMessage = nil }
-        } message: { msg in
-            Text(msg)
-        }
+        .hazmatPanel()
     }
 
     private func statCard(title: String, value: String) -> some View {
@@ -200,6 +260,29 @@ struct TrainerMapReviewView: View {
                 tint: .red
             )
         }
+    }
+
+    private var playbackPaths: [MapPathItem] {
+        let grouped = Dictionary(grouping: viewModel.visiblePoints, by: \.traineeName)
+        return grouped.keys.sorted().compactMap { traineeName in
+            guard let points = grouped[traineeName], points.count >= 2 else { return nil }
+            let sortedPoints = points.sorted(by: { $0.timestamp < $1.timestamp })
+            let coordinates = sortedPoints.map {
+                CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+            }
+            return MapPathItem(
+                title: traineeName,
+                coordinates: coordinates,
+                strokeColor: pathColor(for: traineeName),
+                lineWidth: 3
+            )
+        }
+    }
+
+    private func pathColor(for traineeName: String) -> Color {
+        let palette: [Color] = [.red, .blue, .green, .orange, .teal, .pink, .indigo, .mint]
+        let index = abs(traineeName.hashValue) % palette.count
+        return palette[index]
     }
 
     private var reviewFallbackCenter: CLLocationCoordinate2D? {
@@ -231,6 +314,71 @@ struct TrainerMapReviewView: View {
                 lineWidth: 2
             )
         }
+    }
+    
+    private var sessionTimeSummaryCard: some View {
+        HStack(spacing: 10) {
+            sessionTimePill(
+                title: "First Seen",
+                value: clockLabel(for: viewModel.sessionStartTime),
+                detail: dateLabel(for: viewModel.sessionStartTime)
+            )
+            sessionTimePill(
+                title: "Last Seen",
+                value: clockLabel(for: viewModel.sessionEndTime),
+                detail: dateLabel(for: viewModel.sessionEndTime)
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+    }
+
+    private func sessionTimePill(title: String, value: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.subheadline.weight(.bold))
+            Text(detail)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.secondary.opacity(0.14))
+        )
+    }
+
+    private func clockLabel(for date: Date?) -> String {
+        guard let date else { return "N/A" }
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter.string(from: date)
+    }
+
+    private func dateLabel(for date: Date?) -> String {
+        guard let date else { return "No data" }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
+    }
+
+    private func durationLabel(_ seconds: TimeInterval) -> String {
+        let rounded = max(0, Int(seconds.rounded()))
+        if rounded < 60 {
+            return "\(rounded)s"
+        }
+        let minutes = rounded / 60
+        let remainingSeconds = rounded % 60
+        if remainingSeconds == 0 {
+            return "\(minutes)m"
+        }
+        return "\(minutes)m \(remainingSeconds)s"
     }
 
     private func parsePolygonCoordinates(from geoJSON: String) -> [CLLocationCoordinate2D]? {

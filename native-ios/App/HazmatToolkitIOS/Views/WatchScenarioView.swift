@@ -12,6 +12,7 @@ struct WatchScenarioView: View {
     @State private var selectedTraineeID: String?
     @State private var showAllPoints = true
     @State private var autoRefresh = false
+    @State private var showPlaybackReview = false
 
     private var scenario: Scenario? { store.scenario(by: scenarioID) }
 
@@ -31,6 +32,12 @@ struct WatchScenarioView: View {
 
     private var traineeIDs: [String] {
         Array(Set(allPoints.map(\.traineeID))).sorted()
+    }
+
+    private var resolvedSessionIDForPlayback: UUID? {
+        let sessionState = store.sessionState(for: scenarioID)
+        if let live = sessionState?.sessionID { return live }
+        return allPoints.sorted(by: { $0.createdAt > $1.createdAt }).compactMap(\.sessionID).first
     }
 
     var body: some View {
@@ -62,24 +69,7 @@ struct WatchScenarioView: View {
                     }
 
                     Section {
-                        if #available(iOS 17.0, *) {
-                            MapKitPanel(
-                                title: "WatchScenario Live Map",
-                                subtitle: "Native MapKit map showing trainer-defined zones and tracking points filtered by scenario/trainee.",
-                                pins: trackingPins,
-                                polygons: watchPolygons,
-                                fallbackCenter: scenarioFallbackCoordinate(scenario),
-                                preferFallbackCenterWhenAvailable: true,
-                                recenterOnPinsChange: false,
-                                recenterOnMyLocationChange: false
-                            )
-                            .frame(height: 780)
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .hazmatPanel()
-                        } else {
-                            Text("Map view requires iOS 17 or newer.")
-                                .foregroundStyle(.secondary)
-                        }
+                        watchScenarioMainContent(for: scenario)
                     }
 
                     Section {
@@ -137,42 +127,6 @@ struct WatchScenarioView: View {
                     }
                     .hazmatPanel()
 
-                    Section("Session Controls") {
-                        let sessionState = store.sessionState(for: scenarioID)
-                        let isBusy = store.isSessionActionInProgress(for: scenarioID)
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            if let sessionState {
-                                if horizontalSizeClass == .compact {
-                                    sessionControlsInfo(for: sessionState)
-                                    sessionControlsButtons(for: sessionState, isBusy: isBusy)
-                                } else {
-                                    HStack(alignment: .top, spacing: 20) {
-                                        sessionControlsInfo(for: sessionState)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                                        sessionControlsButtons(for: sessionState, isBusy: isBusy)
-                                            .frame(width: 260, alignment: .topLeading)
-                                    }
-                                }
-                            } else {
-                                Text("No session created yet.")
-                                    .foregroundStyle(.secondary)
-                                Button("Create Session + Join Code") {
-                                    Task { await store.createTrainingSession(for: scenarioID) }
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .disabled(isBusy)
-                            }
-
-                            if isBusy {
-                                ProgressView()
-                                    .controlSize(.small)
-                            }
-                        }
-                    }
-                    .hazmatPanel()
-
                     Section("Trainees (\(traineeIDs.count))") {
                         if traineeIDs.isEmpty {
                             Text("No trainees yet")
@@ -195,6 +149,7 @@ struct WatchScenarioView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .listStyle(.plain)
                 .task(id: scenarioID) {
+                    await store.resolveSessionState(for: scenarioID)
                     await store.loadShapes(for: scenarioID)
                     await store.loadTracking(for: scenario.scenarioName)
                 }
@@ -358,15 +313,140 @@ struct WatchScenarioView: View {
                     }
                 }
 
-                DisclosureGroup("QR Payload (debug)") {
-                    Text(qrPayload)
-                        .font(.caption.monospaced())
-                        .textSelection(.enabled)
-                        .foregroundStyle(.secondary)
-                }
-                .font(.caption)
             }
         }
+    }
+
+    @ViewBuilder
+    private func watchScenarioMainContent(for scenario: Scenario) -> some View {
+        let sessionState = store.sessionState(for: scenarioID)
+        let isBusy = store.isSessionActionInProgress(for: scenarioID)
+
+        if horizontalSizeClass == .compact {
+            VStack(alignment: .leading, spacing: 16) {
+                sessionControlsPanel(for: scenario, sessionState: sessionState, isBusy: isBusy)
+                watchMapPanel(for: scenario)
+            }
+        } else {
+            GeometryReader { proxy in
+                HStack(alignment: .top, spacing: 16) {
+                    sessionControlsPanel(for: scenario, sessionState: sessionState, isBusy: isBusy)
+                        .frame(width: proxy.size.width * 0.25, alignment: .topLeading)
+
+                    watchMapPanel(for: scenario)
+                        .frame(width: proxy.size.width * 0.75, alignment: .topLeading)
+                }
+            }
+            .frame(height: 820)
+        }
+    }
+
+    @ViewBuilder
+    private func watchMapPanel(for scenario: Scenario) -> some View {
+        if #available(iOS 17.0, *) {
+            MapKitPanel(
+                title: "WatchScenario Live Map",
+                subtitle: "Native MapKit map showing trainer-defined zones and tracking points filtered by scenario/trainee.",
+                pins: trackingPins,
+                polygons: watchPolygons,
+                fallbackCenter: scenarioFallbackCoordinate(scenario),
+                preferFallbackCenterWhenAvailable: true,
+                recenterOnPinsChange: false,
+                recenterOnMyLocationChange: false
+            )
+            .frame(height: 780)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .hazmatPanel()
+        } else {
+            Text("Map view requires iOS 17 or newer.")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private func sessionControlsPanel(
+        for scenario: Scenario,
+        sessionState: AppStore.ScenarioSessionControlState?,
+        isBusy: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Session Controls")
+                .font(.headline)
+
+            if let sessionState {
+                sessionControlsInfo(for: sessionState)
+                sessionControlsButtons(for: sessionState, isBusy: isBusy)
+            } else {
+                Text("No session created yet.")
+                    .foregroundStyle(.secondary)
+                Button("Create Session + Join Code") {
+                    Task { await store.createTrainingSession(for: scenarioID) }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isBusy)
+            }
+
+            Button {
+                showPlaybackReview = true
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "play.fill")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                        .background(Color.white.opacity(0.22), in: Circle())
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Playback Review")
+                            .font(.subheadline.weight(.bold))
+                        Text("Play / Pause Timeline")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.white.opacity(0.9))
+                    }
+
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(
+                    LinearGradient(
+                        colors: [Color.blue, Color.blue.opacity(0.85)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                )
+            }
+            .background(
+                NavigationLink(
+                    destination: TrainerMapReviewView(
+                        store: store,
+                        sessionID: resolvedSessionIDForPlayback,
+                        scenarioID: scenarioID,
+                        scenarioName: scenario.scenarioName
+                    ),
+                    isActive: $showPlaybackReview
+                ) {
+                    EmptyView()
+                }
+                .hidden()
+            )
+            .buttonStyle(.plain)
+            .disabled(resolvedSessionIDForPlayback == nil)
+
+            if resolvedSessionIDForPlayback == nil {
+                Text("Playback review is unavailable until a resolvable session ID is present in tracking data.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if isBusy {
+                ProgressView()
+                    .controlSize(.small)
+            }
+        }
+        .hazmatPanel()
     }
 
     @ViewBuilder
