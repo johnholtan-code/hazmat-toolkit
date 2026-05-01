@@ -28,6 +28,7 @@ type JoinBody = {
   traineeName: string;
   deviceType: 'air_monitor' | 'radiation_detection' | 'ph_paper';
 };
+type LatestSessionQuery = { scenarioId?: string };
 
 export const sessionRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: CreateSessionBody }>('/v1/sessions', async (request, reply) => {
@@ -202,6 +203,57 @@ export const sessionRoutes: FastifyPluginAsync = async (app) => {
       }
 
       return reply.code(500).send({ error: 'INTERNAL_ERROR', message: 'Failed to join session.' });
+    }
+  });
+
+  app.get<{ Querystring: LatestSessionQuery }>('/v1/sessions/latest', async (request, reply) => {
+    let identity;
+    try {
+      identity = await requireTrainerIdentity(app, request.headers);
+    } catch (error) {
+      if (error instanceof TrainerAuthError) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED', message: error.message });
+      }
+      throw error;
+    }
+
+    const scenarioID = request.query?.scenarioId?.trim();
+    if (!scenarioID) {
+      return reply.code(400).send({ error: 'BAD_REQUEST', message: 'scenarioId is required.' });
+    }
+
+    try {
+      await assertTrainerCanReadScenario(app.pg, scenarioID, identity);
+      const session = await getLatestSessionForScenario(app.pg, scenarioID);
+      if (!session) {
+        return reply.code(404).send({ error: 'NOT_FOUND', message: 'No session found for scenario.' });
+      }
+      return reply.send({
+        session: {
+          id: session.id,
+          scenarioId: session.scenarioID,
+          status: toPublicSessionStatus(session.status),
+          joinCode: session.joinCode,
+          joinCodeExpiresAt: session.joinCodeExpiresAt,
+          startsAt: session.startsAt,
+          endedAt: session.endedAt,
+          isLive: toPublicSessionStatus(session.status) === 'active'
+        },
+        joinCode: {
+          joinCode: session.joinCode,
+          joinCodeExpiresAt: session.joinCodeExpiresAt
+        },
+        qrPayload: JSON.stringify({ type: 'hazmat_session_join', joinCode: session.joinCode })
+      });
+    } catch (error) {
+      request.log.error({ err: error }, 'Failed to resolve latest session for scenario');
+      if (error instanceof TrainerTargetNotFoundError || isNotFoundError(error)) {
+        return reply.code(404).send({ error: 'NOT_FOUND', message: error.message });
+      }
+      if (error instanceof TrainerForbiddenError) {
+        return reply.code(403).send({ error: 'FORBIDDEN', message: error.message });
+      }
+      return reply.code(500).send({ error: 'INTERNAL_ERROR', message: 'Failed to resolve latest session for scenario.' });
     }
   });
 
@@ -751,6 +803,51 @@ async function rotateJoinCode(
   }
 
   throw lastError ?? new Error('Unable to rotate join code.');
+}
+
+async function getLatestSessionForScenario(
+  pool: { query: PoolClient['query'] },
+  scenarioID: string
+): Promise<{
+  id: string;
+  scenarioID: string;
+  status: string;
+  joinCode: string;
+  joinCodeExpiresAt: string;
+  startsAt: string | null;
+  endedAt: string | null;
+  isLive: boolean;
+} | null> {
+  const result = await pool.query<DBLifecycleRow>(
+    `
+      select
+        id::text as id,
+        scenario_id::text as scenario_id,
+        status::text as status,
+        join_code,
+        join_code_expires_at,
+        starts_at,
+        ended_at,
+        is_live
+      from scenario_sessions
+      where scenario_id = $1::uuid
+      order by coalesce(starts_at, created_at) desc, id desc
+      limit 1
+    `,
+    [scenarioID]
+  );
+  const row = result.rows[0];
+  if (!row) return null;
+  return {
+    id: row.id,
+    scenarioID: row.scenario_id,
+    status: row.status,
+    joinCode: row.join_code,
+    joinCodeExpiresAt: row.join_code_expires_at,
+    startsAt: row.starts_at,
+    endedAt: row.ended_at,
+    isLive: row.is_live
+  };
 }
 
 type DBSnapshotAuthRow = {

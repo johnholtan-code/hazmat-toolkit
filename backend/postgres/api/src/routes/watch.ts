@@ -43,7 +43,6 @@ type WatchTrackingRow = {
   sampling_band: string | null;
   seconds_in_current_band: number | null;
   is_backfilled: boolean;
-  meta_json: unknown;
 };
 
 type TrackingMeta = {
