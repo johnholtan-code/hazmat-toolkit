@@ -12,11 +12,25 @@ enum AppIntentBridge {
     static let persistedScenarioKey = "THMGTrainee.PersistedSelectedScenario"
     static let lastJoinCodeKey = "THMGTrainee.LastJoinCode"
     static let lastTraineeNameKey = "THMGTrainee.LastTraineeName"
+    static let trackingAuditLogKey = "THMGTrainee.TrackingAuditLog"
 }
 
 private struct PersistedDownloadedScenario: Codable {
     var source: String
     var scenario: Scenario
+}
+
+struct TrackingAuditPoint: Codable, Identifiable {
+    var id: UUID
+    var sessionID: String?
+    var recordedAt: Date
+    var lat: Double
+    var lon: Double
+    var samplingBand: String
+    var secondsInCurrentBand: Double?
+    var headingDeg: Double?
+    var accuracyM: Double?
+    var speedMps: Double?
 }
 
 enum RadiationInstrumentMode: String, CaseIterable, Identifiable {
@@ -41,6 +55,20 @@ enum AirMonitorCalibrationStep: Int, CaseIterable, Identifiable {
     case low
 
     var id: Int { rawValue }
+}
+
+private enum GasReadingWriteSource {
+    case timer
+    case zoneChange
+    case bandChange
+    case refreshSnapshot
+    case calibration
+    case reset
+}
+
+private struct FallbackSamplingConfig {
+    let highFeatherPercent: Double
+    let lowFeatherPercent: Double
 }
 
 @MainActor
@@ -127,6 +155,12 @@ final class AppModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     private var pendingGPSZoneName: String?
     private var pendingGPSZoneSampleCount: Int = 0
     private var hasPersistedDownloadedScenario = false
+    private let maxTrackingAuditPoints = 200
+    private let fallbackSamplingByMonitor: [MonitorType: FallbackSamplingConfig] = [
+        .fourGasPID: FallbackSamplingConfig(highFeatherPercent: 12, lowFeatherPercent: 18),
+        .fourGas: FallbackSamplingConfig(highFeatherPercent: 10, lowFeatherPercent: 16)
+    ]
+    private let defaultFallbackSamplingConfig = FallbackSamplingConfig(highFeatherPercent: 12, lowFeatherPercent: 18)
 
     let phFacts: [Int: String] = [
         0: "Hydrochloric acid - highly corrosive",
@@ -516,11 +550,25 @@ final class AppModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
         lastCapturedLocationAt = now
 
-        pendingTrackingPoints.append(makeTrackingPointUpload(from: location, recordedAt: now))
+        let point = makeTrackingPointUpload(from: location, recordedAt: now)
+        pendingTrackingPoints.append(point)
+        appendTrackingAuditPoint(from: point)
     }
 
     private func makeTrackingPointUpload(from location: CLLocation, recordedAt: Date) -> TrackingPointUpload {
         let activeShape = activeGeoShape(for: location.coordinate)
+        let monitorType = selectedMonitor?.rawValue ?? "none"
+        let isAirMonitorSelected = selectedMonitor?.isAirMonitor == true
+        let monitorProfileID = isAirMonitorSelected ? editingAirMonitorProfileID?.uuidString : nil
+        let monitorDeviceName = isAirMonitorSelected ? normalizedAirMonitorDeviceNameForTracking() : nil
+        let monitorSensorLayout = isAirMonitorSelected ? normalizedAirMonitorSensorLayoutForTracking() : nil
+        let samplingBand = isAirMonitorSelected ? currentSamplingBand.rawValue : "none"
+        let secondsInCurrentBand: Double
+        if isAirMonitorSelected {
+            secondsInCurrentBand = max(0, recordedAt.timeIntervalSince(lastSamplingBandChangeAt))
+        } else {
+            secondsInCurrentBand = 0
+        }
         return TrackingPointUpload(
                 clientPointID: UUID(),
                 recordedAt: recordedAt,
@@ -530,7 +578,13 @@ final class AppModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                 speedMps: location.speed >= 0 ? location.speed : nil,
                 headingDeg: location.course >= 0 ? location.course : nil,
                 activeShapeID: activeShape?.id,
-                activeShapeSortOrder: activeShape?.sortOrder
+                activeShapeSortOrder: activeShape?.sortOrder,
+                monitorType: monitorType,
+                monitorProfileID: monitorProfileID,
+                monitorDeviceName: monitorDeviceName,
+                monitorSensorLayout: monitorSensorLayout,
+                samplingBand: samplingBand,
+                secondsInCurrentBand: secondsInCurrentBand
             )
     }
 
@@ -590,7 +644,7 @@ final class AppModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             radiationDistanceFromSourceM = nil
         }
 
-        locationTrackingStatusMessage = "Queued \(pendingTrackingPoints.count) location point(s)."
+        locationTrackingStatusMessage = "Queued \(pendingTrackingPoints.count) point(s). Last band: \(currentSamplingBand.displayLabel)."
     }
 
     private func confirmedGPSZoneChange(candidateZoneName: String) -> String? {
@@ -708,7 +762,14 @@ final class AppModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         shape.carbonMonoxide != nil ||
         shape.hydrogenSulfide != nil ||
         shape.pid != nil ||
-        shape.pH != nil
+        shape.pH != nil ||
+        shape.oxidizerEnabled == true ||
+        shape.oxidizerTargetType != nil ||
+        shape.oxidizerConcentrationPPM != nil ||
+        shape.oxidizerSamplePH != nil ||
+        shape.oxidizerReactionResult != nil ||
+        shape.oxidizerReactionPattern != nil ||
+        shape.oxidizerReactionDurationSeconds != nil
     }
 
     private func pointInPolygon(_ point: CLLocationCoordinate2D, ring: [DataverseClient.JoinedSessionGeoShape.Coordinate]) -> Bool {
@@ -956,6 +1017,11 @@ final class AppModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         selectedScenario?.zones.first { $0.name == selectedZoneName } ?? selectedScenario?.zones.first
     }
 
+    var showsSamplingFallbackNotice: Bool {
+        guard currentSamplingBand != .normal, let zone = currentZone else { return false }
+        return !zoneHasAnySamplingAdjustment(zone)
+    }
+
     var gasAlarms: [String: Bool] {
         [
             "O2": gasReadings.oxygen < 19.5 || gasReadings.oxygen > 23.4,
@@ -978,6 +1044,8 @@ final class AppModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             return .radiationSimulator
         case .phPaper:
             return .phSimulator
+        case .oxidizerTestStrip:
+            return .oxidizerSimulator
         default:
             return .gasSimulator
         }
@@ -1484,6 +1552,15 @@ final class AppModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     ) -> Double {
         let channelAdjustment = zone.airMonitorSampling?.adjustment(for: channel) ?? .unchanged
         let bandAdjustment = effectiveBandAdjustment(for: channelAdjustment)
+        let hasAnyZoneSamplingAdjustment = zoneHasAnySamplingAdjustment(zone)
+
+        if currentSamplingBand != .normal,
+           !hasAnyZoneSamplingAdjustment,
+           bandAdjustment == .unchanged {
+            let fallbackAdjustment = fallbackBandAdjustment(for: currentSamplingBand)
+            let adjusted = base * (1 - (fallbackAdjustment.featherPercent / 100))
+            return min(max(adjusted, clamp.lowerBound), clamp.upperBound)
+        }
 
         guard bandAdjustment.mode == .lower else {
             return min(max(base, clamp.lowerBound), clamp.upperBound)
@@ -1492,6 +1569,23 @@ final class AppModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         let feather = min(max(bandAdjustment.featherPercent, 0), 100)
         let adjusted = base * (1 - (feather / 100))
         return min(max(adjusted, clamp.lowerBound), clamp.upperBound)
+    }
+
+    private func zoneHasAnySamplingAdjustment(_ zone: ScenarioZone) -> Bool {
+        let channels = ["O2", "LEL", "CO", "H2S", "VOC"]
+        return channels.contains { zone.airMonitorSampling?.adjustment(for: $0) != .unchanged }
+    }
+
+    private func fallbackBandAdjustment(for band: AirMonitorSamplingBand) -> AirMonitorSamplingBandAdjustment {
+        let config = fallbackSamplingByMonitor[selectedMonitor ?? .fourGasPID] ?? defaultFallbackSamplingConfig
+        switch band {
+        case .high:
+            return AirMonitorSamplingBandAdjustment(mode: .lower, featherPercent: config.highFeatherPercent)
+        case .low:
+            return AirMonitorSamplingBandAdjustment(mode: .lower, featherPercent: config.lowFeatherPercent)
+        case .normal:
+            return .unchanged
+        }
     }
 
     private func effectiveBandAdjustment(
@@ -1597,6 +1691,18 @@ final class AppModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         defaults.set(code, forKey: AppIntentBridge.lastJoinCodeKey)
     }
 
+    private func normalizedAirMonitorDeviceNameForTracking() -> String? {
+        let trimmed = airMonitorDeviceName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private func normalizedAirMonitorSensorLayoutForTracking() -> [String]? {
+        let sensors = airMonitorSensors.map { slot in
+            "\(slot.catalogAbbr.uppercased()):\(slot.unit)"
+        }
+        return sensors.isEmpty ? nil : sensors
+    }
+
     private func restoreLastJoinCredentialsIfAvailable() {
         let defaults = UserDefaults.standard
         if traineeName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
@@ -1608,7 +1714,46 @@ final class AppModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             joinCode = savedCode
         }
     }
+
+    func trackingAuditLog() -> [TrackingAuditPoint] {
+        let defaults = UserDefaults.standard
+        guard let data = defaults.data(forKey: AppIntentBridge.trackingAuditLogKey) else { return [] }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return (try? decoder.decode([TrackingAuditPoint].self, from: data)) ?? []
+    }
+
+    func clearTrackingAuditLog() {
+        UserDefaults.standard.removeObject(forKey: AppIntentBridge.trackingAuditLogKey)
+    }
+
+    private func appendTrackingAuditPoint(from point: TrackingPointUpload) {
+        var points = trackingAuditLog()
+        points.append(
+            TrackingAuditPoint(
+                id: point.clientPointID,
+                sessionID: joinedSessionID,
+                recordedAt: point.recordedAt,
+                lat: point.lat,
+                lon: point.lon,
+                samplingBand: point.samplingBand ?? "none",
+                secondsInCurrentBand: point.secondsInCurrentBand,
+                headingDeg: point.headingDeg,
+                accuracyM: point.accuracyM,
+                speedMps: point.speedMps
+            )
+        )
+        if points.count > maxTrackingAuditPoints {
+            points.removeFirst(points.count - maxTrackingAuditPoints)
+        }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        if let data = try? encoder.encode(points) {
+            UserDefaults.standard.set(data, forKey: AppIntentBridge.trackingAuditLogKey)
+        }
+    }
 }
+
 
 private final class AirMonitorHeightSamplingMotionManager {
     var onTiltAngleUpdate: ((Double) -> Void)?
