@@ -144,6 +144,26 @@ struct APIShapeDTO: Codable, Hashable, Sendable, Identifiable {
     var hydrogenSulfide: String?
     var pid: String?
     var chemicalReadings: [ShapeChemicalReading]
+    var oxygenHighSamplingMode: String?
+    var oxygenHighFeatherPercent: Double?
+    var oxygenLowSamplingMode: String?
+    var oxygenLowFeatherPercent: Double?
+    var lelHighSamplingMode: String?
+    var lelHighFeatherPercent: Double?
+    var lelLowSamplingMode: String?
+    var lelLowFeatherPercent: Double?
+    var carbonMonoxideHighSamplingMode: String?
+    var carbonMonoxideHighFeatherPercent: Double?
+    var carbonMonoxideLowSamplingMode: String?
+    var carbonMonoxideLowFeatherPercent: Double?
+    var hydrogenSulfideHighSamplingMode: String?
+    var hydrogenSulfideHighFeatherPercent: Double?
+    var hydrogenSulfideLowSamplingMode: String?
+    var hydrogenSulfideLowFeatherPercent: Double?
+    var pidHighSamplingMode: String?
+    var pidHighFeatherPercent: Double?
+    var pidLowSamplingMode: String?
+    var pidLowFeatherPercent: Double?
 
     var doseRate: String?
     var background: String?
@@ -170,6 +190,26 @@ struct APIShapeDTO: Codable, Hashable, Sendable, Identifiable {
         case hydrogenSulfide
         case pid
         case chemicalReadings
+        case oxygenHighSamplingMode
+        case oxygenHighFeatherPercent
+        case oxygenLowSamplingMode
+        case oxygenLowFeatherPercent
+        case lelHighSamplingMode
+        case lelHighFeatherPercent
+        case lelLowSamplingMode
+        case lelLowFeatherPercent
+        case carbonMonoxideHighSamplingMode
+        case carbonMonoxideHighFeatherPercent
+        case carbonMonoxideLowSamplingMode
+        case carbonMonoxideLowFeatherPercent
+        case hydrogenSulfideHighSamplingMode
+        case hydrogenSulfideHighFeatherPercent
+        case hydrogenSulfideLowSamplingMode
+        case hydrogenSulfideLowFeatherPercent
+        case pidHighSamplingMode
+        case pidHighFeatherPercent
+        case pidLowSamplingMode
+        case pidLowFeatherPercent
         case doseRate
         case background
         case shielding
@@ -195,6 +235,26 @@ struct APIShapeDTO: Codable, Hashable, Sendable, Identifiable {
             hydrogenSulfide: hydrogenSulfide,
             pid: pid,
             chemicalReadings: chemicalReadings,
+            oxygenHighSamplingMode: oxygenHighSamplingMode,
+            oxygenHighFeatherPercent: oxygenHighFeatherPercent,
+            oxygenLowSamplingMode: oxygenLowSamplingMode,
+            oxygenLowFeatherPercent: oxygenLowFeatherPercent,
+            lelHighSamplingMode: lelHighSamplingMode,
+            lelHighFeatherPercent: lelHighFeatherPercent,
+            lelLowSamplingMode: lelLowSamplingMode,
+            lelLowFeatherPercent: lelLowFeatherPercent,
+            carbonMonoxideHighSamplingMode: carbonMonoxideHighSamplingMode,
+            carbonMonoxideHighFeatherPercent: carbonMonoxideHighFeatherPercent,
+            carbonMonoxideLowSamplingMode: carbonMonoxideLowSamplingMode,
+            carbonMonoxideLowFeatherPercent: carbonMonoxideLowFeatherPercent,
+            hydrogenSulfideHighSamplingMode: hydrogenSulfideHighSamplingMode,
+            hydrogenSulfideHighFeatherPercent: hydrogenSulfideHighFeatherPercent,
+            hydrogenSulfideLowSamplingMode: hydrogenSulfideLowSamplingMode,
+            hydrogenSulfideLowFeatherPercent: hydrogenSulfideLowFeatherPercent,
+            pidHighSamplingMode: pidHighSamplingMode,
+            pidHighFeatherPercent: pidHighFeatherPercent,
+            pidLowSamplingMode: pidLowSamplingMode,
+            pidLowFeatherPercent: pidLowFeatherPercent,
             doseRate: doseRate,
             background: background,
             shielding: shielding,
@@ -221,6 +281,26 @@ struct APIUpsertShapeRequest: Codable, Sendable {
     var hydrogenSulfide: String?
     var pid: String?
     var chemicalReadings: [ShapeChemicalReading]
+    var oxygenHighSamplingMode: String?
+    var oxygenHighFeatherPercent: Double?
+    var oxygenLowSamplingMode: String?
+    var oxygenLowFeatherPercent: Double?
+    var lelHighSamplingMode: String?
+    var lelHighFeatherPercent: Double?
+    var lelLowSamplingMode: String?
+    var lelLowFeatherPercent: Double?
+    var carbonMonoxideHighSamplingMode: String?
+    var carbonMonoxideHighFeatherPercent: Double?
+    var carbonMonoxideLowSamplingMode: String?
+    var carbonMonoxideLowFeatherPercent: Double?
+    var hydrogenSulfideHighSamplingMode: String?
+    var hydrogenSulfideHighFeatherPercent: Double?
+    var hydrogenSulfideLowSamplingMode: String?
+    var hydrogenSulfideLowFeatherPercent: Double?
+    var pidHighSamplingMode: String?
+    var pidHighFeatherPercent: Double?
+    var pidLowSamplingMode: String?
+    var pidLowFeatherPercent: Double?
 
     var doseRate: String?
     var background: String?
@@ -246,6 +326,26 @@ struct APIUpsertShapeRequest: Codable, Sendable {
         self.hydrogenSulfide = domain.hydrogenSulfide
         self.pid = domain.pid
         self.chemicalReadings = domain.chemicalReadings
+        self.oxygenHighSamplingMode = domain.oxygenHighSamplingMode
+        self.oxygenHighFeatherPercent = domain.oxygenHighFeatherPercent
+        self.oxygenLowSamplingMode = domain.oxygenLowSamplingMode
+        self.oxygenLowFeatherPercent = domain.oxygenLowFeatherPercent
+        self.lelHighSamplingMode = domain.lelHighSamplingMode
+        self.lelHighFeatherPercent = domain.lelHighFeatherPercent
+        self.lelLowSamplingMode = domain.lelLowSamplingMode
+        self.lelLowFeatherPercent = domain.lelLowFeatherPercent
+        self.carbonMonoxideHighSamplingMode = domain.carbonMonoxideHighSamplingMode
+        self.carbonMonoxideHighFeatherPercent = domain.carbonMonoxideHighFeatherPercent
+        self.carbonMonoxideLowSamplingMode = domain.carbonMonoxideLowSamplingMode
+        self.carbonMonoxideLowFeatherPercent = domain.carbonMonoxideLowFeatherPercent
+        self.hydrogenSulfideHighSamplingMode = domain.hydrogenSulfideHighSamplingMode
+        self.hydrogenSulfideHighFeatherPercent = domain.hydrogenSulfideHighFeatherPercent
+        self.hydrogenSulfideLowSamplingMode = domain.hydrogenSulfideLowSamplingMode
+        self.hydrogenSulfideLowFeatherPercent = domain.hydrogenSulfideLowFeatherPercent
+        self.pidHighSamplingMode = domain.pidHighSamplingMode
+        self.pidHighFeatherPercent = domain.pidHighFeatherPercent
+        self.pidLowSamplingMode = domain.pidLowSamplingMode
+        self.pidLowFeatherPercent = domain.pidLowFeatherPercent
 
         self.doseRate = domain.doseRate
         self.background = domain.background
