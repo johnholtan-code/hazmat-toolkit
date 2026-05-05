@@ -2,7 +2,11 @@ import { getConfig, getSupabaseClient } from "./supabase-client.js";
 
 export async function signIn(email, password) {
   const supabase = getSupabaseClient();
-  return supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    throw error;
+  }
+  return data;
 }
 
 export async function signOut() {

@@ -303,8 +303,12 @@ async function ensureAdminSession() {
   ui.panel.hidden = true;
   if (user && !userIsSuperAdmin(user)) {
     await signOut();
+    ui.authStatus.innerHTML = `<strong>Status:</strong> <span class="bad">Signed in, but this email is not authorized for Super Admin access.</span>`;
     setStatus("This account is not authorized for Super Admin access.", "bad");
+    return;
   }
+
+  ui.authStatus.innerHTML = `<strong>Status:</strong> <span class="ok">Ready.</span>`;
 }
 
 // Event listeners
@@ -317,6 +321,9 @@ ui.authForm.addEventListener("submit", async (e) => {
     ui.authStatus.innerHTML = `<strong>Status:</strong> <span class="ok">Signing in...</span>`;
     await signIn(email, password);
     await ensureAdminSession();
+    if (state.user) {
+      ui.authStatus.innerHTML = `<strong>Status:</strong> <span class="ok">Signed in as ${escapeHtml(state.user.email || "admin")}.</span>`;
+    }
   } catch (err) {
     console.error(err);
     ui.authStatus.innerHTML = `<strong>Status:</strong> <span class="bad">Auth error: ${escapeHtml(err.message)}</span>`;
