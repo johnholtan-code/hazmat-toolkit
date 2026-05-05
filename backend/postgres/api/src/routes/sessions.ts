@@ -29,6 +29,7 @@ type JoinBody = {
   deviceType: 'air_monitor' | 'radiation_detection' | 'ph_paper';
 };
 type LatestSessionQuery = { scenarioId?: string };
+type ScenarioSessionsQuery = { scenarioId?: string };
 
 export const sessionRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: CreateSessionBody }>('/v1/sessions', async (request, reply) => {
@@ -254,6 +255,51 @@ export const sessionRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(403).send({ error: 'FORBIDDEN', message: error.message });
       }
       return reply.code(500).send({ error: 'INTERNAL_ERROR', message: 'Failed to resolve latest session for scenario.' });
+    }
+  });
+
+  app.get<{ Querystring: ScenarioSessionsQuery }>('/v1/sessions', async (request, reply) => {
+    let identity;
+    try {
+      identity = await requireTrainerIdentity(app, request.headers);
+    } catch (error) {
+      if (error instanceof TrainerAuthError) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED', message: error.message });
+      }
+      throw error;
+    }
+
+    const scenarioID = request.query?.scenarioId?.trim();
+    if (!scenarioID) {
+      return reply.code(400).send({ error: 'BAD_REQUEST', message: 'scenarioId is required.' });
+    }
+
+    try {
+      await assertTrainerCanReadScenario(app.pg, scenarioID, identity);
+      const sessions = await listSessionsForScenario(app.pg, scenarioID);
+      return reply.send(
+        sessions.map((session) => ({
+          id: session.id,
+          scenarioId: session.scenarioID,
+          status: toPublicSessionStatus(session.status),
+          joinCode: session.joinCode,
+          joinCodeExpiresAt: session.joinCodeExpiresAt,
+          startsAt: session.startsAt,
+          endedAt: session.endedAt,
+          isLive: toPublicSessionStatus(session.status) === 'active',
+          sessionName: session.sessionName,
+          createdAt: session.createdAt
+        }))
+      );
+    } catch (error) {
+      request.log.error({ err: error }, 'Failed to list sessions for scenario');
+      if (error instanceof TrainerTargetNotFoundError || isNotFoundError(error)) {
+        return reply.code(404).send({ error: 'NOT_FOUND', message: error.message });
+      }
+      if (error instanceof TrainerForbiddenError) {
+        return reply.code(403).send({ error: 'FORBIDDEN', message: error.message });
+      }
+      return reply.code(500).send({ error: 'INTERNAL_ERROR', message: 'Failed to list sessions for scenario.' });
     }
   });
 
@@ -691,6 +737,8 @@ type DBLifecycleRow = {
   starts_at: string | null;
   ended_at: string | null;
   is_live: boolean;
+  session_name?: string | null;
+  created_at?: string | null;
 };
 
 async function closeSession(pool: { query: PoolClient['query'] }, sessionID: string) {
@@ -848,6 +896,55 @@ async function getLatestSessionForScenario(
     endedAt: row.ended_at,
     isLive: row.is_live
   };
+}
+
+async function listSessionsForScenario(
+  pool: { query: PoolClient['query'] },
+  scenarioID: string
+): Promise<Array<{
+  id: string;
+  scenarioID: string;
+  status: string;
+  joinCode: string;
+  joinCodeExpiresAt: string;
+  startsAt: string | null;
+  endedAt: string | null;
+  isLive: boolean;
+  sessionName: string | null;
+  createdAt: string | null;
+}>> {
+  const result = await pool.query<DBLifecycleRow>(
+    `
+      select
+        id::text as id,
+        scenario_id::text as scenario_id,
+        status::text as status,
+        join_code,
+        join_code_expires_at,
+        starts_at,
+        ended_at,
+        is_live,
+        session_name,
+        created_at
+      from scenario_sessions
+      where scenario_id = $1::uuid
+      order by coalesce(starts_at, created_at) desc, id desc
+    `,
+    [scenarioID]
+  );
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    scenarioID: row.scenario_id,
+    status: row.status,
+    joinCode: row.join_code,
+    joinCodeExpiresAt: row.join_code_expires_at,
+    startsAt: row.starts_at,
+    endedAt: row.ended_at,
+    isLive: row.is_live,
+    sessionName: row.session_name ?? null,
+    createdAt: row.created_at ?? null
+  }));
 }
 
 type DBSnapshotAuthRow = {
