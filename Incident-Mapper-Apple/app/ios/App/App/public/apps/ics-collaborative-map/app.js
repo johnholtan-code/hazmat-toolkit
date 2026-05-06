@@ -3084,7 +3084,8 @@
       return true;
     } catch (error) {
       if (isViewerAccessDisabledError(error)) {
-        exitActiveWorkspace();
+        handleViewerAccessRevoked();
+        return false;
       }
       setStatus(formatError(error));
       return false;
@@ -3292,9 +3293,7 @@
         renderCostSummary();
       } catch (error) {
         if (state.viewerMode && isViewerAccessDisabledError(error)) {
-          exitActiveWorkspace();
-          renderAll();
-          setStatus("Viewer access has been turned off for this session.");
+          handleViewerAccessRevoked();
           return;
         }
         setStatus(formatError(error));
@@ -3418,6 +3417,18 @@
     if (elements.paletteSearchInput) elements.paletteSearchInput.value = "";
     if (elements.scenarioFileInput) elements.scenarioFileInput.value = "";
     scheduleMapResizeRefresh();
+  }
+
+  function handleViewerAccessRevoked() {
+    if (!state.viewerMode) return;
+    exitActiveWorkspace();
+    renderAll();
+    setStatus("Your viewing access has been revoked by the incident commander.");
+    window.setTimeout(() => {
+      elements.landingView.classList.remove("hidden");
+      elements.appView.classList.add("hidden");
+      scheduleMapResizeRefresh();
+    }, 100);
   }
 
   async function leaveCurrentSession() {

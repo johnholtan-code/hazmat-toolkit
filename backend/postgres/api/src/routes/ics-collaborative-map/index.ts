@@ -3893,7 +3893,7 @@ function mapSession(row: CollabSessionRow, publicBaseUrl?: string) {
 
 function ensureViewerAccessEnabled(session: CollabSessionRow) {
   if (session.viewer_access_enabled === false) {
-    throw new ViewerAccessDisabledError('Viewer access has been turned off for this session.');
+    throw new ViewerAccessDisabledError('Your viewing access has been revoked by the incident commander.');
   }
 }
 
