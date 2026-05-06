@@ -6,6 +6,8 @@
     supabaseAnonKey: config.supabaseAnonKey || "",
     publicBaseUrl: (config.publicBaseUrl || "").replace(/\/$/, "")
   };
+  const EXPORTS_ENABLED = Boolean(config.exportsEnabled);
+  const EXPORTS_DISABLED_MESSAGE = "Export is not available on your current plan.";
   const STORAGE_KEYS = {
     commanderAuth: "icsCollabCommanderAuth",
     participantAuth: "icsCollabParticipantAuth",
@@ -1519,6 +1521,12 @@
     elements.closeIcs207PreviewBtn?.addEventListener("click", closeIcs207Preview);
     elements.ics207PrintBtn?.addEventListener("click", printIcs207Workspace);
     elements.ics207ExportPdfBtn?.addEventListener("click", exportIcs207Pdf);
+    if (!EXPORTS_ENABLED) {
+      elements.printExportBtn.classList.add("hidden");
+      elements.exportTrainingScenarioBtn.disabled = true;
+      elements.ics202ExportPdfBtn.disabled = true;
+      if (elements.ics207ExportPdfBtn) elements.ics207ExportPdfBtn.disabled = true;
+    }
     [
       elements.ics207IncidentNameInput,
       elements.ics207PreparedByNameInput,
@@ -3930,7 +3938,7 @@
       ? (isScenarioReviewMode() ? "Replay Scenario" : "Replay Incident")
       : (isScenarioReviewMode() ? "Load Scenario Replay" : "Load Incident Replay");
     elements.exitPlaybackBtn.classList.toggle("hidden", !state.playbackMode);
-    elements.exportTrainingScenarioBtn.disabled = !visible;
+    elements.exportTrainingScenarioBtn.disabled = !visible || !EXPORTS_ENABLED;
     elements.exportTrainingScenarioBtn.textContent = "Export Scenario";
     elements.editScenarioBtn.classList.toggle("hidden", !isScenarioReviewMode());
     elements.editScenarioBtn.disabled = scenarioReviewCanEdit();
@@ -5438,6 +5446,10 @@
   }
 
   function showPrintExportModal() {
+    if (!EXPORTS_ENABLED) {
+      setStatus(EXPORTS_DISABLED_MESSAGE);
+      return;
+    }
     if (elements.printExportBtn?.disabled) return;
     renderExportActions();
     elements.printExportModal.classList.remove("hidden");
@@ -7135,6 +7147,10 @@
   }
 
   async function exportTrainingScenario() {
+    if (!EXPORTS_ENABLED) {
+      setStatus(EXPORTS_DISABLED_MESSAGE);
+      return;
+    }
     const workspaceSession = getWorkspaceSession();
     if (!workspaceSession) {
       setStatus("Open a session or scenario first.");
@@ -8101,7 +8117,7 @@
     if (elements.ics207PreviewValidation) {
       elements.ics207PreviewValidation.innerHTML = buildIcs207PreviewValidationMarkup(validation);
     }
-    elements.ics207ExportPdfBtn.disabled = Boolean(validation.errors.length);
+    elements.ics207ExportPdfBtn.disabled = !EXPORTS_ENABLED || Boolean(validation.errors.length);
     elements.ics207PrintBtn.disabled = Boolean(validation.errors.length);
     return { snapshot, validation };
   }
@@ -8178,6 +8194,10 @@
   }
 
   async function exportIcs207Pdf() {
+    if (!EXPORTS_ENABLED) {
+      setStatus(EXPORTS_DISABLED_MESSAGE);
+      return;
+    }
     const previewDraft = syncIcs207PreviewDraftFromInputs();
     if (!previewDraft) return;
     const rendered = renderIcs207Preview();
@@ -8745,6 +8765,10 @@
   }
 
   async function exportIcs202Pdf() {
+    if (!EXPORTS_ENABLED) {
+      setStatus(EXPORTS_DISABLED_MESSAGE);
+      return;
+    }
     const validation = validateIcs202({ forFinalize: true });
     if (validation.errors.length) {
       updateIcs202ValidationBanner({ forFinalize: true, scrollIntoView: true });
@@ -8924,6 +8948,10 @@
   }
 
   async function downloadSessionJson(session) {
+    if (!EXPORTS_ENABLED) {
+      setStatus(EXPORTS_DISABLED_MESSAGE);
+      return;
+    }
     const snapshotResponse = await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(session.id)}/snapshot`, {
       actorType: "commander"
     });
@@ -9407,18 +9435,7 @@
       return;
     }
     if (state.pendingAttachmentPayload) {
-      if (!canCreateObjects()) {
-        state.pendingAttachmentPayload = null;
-        setStatus("This session is read-only or you do not have edit access.");
-        return;
-      }
-      const attachment = state.pendingAttachmentPayload;
-      state.pendingAttachmentPayload = null;
-      try {
-        await placeAttachmentPinAt(event.latlng, attachment);
-      } catch (error) {
-        setStatus(formatError(error));
-      }
+      await handlePendingAttachmentPlacement(event.latlng);
       return;
     }
     if (state.pendingIsolationConfig) {
@@ -9453,6 +9470,23 @@
     state.drawState.points.push(point);
     redrawPreviewLayer();
     updateDrawControls();
+  }
+
+  async function handlePendingAttachmentPlacement(latlng) {
+    if (!state.pendingAttachmentPayload) return;
+    if (!canCreateObjects()) {
+      state.pendingAttachmentPayload = null;
+      setStatus("This session is read-only or you do not have edit access.");
+      return;
+    }
+    const attachment = state.pendingAttachmentPayload;
+    state.pendingAttachmentPayload = null;
+    try {
+      await placeAttachmentPinAt(latlng, attachment);
+    } catch (error) {
+      state.pendingAttachmentPayload = attachment;
+      setStatus(formatError(error));
+    }
   }
 
   async function handlePendingIsolationPlacement(latlng) {
@@ -9618,7 +9652,7 @@
       syncIncidentFocusState({ notify: true });
       renderAll();
       setStatus(`${template.label} placed in editable scenario.`);
-      return true;
+      return objectId;
     }
     const objectId = options.objectId || createLocalID();
     const result = await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(state.activeSession.id)}/mutations`, {
@@ -9644,23 +9678,33 @@
     if (!options.silent) {
       setStatus(`${template.label} placed.`);
     }
-    return true;
+    return objectId;
   }
 
   async function buildAttachmentEntryForPlacement(payload, objectId) {
     if (!isScenarioReviewMode() && sessionIsActive() && state.activeSession?.id) {
-      const result = await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(state.activeSession.id)}/attachments/import`, {
-        method: "POST",
-        actorType: currentActorType(),
-        body: {
-          objectId,
-          fileName: payload?.fileName || "Attached Image",
-          dataUrl: payload?.dataUrl || ""
+      try {
+        const result = await apiFetch(`/v1/ics-collab/sessions/${encodeURIComponent(state.activeSession.id)}/attachments/import`, {
+          method: "POST",
+          actorType: currentActorType(),
+          body: {
+            objectId,
+            fileName: payload?.fileName || "Attached Image",
+            dataUrl: payload?.dataUrl || ""
+          }
+        });
+        const imported = normalizeAttachmentEntry(result?.file);
+        if (!imported) throw new Error("Attachment upload failed.");
+        return imported;
+      } catch (error) {
+        const message = String(error?.message || error || "");
+        const storageUnavailable = /Attachment storage is not configured on the server/i.test(message);
+        const importFailed = /Failed to import collaborative attachment/i.test(message);
+        if (!storageUnavailable && !importFailed) {
+          throw error;
         }
-      });
-      const imported = normalizeAttachmentEntry(result?.file);
-      if (!imported) throw new Error("Attachment upload failed.");
-      return imported;
+        setStatus("Attachment upload is unavailable on the server. Saving image inline for this session.");
+      }
     }
     const localEntry = normalizeAttachmentEntry({
       id: createLocalID(),
@@ -9703,6 +9747,12 @@
       lat: roundCoord(latlng.lat),
       lng: roundCoord(latlng.lng)
     }, { objectId });
+    const placedObject = state.objects.get(objectId);
+    if (placedObject) {
+      state.selectedObjectId = objectId;
+      renderSelectedObject();
+      openAttachmentPreview(placedObject);
+    }
   }
 
   async function appendAttachmentToObject(objectId, file) {
@@ -10395,6 +10445,16 @@
       clickableLayers = [layer];
     }
     (clickableLayers.length ? clickableLayers : [layer]).forEach((clickLayer) => clickLayer.on("click", async (event) => {
+      if (state.pendingAttachmentPayload && event?.latlng) {
+        if (typeof event.originalEvent?.stopPropagation === "function") {
+          event.originalEvent.stopPropagation();
+        }
+        if (typeof event.originalEvent?.preventDefault === "function") {
+          event.originalEvent.preventDefault();
+        }
+        await handlePendingAttachmentPlacement(event.latlng);
+        return;
+      }
       if (state.pendingIsolationConfig && event?.latlng) {
         if (typeof event.originalEvent?.stopPropagation === "function") {
           event.originalEvent.stopPropagation();
@@ -12242,25 +12302,28 @@
     const hasCostRows = Boolean(getCostedResourceObjects().length);
     const hasMapObjects = Boolean(state.layers.size);
     const hasLiveSession = Boolean(state.activeSession);
-    elements.printExportBtn.classList.toggle("hidden", !visible);
-    if (!visible) {
+    const exportVisible = visible && EXPORTS_ENABLED;
+    elements.printExportBtn.classList.toggle("hidden", !exportVisible);
+    if (!exportVisible) {
       hidePrintExportModal();
     }
-    elements.printExportBtn.disabled = !visible || (!hasMapObjects && !hasCostRows && !hasLiveSession);
+    elements.printExportBtn.disabled = !exportVisible || (!hasMapObjects && !hasCostRows && !hasLiveSession);
     renderTopbarSettingsMenu();
-    elements.exportCostCsvBtn.disabled = !hasCostRows;
-    elements.exportCostPdfBtn.disabled = !hasCostRows;
-    elements.printMapBtn.disabled = !hasMapObjects;
-    elements.exportMapPdfBtn.disabled = !hasMapObjects;
+    elements.exportCostCsvBtn.disabled = !EXPORTS_ENABLED || !hasCostRows;
+    elements.exportCostPdfBtn.disabled = !EXPORTS_ENABLED || !hasCostRows;
+    elements.printMapBtn.disabled = !EXPORTS_ENABLED || !hasMapObjects;
+    elements.exportMapPdfBtn.disabled = !EXPORTS_ENABLED || !hasMapObjects;
     if (elements.exportIcs207Btn) {
-      elements.exportIcs207Btn.disabled = !hasLiveSession;
+      elements.exportIcs207Btn.disabled = !EXPORTS_ENABLED || !hasLiveSession;
     }
     if (elements.printExportModalNote) {
-      elements.printExportModalNote.textContent = hasLiveSession
-        ? "ICS 207 export uses the latest saved Command Structure from the live collaborative session."
-        : (hasMapObjects
-          ? "Map output fits to the full extent of mapped items with a buffer around the edges and opens a save/share sheet on supported devices."
-          : "Place one or more map items to enable map print and PDF export.");
+      elements.printExportModalNote.textContent = !EXPORTS_ENABLED
+        ? "Export is currently unavailable on your plan."
+        : (hasLiveSession
+          ? "ICS 207 export uses the latest saved Command Structure from the live collaborative session."
+          : (hasMapObjects
+            ? "Map output fits to the full extent of mapped items with a buffer around the edges and opens a save/share sheet on supported devices."
+            : "Place one or more map items to enable map print and PDF export."));
     }
   }
 
@@ -12659,6 +12722,10 @@
   }
 
   async function printMapExport() {
+    if (!EXPORTS_ENABLED) {
+      setStatus(EXPORTS_DISABLED_MESSAGE);
+      return;
+    }
     const capture = await captureBufferedMapImage();
     if (!capture) return;
     const filename = buildExportFilename("map", "png");
@@ -12688,6 +12755,10 @@
   }
 
   async function exportMapPdf() {
+    if (!EXPORTS_ENABLED) {
+      setStatus(EXPORTS_DISABLED_MESSAGE);
+      return;
+    }
     hidePrintExportModal();
     const bounds = getMapExportBounds();
     if (!bounds || !bounds.isValid()) {
@@ -12727,6 +12798,10 @@
   }
 
   async function exportCostCsv() {
+    if (!EXPORTS_ENABLED) {
+      setStatus(EXPORTS_DISABLED_MESSAGE);
+      return;
+    }
     hidePrintExportModal();
     const rows = normalizeCostRowsForExport();
     if (!rows.length) {
@@ -12793,6 +12868,10 @@
   }
 
   async function exportCostPdf() {
+    if (!EXPORTS_ENABLED) {
+      setStatus(EXPORTS_DISABLED_MESSAGE);
+      return;
+    }
     hidePrintExportModal();
     const rows = normalizeCostRowsForExport();
     if (!rows.length) {
@@ -12960,7 +13039,18 @@
 
   function createLocalID() {
     if (window.crypto?.randomUUID) return window.crypto.randomUUID();
-    return `local_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    const bytes = new Uint8Array(16);
+    if (window.crypto?.getRandomValues) {
+      window.crypto.getRandomValues(bytes);
+    } else {
+      for (let index = 0; index < bytes.length; index += 1) {
+        bytes[index] = Math.floor(Math.random() * 256);
+      }
+    }
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (value) => value.toString(16).padStart(2, "0"));
+    return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10, 16).join("")}`;
   }
 
   function loadStoredJSON(key) {

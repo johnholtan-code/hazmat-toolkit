@@ -194,6 +194,36 @@ actor MockHazmatRepository: HazmatRepository {
             zoneEvents: []
         )
     }
+
+    func fetchSessions(for scenarioID: UUID) async throws -> [ScenarioSessionSummary] {
+        let now = Date()
+        return [
+            ScenarioSessionSummary(
+                id: UUID(),
+                scenarioID: scenarioID,
+                status: "active",
+                joinCode: "MOCK01",
+                joinCodeExpiresAt: now.addingTimeInterval(3600),
+                startsAt: now.addingTimeInterval(-900),
+                endedAt: nil,
+                isLive: true,
+                sessionName: "Mock Live Session",
+                createdAt: now.addingTimeInterval(-1800)
+            ),
+            ScenarioSessionSummary(
+                id: UUID(),
+                scenarioID: scenarioID,
+                status: "closed",
+                joinCode: "MOCK02",
+                joinCodeExpiresAt: now.addingTimeInterval(-3600),
+                startsAt: now.addingTimeInterval(-86_400),
+                endedAt: now.addingTimeInterval(-85_800),
+                isLive: false,
+                sessionName: "Mock Prior Session",
+                createdAt: now.addingTimeInterval(-87_000)
+            )
+        ]
+    }
 }
 
 enum RepositoryError: LocalizedError {

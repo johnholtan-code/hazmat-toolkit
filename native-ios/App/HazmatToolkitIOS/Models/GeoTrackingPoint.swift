@@ -87,3 +87,16 @@ struct SessionTrackingReview: Codable, Hashable {
     var points: [GeoTrackingPoint]
     var zoneEvents: [SessionZoneEvent]
 }
+
+struct ScenarioSessionSummary: Identifiable, Hashable {
+    let id: UUID
+    let scenarioID: UUID
+    let status: String
+    let joinCode: String?
+    let joinCodeExpiresAt: Date?
+    let startsAt: Date?
+    let endedAt: Date?
+    let isLive: Bool
+    let sessionName: String?
+    let createdAt: Date?
+}

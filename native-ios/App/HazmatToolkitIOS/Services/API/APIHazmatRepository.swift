@@ -67,6 +67,48 @@ struct APIHazmatRepository: HazmatRepository {
             zoneEvents: zoneEvents.items.map { $0.toDomain() }
         )
     }
+
+    func fetchSessions(for scenarioID: UUID) async throws -> [ScenarioSessionSummary] {
+        do {
+            return try await client.listSessions(scenarioID: scenarioID)
+                .map { $0.toDomain() }
+                .sorted {
+                    let left = $0.startsAt ?? $0.createdAt ?? .distantPast
+                    let right = $1.startsAt ?? $1.createdAt ?? .distantPast
+                    return left > right
+                }
+        } catch let error as HazmatAPIError {
+            switch error {
+            case .httpStatus(let code, let body) where code == 404 && body.contains("Route GET:/v1/sessions"):
+                do {
+                    let latest = try await client.latestSession(scenarioID: scenarioID).session
+                    return [
+                        ScenarioSessionSummary(
+                            id: latest.id,
+                            scenarioID: latest.scenarioId,
+                            status: latest.status,
+                            joinCode: latest.joinCode,
+                            joinCodeExpiresAt: latest.joinCodeExpiresAt,
+                            startsAt: latest.startsAt,
+                            endedAt: latest.endedAt,
+                            isLive: latest.isLive,
+                            sessionName: nil,
+                            createdAt: nil
+                        )
+                    ]
+                } catch let latestError as HazmatAPIError {
+                    switch latestError {
+                    case .httpStatus(let latestCode, _) where latestCode == 404:
+                        return []
+                    default:
+                        throw latestError
+                    }
+                }
+            default:
+                throw error
+            }
+        }
+    }
 }
 
 enum HazmatAPIRepositoryError: LocalizedError {

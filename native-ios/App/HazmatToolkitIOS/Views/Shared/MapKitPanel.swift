@@ -43,12 +43,35 @@ struct MapPolygonItem: Identifiable {
     }
 }
 
+struct MapPathItem: Identifiable {
+    let id: UUID
+    var title: String
+    var coordinates: [CLLocationCoordinate2D]
+    var strokeColor: Color = .blue
+    var lineWidth: Double = 3
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        coordinates: [CLLocationCoordinate2D],
+        strokeColor: Color = .blue,
+        lineWidth: Double = 3
+    ) {
+        self.id = id
+        self.title = title
+        self.coordinates = coordinates
+        self.strokeColor = strokeColor
+        self.lineWidth = lineWidth
+    }
+}
+
 @available(iOS 17.0, *)
 struct MapKitPanel: View {
     let title: String
     let subtitle: String
     let pins: [MapPinItem]
     var polygons: [MapPolygonItem] = []
+    var paths: [MapPathItem] = []
     let fallbackCenter: CLLocationCoordinate2D?
     var preferFallbackCenterWhenAvailable: Bool = false
     var recenterOnPinsChange: Bool = true
@@ -63,6 +86,10 @@ struct MapKitPanel: View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack(alignment: .topTrailing) {
                 Map(position: $position) {
+                    ForEach(paths) { path in
+                        MapPolyline(coordinates: path.coordinates)
+                            .stroke(path.strokeColor, lineWidth: path.lineWidth)
+                    }
                     ForEach(polygons) { polygon in
                         MapPolygon(coordinates: polygon.coordinates)
                             .foregroundStyle(polygon.fillColor)
@@ -136,6 +163,14 @@ struct MapKitPanel: View {
             guard recenterOnPinsChange else { return }
             recenter()
         }
+        .onChange(of: paths.map { $0.coordinates.map(\.latitude) }) { _, _ in
+            guard recenterOnPinsChange else { return }
+            recenter()
+        }
+        .onChange(of: paths.map { $0.coordinates.map(\.longitude) }) { _, _ in
+            guard recenterOnPinsChange else { return }
+            recenter()
+        }
         .onChange(of: fallbackCenter?.latitude) { _, _ in
             guard recenterOnFallbackCenterChange else { return }
             recenter()
@@ -165,6 +200,7 @@ struct MapKitPanel: View {
         } else {
             center = pins.first?.coordinate
                 ?? polygonCenter
+                ?? pathCenter
                 ?? fallbackCenter
                 ?? CLLocationCoordinate2D(latitude: 39.8283, longitude: -98.5795)
         }
@@ -174,6 +210,26 @@ struct MapKitPanel: View {
 
     private var polygonCenter: CLLocationCoordinate2D? {
         let coordinates = polygons.flatMap(\.coordinates)
+        guard let first = coordinates.first else { return nil }
+
+        let latitudes = coordinates.map(\.latitude)
+        let longitudes = coordinates.map(\.longitude)
+
+        guard let minLatitude = latitudes.min(),
+              let maxLatitude = latitudes.max(),
+              let minLongitude = longitudes.min(),
+              let maxLongitude = longitudes.max() else {
+            return first
+        }
+
+        return CLLocationCoordinate2D(
+            latitude: (minLatitude + maxLatitude) / 2,
+            longitude: (minLongitude + maxLongitude) / 2
+        )
+    }
+
+    private var pathCenter: CLLocationCoordinate2D? {
+        let coordinates = paths.flatMap(\.coordinates)
         guard let first = coordinates.first else { return nil }
 
         let latitudes = coordinates.map(\.latitude)

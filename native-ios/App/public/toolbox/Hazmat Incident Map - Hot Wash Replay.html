@@ -34,6 +34,13 @@
     --warn:#b63b3b;
     --grid: rgba(255,212,0,0.12);
     --radius: 14px;
+    /* Responsive sizing - scales with zoom and viewport */
+    --appbar-height: clamp(56px, 12vh, 80px);
+    --sidebar-width: clamp(200px, 20vw, 300px);
+    --icon-size: clamp(44px, 6vw, 60px);
+    --spacing: clamp(8px, 2vw, 16px);
+    --input-width: clamp(120px, 15vw, 200px);
+    --gap: clamp(8px, 1.5vw, 12px);
   }
 
   body[data-theme="light"] {
@@ -58,11 +65,9 @@
   }
 
   header.appbar{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    padding:14px 18px;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
     border-bottom:1px solid rgba(255,212,0,0.25);
     background:linear-gradient(180deg,#0a0a0a,#000000);
     position: relative;
@@ -71,17 +76,124 @@
     background: linear-gradient(180deg,#f6f8fb,#eef2f7);
     border-bottom-color: rgba(23,35,52,0.2);
   }
+
+  .appbar-row-1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 18px;
+    min-height: clamp(50px, 8vh, 60px);
+  }
+
+  .appbar-row-2 {
+    display: none;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 18px;
+    align-items: center;
+    border-top: 1px solid rgba(255,212,0,0.12);
+  }
+
+  .appbar-row-2.visible {
+    display: flex;
+  }
+
   header.appbar h1{
     margin:0;
-    font-size:18px;
+    font-size: clamp(16px, 2.5vw, 18px);
     font-family:"Depressionist 3 Revisited","Times New Roman",serif;
+    flex-shrink: 0;
   }
   header.appbar p{margin:4px 0 0;color:var(--muted)}
 
+  /* Mode Indicator Banner */
+  .mode-indicator-banner {
+    padding: 10px 18px;
+    background: rgba(37, 99, 235, 0.12);
+    border-bottom: 1px solid rgba(37, 99, 235, 0.3);
+    color: #3b82f6;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    animation: slideDown 0.3s ease-out;
+  }
+
+  .mode-indicator-banner.hidden {
+    display: none;
+  }
+
+  .mode-indicator-banner.draw-mode {
+    background: rgba(59, 130, 246, 0.12);
+    border-bottom-color: rgba(59, 130, 246, 0.3);
+    color: #3b82f6;
+  }
+
+  .mode-indicator-banner.review-mode {
+    background: rgba(255, 212, 0, 0.12);
+    border-bottom-color: rgba(255, 212, 0, 0.3);
+    color: #ffd400;
+  }
+
+  body[data-theme="light"] .mode-indicator-banner {
+    background: rgba(37, 99, 235, 0.08);
+    border-bottom-color: rgba(37, 99, 235, 0.2);
+    color: #2563eb;
+  }
+
+  body[data-theme="light"] .mode-indicator-banner.review-mode {
+    background: rgba(200, 158, 0, 0.08);
+    border-bottom-color: rgba(200, 158, 0, 0.2);
+    color: #9a6f00;
+  }
+
+  .mode-indicator-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mode-indicator-text strong {
+    font-weight: 700;
+  }
+
+  .mode-indicator-switch {
+    background: transparent;
+    border: 1px solid currentColor;
+    color: inherit;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .mode-indicator-switch:hover {
+    background: rgba(59, 130, 246, 0.2);
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .incident-label {
     font-family:"Depressionist 3 Revisited","Times New Roman",serif;
-    font-size: 18px;
+    font-size: clamp(12px, 2vw, 14px);
     white-space: nowrap;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
   }
 
   .top-clock {
@@ -97,7 +209,8 @@
   .mode-switch {
     display: inline-flex;
     gap: 6px;
-    margin-left: 10px;
+    margin: 0 auto;
+    flex-shrink: 0;
   }
 
   .mode-switch button {
@@ -105,20 +218,91 @@
     border-radius: 999px;
     background: transparent;
     color: var(--muted);
-    padding: 6px 10px;
-    font-size: 12px;
+    padding: 6px 12px;
+    font-size: 13px;
     cursor: pointer;
+    transition: all 0.2s ease;
   }
 
   .mode-switch button.active {
     background: var(--accent);
     color: #111;
     border-color: var(--accent);
+    font-weight: 600;
   }
 
   .mode-switch button:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+  }
+
+  /* Secondary Navigation Bar */
+  .appbar-nav {
+    display: flex;
+    gap: 2px;
+    padding: 0 18px;
+    border-top: 1px solid rgba(255,212,0,0.12);
+    background: rgba(13,21,36,0.4);
+    overflow-x: auto;
+  }
+
+  .appbar-nav-tab {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+    position: relative;
+  }
+
+  .appbar-nav-tab:hover {
+    color: var(--accent);
+  }
+
+  .appbar-nav-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  body[data-theme="light"] .appbar-nav {
+    background: rgba(255,255,255,0.4);
+    border-top-color: rgba(23,35,52,0.12);
+  }
+
+  body[data-theme="light"] .appbar-nav-tab {
+    color: var(--muted);
+  }
+
+  body[data-theme="light"] .appbar-nav-tab:hover,
+  body[data-theme="light"] .appbar-nav-tab.active {
+    color: var(--accent);
+  }
+
+  @keyframes pulse-scale {
+    0% {
+      transform: scale(1);
+      filter: brightness(1);
+    }
+    50% {
+      transform: scale(1.15);
+      filter: brightness(1.3);
+    }
+    100% {
+      transform: scale(1);
+      filter: brightness(1);
+    }
+  }
+
+  .mode-switch button.pulse-attention {
+    animation: pulse-scale 1s ease-in-out 4;
+    transform-origin: center;
   }
 
   .menu-wrap {
@@ -242,16 +426,16 @@
   }
 
   /* NON-DEVELOPER SAFE EDIT:
-     `grid-template-columns: 230px 1fr;`
-     - First value = left sidebar width
+     `grid-template-columns: var(--sidebar-width) 1fr;`
+     - First value = left sidebar width (responsive via --sidebar-width)
      - Second value = map area (remaining width) */
   .app {
     position: relative;
     display: grid;
-    grid-template-columns: 230px 1fr;
-    height: calc(100vh - 70px);
-    gap: 10px;
-    padding: 10px;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    height: calc(100vh - var(--appbar-height));
+    gap: var(--gap);
+    padding: var(--spacing);
   }
 
   .log-lock-overlay {
@@ -274,8 +458,8 @@
   .log-start-hint {
     position: fixed;
     z-index: 80;
-    min-width: 290px;
-    max-width: min(460px, 92vw);
+    min-width: clamp(260px, 90vw, 290px);
+    max-width: clamp(260px, 90vw, 460px);
     border-radius: 12px;
     border: 1px solid rgba(255, 212, 0, 0.45);
     background: rgba(13, 21, 36, 0.96);
@@ -310,8 +494,8 @@
   .guide-popup {
     position: fixed;
     z-index: 86;
-    min-width: 300px;
-    max-width: min(460px, 92vw);
+    min-width: clamp(280px, 90vw, 300px);
+    max-width: clamp(280px, 90vw, 460px);
     border-radius: 12px;
     border: 1px solid rgba(255, 212, 0, 0.45);
     background: rgba(13, 21, 36, 0.96);
@@ -482,6 +666,102 @@
     overflow: hidden;
   }
 
+  /* Mobile Palette Drawer */
+  .mobile-palette-drawer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    border-radius: var(--radius) var(--radius) 0 0;
+    max-height: 80vh;
+    z-index: 50;
+    display: none;
+    flex-direction: column;
+    touch-action: none;
+    animation: slideUpDrawer 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .mobile-palette-drawer.visible {
+    display: flex;
+  }
+
+  .mobile-palette-drawer.sliding-down {
+    animation: slideDownDrawer 0.3s cubic-bezier(0.36, 0, 0.66, -0.56);
+  }
+
+  .mobile-palette-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 8px auto;
+    touch-action: none;
+  }
+
+  .mobile-palette-content {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 0 12px 12px 12px;
+    min-height: 0;
+  }
+
+  .mobile-palette-content h2 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-family: "Depressionist 3 Revisited", "Times New Roman", serif;
+    color: var(--text);
+  }
+
+  .mobile-palette-content .palette {
+    width: 100%;
+  }
+
+  .mobile-palette-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 49;
+    display: none;
+    backdrop-filter: blur(2px);
+  }
+
+  .mobile-palette-overlay.visible {
+    display: block;
+  }
+
+  @keyframes slideUpDrawer {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideDownDrawer {
+    from {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .mobile-palette-drawer,
+    .mobile-palette-overlay {
+      display: none !important;
+    }
+  }
+
   .sidebar h2 {
     margin: 0;
     font-size: 18px;
@@ -593,6 +873,29 @@
     transform: none;
   }
 
+  /* Disabled/Grayed out controls by mode */
+  .palette:disabled,
+  .palette.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .palette.disabled .icon-item,
+  .palette.disabled .category-toggle,
+  .palette.disabled .category-header {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  #globalControls:has(> button:disabled) {
+    opacity: 0.7;
+  }
+
+  .control-group button:disabled {
+    opacity: 0.5;
+    color: var(--muted);
+  }
+
   .toolbar .row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -676,7 +979,7 @@
 
   .icon-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 6px;
   }
 
@@ -714,6 +1017,21 @@
   .icon-item.selected-staging {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
+  }
+
+  /* Keyboard Focus Styles (WCAG 2.4.7) */
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .palette .category-toggle:focus-visible,
+  .palette .icon-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
   }
 
   .icon-item.rate-label {
@@ -822,8 +1140,8 @@
 
   .map-style-chip {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: var(--spacing);
+    right: var(--spacing);
     z-index: 5;
     display: inline-flex;
     gap: 6px;
@@ -855,11 +1173,11 @@
 
   .cost-summary-panel {
     position: absolute;
-    right: 12px;
-    top: 58px;
+    inset: auto 12px auto auto;
+    top: calc(var(--appbar-height) + 8px);
     z-index: 6;
     min-width: 212px;
-    max-width: 260px;
+    max-width: clamp(200px, 85vw, 260px);
     border: 1px solid var(--border);
     border-radius: 10px;
     background: rgba(10, 10, 10, 0.88);
@@ -867,6 +1185,7 @@
     padding: 8px 10px;
     box-shadow: var(--shadow);
     backdrop-filter: blur(3px);
+    touch-action: none;
   }
 
   body[data-theme="light"] .cost-summary-panel {
@@ -887,6 +1206,36 @@
     justify-content: space-between;
     gap: 8px;
     margin-bottom: 6px;
+  }
+
+  .cost-panel-drag-handle {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: grab;
+    padding: 0 4px;
+    font-size: 16px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+  }
+
+  .cost-panel-drag-handle:hover {
+    color: var(--accent);
+  }
+
+  .cost-panel-drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .cost-summary-panel.dragging {
+    box-shadow: 0 12px 40px rgba(255, 212, 0, 0.25);
+    z-index: 10;
+  }
+
+  .cost-summary-panel.dragging .cost-panel-drag-handle {
+    cursor: grabbing;
+    color: var(--accent);
   }
 
   .cost-summary-panel .toggle {
@@ -953,6 +1302,26 @@
     padding-top: 6px;
     border-top: 1px solid rgba(255,255,255,0.24);
     white-space: pre-wrap;
+  }
+
+  .map-mode-banner {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    max-width: min(560px, calc(100% - 36px));
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(7, 15, 29, 0.78);
+    color: #f8fafc;
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 1.4;
+    text-align: center;
+    box-shadow: 0 14px 34px rgba(2,6,23,0.28);
+    z-index: 8;
+    pointer-events: none;
   }
 
   .map-wrap.exporting .map-style-chip,
@@ -1222,8 +1591,8 @@
 
   #timelineModal {
     background: transparent;
-    inset: 80px auto 10px 10px;
-    width: 230px;
+    inset: calc(var(--appbar-height) + 16px) auto 10px 10px;
+    width: var(--sidebar-width);
     align-items: flex-start;
     justify-content: flex-start;
     padding: 0;
@@ -1233,7 +1602,7 @@
 
   #timelineModal .modal {
     width: 100%;
-    max-height: calc(100vh - 110px);
+    max-height: calc(100vh - var(--appbar-height) - 120px);
     border-radius: 14px;
     margin: 0;
     overflow: auto;
@@ -1424,54 +1793,115 @@
     cursor: pointer;
   }
 
-  @media (max-width: 1024px) {
+  /* MOBILE FIRST: 0px - 479px */
+  @media (max-width: 479px) {
+    :root {
+      --appbar-height: clamp(110px, 20vh, 140px);
+      --sidebar-width: 100%;
+      --spacing: clamp(6px, 1.5vw, 10px);
+      --input-width: clamp(100px, 12vw, 140px);
+    }
+
+    .appbar-row-2 { display: none; }
+    .appbar-row-2.visible { display: none !important; }
+
+    .incident-label { display: none; }
+    .appbar .incident-input { font-size: 13px; }
+
     .app {
       grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr;
       height: auto;
-      gap: 10px;
-      padding: 10px;
+      gap: var(--gap);
+      padding: var(--spacing);
     }
-    .sidebar { order: 2; }
-    .board { order: 1; }
-    #timelineModal {
-      inset: 64px 0 0 0;
-      width: auto;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 8px 14px 14px;
-    }
-    #timelineModal .modal {
-      width: min(440px, 92vw);
-      max-height: min(50vh, 460px);
-    }
-  }
 
-  @media (max-width: 720px) {
-    .icon-grid { grid-template-columns: repeat(2, 1fr); }
-    .board-header h1 { font-size: 16px; }
+    .sidebar {
+      display: none;
+      order: 2;
+    }
+    .board { order: 1; }
+
     #timelineModal {
-      padding: 8px;
-      justify-content: center;
-      inset: 64px 0 0 0;
+      inset: calc(var(--appbar-height) + 10px) auto 10px 10px;
+      width: clamp(240px, 90vw, 280px);
     }
     #timelineModal .modal {
       width: 100%;
       max-height: 50vh;
     }
-    .log-start-hint {
-      min-width: 0;
-      max-width: calc(100vw - 16px);
+
+    .icon-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* TABLET: 480px - 767px */
+  @media (min-width: 480px) and (max-width: 767px) {
+    :root {
+      --appbar-height: clamp(120px, 22vh, 150px);
+      --sidebar-width: 100%;
+      --spacing: clamp(8px, 2vw, 12px);
     }
-    .cost-summary-panel {
-      right: 8px;
-      top: 54px;
-      min-width: 180px;
-      max-width: calc(100vw - 24px);
-      padding: 7px 8px;
+
+    .appbar-row-2 { display: flex; }
+    .incident-label { font-size: 11px; }
+
+    .app {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      height: auto;
+      gap: var(--gap);
+      padding: var(--spacing);
+    }
+
+    .sidebar {
+      order: 2;
+      width: 100%;
+      max-width: 100%;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .board { order: 1; }
+
+    #timelineModal {
+      inset: calc(var(--appbar-height) + 12px) auto 10px auto;
+      width: clamp(300px, 85vw, 400px);
+      justify-content: center;
+    }
+    #timelineModal .modal {
+      width: 100%;
+      max-height: min(50vh, 380px);
+    }
+
+    .icon-grid { grid-template-columns: repeat(2, 1fr); }
+    .board-header h1 { font-size: 16px; }
+  }
+
+  /* DESKTOP: 768px and up */
+  @media (min-width: 768px) {
+    :root {
+      --appbar-height: clamp(125px, 24vh, 160px);
+      --sidebar-width: clamp(220px, 20vw, 280px);
+    }
+
+    .appbar-row-2 { display: flex; }
+    .incident-label { font-size: 12px; }
+
+    .app {
+      grid-template-columns: var(--sidebar-width) 1fr;
+      grid-template-rows: 1fr;
+      height: calc(100vh - var(--appbar-height));
+    }
+
+    #timelineModal {
+      inset: calc(var(--appbar-height) + 16px) auto 10px 10px;
+      width: var(--sidebar-width);
+    }
+    #timelineModal .modal {
+      width: 100%;
+      max-height: calc(100vh - var(--appbar-height) - 120px);
     }
   }
 
+  /* Touch Device Enhancements */
   @media (pointer: coarse) {
     .btn,
     .toolbar button,
@@ -1482,6 +1912,7 @@
     .mode-switch button {
       min-height: 40px;
       padding: 8px 12px;
+      font-size: 13px;
     }
   }
 </style>
@@ -1491,55 +1922,74 @@
   - You can change visible text labels/headings in this HTML section.
   - Keep each element `id="..."` the same or app features may stop working. -->
 <header class="appbar">
-  <div>
+  <!-- Row 1: Title, Mode buttons, Status -->
+  <div class="appbar-row-1">
     <h1>The Hazmat Guys - Incident Mapper</h1>
+    <div class="mode-switch" role="group" aria-label="Mode">
+      <button type="button" id="modePlaceBtn" class="active">Place</button>
+      <button type="button" id="modeDrawBtn">Draw</button>
+      <button type="button" id="modeReviewBtn">Review</button>
+    </div>
     <div class="row">
-      <span class="incident-label">Incident Name</span>
-      <div class="search-input-wrap">
-        <!-- SAFE EDIT: Change placeholder examples to fit your training scenarios. -->
-        <input id="incidentName" class="incident-input" type="text" placeholder="Example: Rail Yard Tank Car Leak" />
-        <button id="incidentNameClear" class="search-clear" type="button" aria-label="Clear incident name">x</button>
-      </div>
-      <span class="incident-label">Operational Period</span>
-      <div class="search-input-wrap">
-        <input id="operationalPeriod" class="incident-input" type="text" placeholder="Example: OP-1 (0600-1800)" />
-        <button id="operationalPeriodClear" class="search-clear" type="button" aria-label="Clear operational period">x</button>
-      </div>
-      <div class="search-input-wrap">
-        <input id="locationSearch" class="incident-input address-input" type="text" placeholder="Address or lat,lng" list="recentAddresses" />
-        <button id="locationSearchClear" class="search-clear" type="button" aria-label="Clear address">x</button>
-      </div>
-      <datalist id="recentAddresses"></datalist>
-      <button class="btn ghost" type="button" id="goToAddressBtn">Go</button>
-      <div class="search-input-wrap">
-        <input id="categorySearch" class="incident-input" type="text" placeholder="Search icons" />
-        <button id="categorySearchClear" class="search-clear" type="button" aria-label="Clear icon search">x</button>
-      </div>
-      <div class="mode-switch" role="group" aria-label="Mode">
-        <button type="button" id="modePlaceBtn" class="active">Place</button>
-        <button type="button" id="modeDrawBtn">Draw</button>
-        <button type="button" id="modeReviewBtn">Review</button>
+      <div id="topClock" class="top-clock"></div>
+      <span id="statusText" class="status-pill">Ready</span>
+      <button class="btn log-start" type="button" id="logToggleBtn">Start Log</button>
+      <div class="menu-wrap">
+        <button class="btn ghost" type="button" id="moreBtn">More</button>
+        <div id="moreMenu" class="menu-panel hidden">
+          <button type="button" id="settingsBtn">Settings</button>
+          <button type="button" id="timelineBtn">Timeline</button>
+          <button type="button" id="legendBtn">Quick Legend</button>
+          <button type="button" id="shortcutsBtn">Shortcuts</button>
+          <button type="button" id="usabilityBtn">Usability</button>
+          <button type="button" disabled>Export</button>
+          <button type="button" id="howToBtn">How to Use This Thing</button>
+        </div>
       </div>
     </div>
   </div>
-  <div class="row">
-    <div id="topClock" class="top-clock"></div>
-    <span id="statusText" class="status-pill">Ready</span>
-    <button class="btn log-start" type="button" id="logToggleBtn">Start Log</button>
-    <div class="menu-wrap">
-      <button class="btn ghost" type="button" id="moreBtn">More</button>
-      <div id="moreMenu" class="menu-panel hidden">
-        <button type="button" id="settingsBtn">Settings</button>
-        <button type="button" id="timelineBtn">Timeline</button>
-        <button type="button" id="legendBtn">Quick Legend</button>
-        <button type="button" id="shortcutsBtn">Shortcuts</button>
-        <button type="button" id="usabilityBtn">Usability</button>
-        <button type="button" disabled>Export</button>
-        <button type="button" id="howToBtn">How to Use This Thing</button>
-      </div>
+
+  <!-- Row 2: Search inputs (visible on tablet/desktop) -->
+  <div class="appbar-row-2" id="appbarRow2">
+    <span class="incident-label">Incident Name</span>
+    <div class="search-input-wrap">
+      <!-- SAFE EDIT: Change placeholder examples to fit your training scenarios. -->
+      <input id="incidentName" class="incident-input" type="text" placeholder="Example: Rail Yard Tank Car Leak" />
+      <button id="incidentNameClear" class="search-clear" type="button" aria-label="Clear incident name">x</button>
+    </div>
+    <span class="incident-label">Operational Period</span>
+    <div class="search-input-wrap">
+      <input id="operationalPeriod" class="incident-input" type="text" placeholder="Example: OP-1 (0600-1800)" />
+      <button id="operationalPeriodClear" class="search-clear" type="button" aria-label="Clear operational period">x</button>
+    </div>
+    <div class="search-input-wrap">
+      <input id="locationSearch" class="incident-input address-input" type="text" placeholder="Address or lat,lng" list="recentAddresses" />
+      <button id="locationSearchClear" class="search-clear" type="button" aria-label="Clear address">x</button>
+    </div>
+    <datalist id="recentAddresses"></datalist>
+    <button class="btn ghost" type="button" id="goToAddressBtn">Go</button>
+    <div class="search-input-wrap">
+      <input id="categorySearch" class="incident-input" type="text" placeholder="Search icons" />
+      <button id="categorySearchClear" class="search-clear" type="button" aria-label="Clear icon search">x</button>
     </div>
   </div>
+
+  <!-- Row 3: Secondary navigation tabs -->
+  <nav class="appbar-nav" id="appbarNav">
+    <button class="appbar-nav-tab active" data-tab="palette" id="navPaletteTab">Palette</button>
+    <button class="appbar-nav-tab" data-tab="timeline" id="navTimelineTab">Timeline</button>
+    <button class="appbar-nav-tab" data-tab="legend" id="navLegendTab">Legend</button>
+    <button class="appbar-nav-tab" data-tab="shortcuts" id="navShortcutsTab">Shortcuts</button>
+  </nav>
 </header>
+
+<!-- Mode Indicator Banner -->
+<div class="mode-indicator-banner hidden" id="modeIndicatorBanner" role="status" aria-live="polite" aria-atomic="true">
+  <span class="mode-indicator-text">
+    <strong id="modeIndicatorLabel">Draw Mode</strong> — Drawing tools active. <button class="mode-indicator-switch" id="modeIndicatorSwitchBtn" type="button" aria-label="Switch back to Place mode">Switch to Place</button>
+  </span>
+</div>
+
 <select id="userRoleSelect" style="display:none;">
   <option value="editor" selected>Editor</option>
   <option value="viewer">Viewer</option>
@@ -1553,6 +2003,18 @@
     <div class="palette-tooltip" id="paletteTooltip"></div>
 
   </aside>
+
+  <!-- Mobile Palette Drawer (bottom sheet) -->
+  <div class="mobile-palette-drawer" id="mobilePaletteDrawer">
+    <div class="mobile-palette-handle"></div>
+    <div class="mobile-palette-content">
+      <h2>Icon Palette</h2>
+      <div class="palette" id="mobilePalette"></div>
+    </div>
+  </div>
+
+  <!-- Mobile Palette Overlay (backdrop) -->
+  <div class="mobile-palette-overlay" id="mobilePaletteOverlay"></div>
 
   <main class="panel board">
     <div class="board-header"></div>
@@ -1568,6 +2030,7 @@
       </div>
       <div class="cost-summary-panel" id="costSummaryPanel" aria-live="polite">
         <div class="head">
+          <button id="costPanelDragHandle" class="cost-panel-drag-handle" type="button" aria-label="Drag to reposition" title="Drag to move panel">≡</button>
           <div class="title">Cost Summary</div>
           <button id="costSummaryToggle" class="toggle" type="button" aria-label="Minimize cost summary" aria-expanded="true">−</button>
         </div>
@@ -1576,6 +2039,7 @@
       <div class="replay-badge" id="replayBadge">Replay</div>
       <div class="map-items" id="mapItems"></div>
       <div class="map-tooltip" id="mapTooltip"></div>
+      <div class="map-mode-banner hidden" id="mapModeBanner" aria-live="polite">You are currently in Review mode. Switch to Place mode to start interacting.</div>
     </div>
 
     <div class="board-footer">
@@ -1632,7 +2096,7 @@
   Tools are locked. Click <strong>Start Log</strong> in the top header to begin and unlock mapping tools.
 </div>
 
-<div id="guidePopup" class="guide-popup" role="dialog" aria-modal="false" aria-label="How to use walkthrough">
+<div id="guidePopup" class="guide-popup" role="dialog" aria-modal="true" aria-label="How to use walkthrough">
   <div id="guideTitle" class="title">How to Use This Thing</div>
   <div id="guideBody" class="body"></div>
   <div id="guideMeta" class="meta"></div>
@@ -2048,8 +2512,8 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/svg2pdf.js@2.5.0/dist/svg2pdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="napsig_palette.js"></script>
-<script src="staging_rates.js"></script>
+<script src="../napsig_palette.js"></script>
+<script src="../staging_rates.js"></script>
 <script>
   /*
     NON-DEVELOPER EDIT GUIDE (safe defaults to customize):
@@ -2063,6 +2527,15 @@
   let paletteData = [];
   let labelIndex = {};
 
+  // Performance: Debounce utility for search and other input handlers
+  const createDebounce = (fn, delay = 300) => {
+    let timeoutId = null;
+    return function(...args) {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => fn(...args), delay);
+    };
+  };
+
   const paletteEl = document.getElementById("palette");
   const mapItemsEl = document.getElementById("mapItems");
   const mapDrawingsEl = document.getElementById("mapDrawings");
@@ -2070,6 +2543,10 @@
   const mapEl = document.getElementById("leafletMap");
   const mapGrid = document.getElementById("mapGrid");
   const mapTooltip = document.getElementById("mapTooltip");
+  const mapModeBanner = document.getElementById("mapModeBanner");
+  const modeIndicatorBanner = document.getElementById("modeIndicatorBanner");
+  const modeIndicatorLabel = document.getElementById("modeIndicatorLabel");
+  const modeIndicatorSwitchBtn = document.getElementById("modeIndicatorSwitchBtn");
   const mapStyleRoad = document.getElementById("mapStyleRoad");
   const mapStyleLight = document.getElementById("mapStyleLight");
   const mapStyleSat = document.getElementById("mapStyleSat");
@@ -2485,6 +2962,23 @@
   const STAGING_CATEGORY = "Staging Assets";
   const EQUIPMENT_CATEGORY = "Equipment";
   const CONSUMABLES_CATEGORY = "Consumables";
+  const EQUIPMENT_CATEGORY_ICON_SRC = "../apps/ics-collaborative-map/icons/resources/support_equipment_generic.svg";
+  const CONSUMABLES_CATEGORY_ICON_SRC = "../icons/containment_boom.svg";
+  const RATE_ICON_RULES = [
+    { tokens: ["ambulance"], src: "../icons/ambulance_unit.svg" },
+    { tokens: ["hazmat", "haz mat"], src: "../icons/hazmat_truck.svg" },
+    { tokens: ["monitor", "detector", "draeger", "sensor", "calibration gas", "cal gas"], src: "../icons/portable_monitor.svg" },
+    { tokens: ["air", "co2"], src: "../icons/air_monitor_trailer.svg" },
+    { tokens: ["generator"], src: "../icons/generator_small.svg" },
+    { tokens: ["truck", "pickup", "suv", "sedan", "automobile"], src: "../icons/traffic_control_truck.svg" },
+    { tokens: ["trailer"], src: "../icons/foam_trailer.svg" },
+    { tokens: ["drone", "uav"], src: "../icons/drone_uav.svg" },
+    { tokens: ["boat", "airboat", "barge", "tow"], src: "../icons/water_tanker.svg" },
+    { tokens: ["excavator", "bulldozer", "loader", "skid steer", "auger", "boring"], src: "../icons/excavator.svg" },
+    { tokens: ["cone", "barricade", "tape", "flare"], src: "../icons/traffic_cones.svg" },
+    { tokens: ["boom", "absorbent", "pad", "putty", "dike", "liner", "drum", "bucket", "neutralizer", "decon", "hose", "plug"], src: "../icons/containment_boom.svg" },
+    { tokens: ["suit", "glove", "goggle", "boot"], src: "../icons/decon_tent.svg" }
+  ];
   const OVERLAY_CATEGORY = "Overlays";
   const STAGING_CATEGORIES = new Set([STAGING_CATEGORY, EQUIPMENT_CATEGORY, CONSUMABLES_CATEGORY]);
   // SAFE EDIT: add/remove staging items shown in the Staging Assets palette.
@@ -2737,12 +3231,21 @@
     }
   }
 
-  function buildRatePaletteItems(templates) {
+  function resolveRateItemIconSrc(template, categoryName) {
+    const fallback = categoryName === EQUIPMENT_CATEGORY
+      ? EQUIPMENT_CATEGORY_ICON_SRC
+      : (categoryName === CONSUMABLES_CATEGORY ? CONSUMABLES_CATEGORY_ICON_SRC : "");
+    const haystack = `${template?.name || ""} ${template?.label || ""} ${template?.description || ""} ${template?.manufacturer || ""}`.toLowerCase();
+    const rule = RATE_ICON_RULES.find((entry) => entry.tokens.some((token) => haystack.includes(token)));
+    return rule?.src || fallback;
+  }
+
+  function buildRatePaletteItems(templates, categoryName) {
     return templates.map(template => ({
       name: template.name,
       label: template.label,
-      src: "",
-      isRateCard: true,
+      src: resolveRateItemIconSrc(template, categoryName),
+      isRateCard: categoryName === CONSUMABLES_CATEGORY || categoryName === EQUIPMENT_CATEGORY,
       billingModel: template.billingModel || "hourly",
       unit: template.unit || "Unit",
       costRate: Number(template.costRate) || 0,
@@ -2766,10 +3269,11 @@
     const stagingItems = STAGING_TEMPLATES.map(item => ({
       name: item.name,
       label: item.label,
-      src: item.src
+      src: item.src,
+      isRateCard: true
     }));
-    const equipmentRateItems = buildRatePaletteItems(EQUIPMENT_RATE_TEMPLATES);
-    const consumableRateItems = buildRatePaletteItems(CONSUMABLE_RATE_TEMPLATES);
+    const equipmentRateItems = buildRatePaletteItems(EQUIPMENT_RATE_TEMPLATES, EQUIPMENT_CATEGORY);
+    const consumableRateItems = buildRatePaletteItems(CONSUMABLE_RATE_TEMPLATES, CONSUMABLES_CATEGORY);
     ensureCategoryItems(STAGING_CATEGORY, stagingItems);
     ensureCategoryItems(EQUIPMENT_CATEGORY, equipmentRateItems);
     ensureCategoryItems(CONSUMABLES_CATEGORY, consumableRateItems);
@@ -2928,6 +3432,11 @@
     if (typeof src !== "string" || !src) return "";
     if (/^(data:|https?:|blob:)/i.test(src)) return src;
     const canonical = src.replace(/\\/g, "/");
+    // Legacy staging entries use `icons/...` relative to this file, but the shipped
+    // assets live in `../icons/...` under `public/icons`.
+    if (/^icons\//i.test(canonical)) {
+      return `../${canonical}`;
+    }
     const canonicalNoLead = canonical.replace(/^\.\/+/, "").replace(/^\/+/, "");
     const fromNapsgFolder = canonical.match(/(?:^|\/)(NAPSG Icons\/.+)$/i);
     if (fromNapsgFolder && fromNapsgFolder[1]) {
@@ -3301,6 +3810,14 @@
       header.addEventListener("click", () => {
         const collapsed = section.classList.toggle("collapsed");
         toggle.textContent = collapsed ? "+" : "−";
+      });
+      // Keyboard navigation: Enter/Space to toggle category collapse
+      header.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          const collapsed = section.classList.toggle("collapsed");
+          toggle.textContent = collapsed ? "+" : "−";
+        }
       });
       paletteEl.appendChild(section);
     });
@@ -3780,24 +4297,33 @@
     mapDrawingsEl.setAttribute("height", String(height));
   }
 
+  let drawingsRenderScheduled = false;
+
   function renderDrawings() {
     if (!map || !mapDrawingsEl) return;
-    setSvgSizeToMap();
-    mapDrawingsEl.innerHTML = "";
-    drawings.forEach(stroke => {
-      if (!stroke.points || stroke.points.length < 2) return;
-      const points = stroke.points.map(p => {
-        const pt = map.latLngToContainerPoint([p.lat, p.lng]);
-        return `${pt.x},${pt.y}`;
+    // Batch SVG redraws using requestAnimationFrame to avoid layout thrashing
+    if (drawingsRenderScheduled) return;
+    drawingsRenderScheduled = true;
+
+    requestAnimationFrame(() => {
+      setSvgSizeToMap();
+      mapDrawingsEl.innerHTML = "";
+      drawings.forEach(stroke => {
+        if (!stroke.points || stroke.points.length < 2) return;
+        const points = stroke.points.map(p => {
+          const pt = map.latLngToContainerPoint([p.lat, p.lng]);
+          return `${pt.x},${pt.y}`;
+        });
+        const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+        polyline.setAttribute("points", points.join(" "));
+        polyline.setAttribute("fill", "none");
+        polyline.setAttribute("stroke", stroke.color || "#ff3b30");
+        polyline.setAttribute("stroke-width", String(stroke.width || 4));
+        polyline.setAttribute("stroke-linecap", "round");
+        polyline.setAttribute("stroke-linejoin", "round");
+        mapDrawingsEl.appendChild(polyline);
       });
-      const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-      polyline.setAttribute("points", points.join(" "));
-      polyline.setAttribute("fill", "none");
-      polyline.setAttribute("stroke", stroke.color || "#ff3b30");
-      polyline.setAttribute("stroke-width", String(stroke.width || 4));
-      polyline.setAttribute("stroke-linecap", "round");
-      polyline.setAttribute("stroke-linejoin", "round");
-      mapDrawingsEl.appendChild(polyline);
+      drawingsRenderScheduled = false;
     });
   }
 
@@ -3936,6 +4462,47 @@
     modeHint.textContent = "Place mode: drag icons to map, then select items for actions.";
   }
 
+  function updateMapModeBanner() {
+    if (!modeIndicatorBanner) return;
+
+    const isPlaceMode = appMode === "place";
+    const isDrawMode = appMode === "draw";
+    const isReviewMode = appMode === "review";
+
+    // Hide banner in Place mode, show in Draw/Review modes
+    modeIndicatorBanner.classList.toggle("hidden", isPlaceMode);
+
+    if (isDrawMode) {
+      modeIndicatorBanner.classList.remove("review-mode");
+      modeIndicatorBanner.classList.add("draw-mode");
+      if (modeIndicatorLabel) modeIndicatorLabel.textContent = "Draw Mode";
+      const textSpan = modeIndicatorBanner.querySelector(".mode-indicator-text");
+      if (textSpan) {
+        textSpan.innerHTML = '<strong id="modeIndicatorLabel">Draw Mode</strong> — Sketching tools active. Drag on map to draw. <button class="mode-indicator-switch" id="modeIndicatorSwitchBtn" type="button">Switch to Place</button>';
+        modeIndicatorSwitchBtn.addEventListener("click", () => setAppMode("place"));
+      }
+    } else if (isReviewMode) {
+      modeIndicatorBanner.classList.remove("draw-mode");
+      modeIndicatorBanner.classList.add("review-mode");
+      if (modeIndicatorLabel) modeIndicatorLabel.textContent = "Review Mode";
+      const textSpan = modeIndicatorBanner.querySelector(".mode-indicator-text");
+      if (textSpan) {
+        textSpan.innerHTML = '<strong id="modeIndicatorLabel">Review Mode</strong> — Map is read-only. Pan and inspect without editing. <button class="mode-indicator-switch" id="modeIndicatorSwitchBtn" type="button">Switch to Place</button>';
+        modeIndicatorSwitchBtn.addEventListener("click", () => setAppMode("place"));
+      }
+    }
+
+    // Disable/enable palette based on mode
+    if (paletteEl) {
+      paletteEl.classList.toggle("disabled", !isPlaceMode);
+    }
+
+    // Keep old mapModeBanner hidden (deprecated)
+    if (mapModeBanner) {
+      mapModeBanner.classList.add("hidden");
+    }
+  }
+
   function setAppMode(mode) {
     if (mode === "staging") mode = "place";
     if (mode !== "review" && userRole !== "editor") {
@@ -3972,6 +4539,7 @@
     }
     renderPalette();
     updateControlState();
+    updateMapModeBanner();
   }
 
   function beginDrawing(event) {
@@ -4347,6 +4915,7 @@
   function closeShortcutsModal() {
     shortcutsModal.style.display = "none";
     setModalOpen(false);
+    updateSecondaryNavActive('palette'); // Reset to palette tab
   }
 
   function openExportModal() {
@@ -7977,6 +8546,9 @@
   modePlaceBtn.addEventListener("click", () => setAppMode("place"));
   modeDrawBtn.addEventListener("click", () => setAppMode("draw"));
   modeReviewBtn.addEventListener("click", () => setAppMode("review"));
+  if (modeIndicatorSwitchBtn) {
+    modeIndicatorSwitchBtn.addEventListener("click", () => setAppMode("place"));
+  }
   if (userRoleSelect) {
     userRoleSelect.addEventListener("change", (event) => {
       setUserRole(event.target.value);
@@ -8115,9 +8687,13 @@
   mapStyleLight.addEventListener("click", () => setBaseLayer("light", { notify: true, track: true }));
   mapStyleSat.addEventListener("click", () => setBaseLayer("satellite", { notify: true, track: true }));
 
+  const debouncedRenderPalette = createDebounce(() => {
+    renderPalette();
+  }, 300);
+
   categorySearch.addEventListener("input", () => {
     syncTopFieldClears();
-    renderPalette();
+    debouncedRenderPalette();
   });
   incidentNameClear.addEventListener("click", () => {
     incidentName.value = "";
@@ -8172,6 +8748,7 @@
   closeLegend.addEventListener("click", () => {
     legendModal.style.display = "none";
     setModalOpen(false);
+    updateSecondaryNavActive('palette'); // Reset to palette tab
   });
   legendModal.addEventListener("click", (event) => {
     if (event.target === legendModal) {
@@ -8212,6 +8789,7 @@
     setTimelineLogVisibility(false);
     restoreStateAfterReplay();
     setStatus(logStarted ? "Log running" : "Log not started");
+    updateSecondaryNavActive('palette'); // Reset to palette tab
   }
 
   timelineBtn.addEventListener("click", openTimelineModal);
@@ -8423,6 +9001,308 @@
       if (event.target === stagingEditModal) closeStagingEditModal();
     });
   }
+
+  // Cost Panel Drag Manager
+  class CostPanelManager {
+    constructor(panelEl, dragHandle) {
+      this.panel = panelEl;
+      this.handle = dragHandle;
+      this.isDragging = false;
+      this.startX = 0;
+      this.startY = 0;
+      this.startLeft = 0;
+      this.startTop = 0;
+      this.storageKey = 'costPanelPosition';
+
+      this.restorePosition();
+      this.initDragListeners();
+    }
+
+    initDragListeners() {
+      this.handle.addEventListener('mousedown', (e) => this.onDragStart(e));
+      this.handle.addEventListener('touchstart', (e) => this.onDragStart(e));
+      document.addEventListener('mousemove', (e) => this.onDragMove(e));
+      document.addEventListener('touchmove', (e) => this.onDragMove(e));
+      document.addEventListener('mouseup', (e) => this.onDragEnd(e));
+      document.addEventListener('touchend', (e) => this.onDragEnd(e));
+
+      // Double-click to reset
+      this.handle.addEventListener('dblclick', () => this.resetPosition());
+    }
+
+    onDragStart(e) {
+      if (e.button === 2) return; // Ignore right-click
+      e.preventDefault();
+      e.stopPropagation();
+
+      this.isDragging = true;
+      const rect = this.panel.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      this.startX = clientX;
+      this.startY = clientY;
+      this.startLeft = rect.left - this.panel.parentElement.getBoundingClientRect().left;
+      this.startTop = rect.top - this.panel.parentElement.getBoundingClientRect().top;
+
+      this.panel.classList.add('dragging');
+    }
+
+    onDragMove(e) {
+      if (!this.isDragging) return;
+
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      const deltaX = clientX - this.startX;
+      const deltaY = clientY - this.startY;
+
+      let newLeft = this.startLeft + deltaX;
+      let newTop = this.startTop + deltaY;
+
+      // Constrain bounds
+      const mapWrap = this.panel.parentElement;
+      const mapRect = mapWrap.getBoundingClientRect();
+      const panelRect = this.panel.getBoundingClientRect();
+
+      const minLeft = 8;
+      const minTop = 8;
+      const maxLeft = mapRect.width - panelRect.width + 8;
+      const maxTop = mapRect.height - panelRect.height + 8;
+
+      newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
+      newTop = Math.max(minTop, Math.min(newTop, maxTop));
+
+      this.panel.style.left = newLeft + 'px';
+      this.panel.style.top = newTop + 'px';
+      this.panel.style.right = 'auto';
+    }
+
+    onDragEnd(e) {
+      if (!this.isDragging) return;
+      this.isDragging = false;
+      this.panel.classList.remove('dragging');
+
+      // Save position to localStorage
+      const rect = this.panel.getBoundingClientRect();
+      const parentRect = this.panel.parentElement.getBoundingClientRect();
+      const position = {
+        left: rect.left - parentRect.left,
+        top: rect.top - parentRect.top
+      };
+      localStorage.setItem(this.storageKey, JSON.stringify(position));
+    }
+
+    restorePosition() {
+      try {
+        const stored = localStorage.getItem(this.storageKey);
+        if (stored) {
+          const pos = JSON.parse(stored);
+          this.panel.style.left = pos.left + 'px';
+          this.panel.style.top = pos.top + 'px';
+          this.panel.style.right = 'auto';
+        }
+      } catch (e) {
+        console.warn('Failed to restore cost panel position:', e);
+      }
+    }
+
+    resetPosition() {
+      this.panel.style.left = 'auto';
+      this.panel.style.top = 'calc(var(--appbar-height) + 8px)';
+      this.panel.style.right = '12px';
+      localStorage.removeItem(this.storageKey);
+    }
+  }
+
+  // Initialize cost panel drag manager
+  if (costSummaryPanel) {
+    const dragHandle = document.getElementById('costPanelDragHandle');
+    if (dragHandle) {
+      new CostPanelManager(costSummaryPanel, dragHandle);
+    }
+  }
+
+  // Wire up secondary navigation tabs
+  const navTimelineTab = document.getElementById('navTimelineTab');
+  const navLegendTab = document.getElementById('navLegendTab');
+  const navShortcutsTab = document.getElementById('navShortcutsTab');
+
+  if (navTimelineTab) {
+    navTimelineTab.addEventListener('click', () => {
+      openTimelineModal();
+      updateSecondaryNavActive('timeline');
+    });
+  }
+  if (navLegendTab) {
+    navLegendTab.addEventListener('click', () => {
+      legendModal.style.display = "flex";
+      setModalOpen(true);
+      updateSecondaryNavActive('legend');
+    });
+  }
+  if (navShortcutsTab) {
+    navShortcutsTab.addEventListener('click', () => {
+      openShortcutsModal();
+      updateSecondaryNavActive('shortcuts');
+    });
+  }
+
+  // Update active tab indicator in secondary nav
+  function updateSecondaryNavActive(tabName) {
+    document.querySelectorAll('.appbar-nav-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    const activeTab = document.querySelector(`.appbar-nav-tab[data-tab="${tabName}"]`);
+    if (activeTab) activeTab.classList.add('active');
+  }
+
+  // Mobile Palette Drawer Manager
+  class MobilePaletteDrawer {
+    constructor() {
+      this.drawer = document.getElementById('mobilePaletteDrawer');
+      this.overlay = document.getElementById('mobilePaletteOverlay');
+      this.handle = this.drawer?.querySelector('.mobile-palette-handle');
+      this.content = this.drawer?.querySelector('.mobile-palette-content');
+      this.navPaletteTab = document.getElementById('navPaletteTab');
+
+      this.touchStartY = 0;
+      this.touchStartX = 0;
+      this.isDraggingDrawer = false;
+
+      if (this.drawer && this.overlay) {
+        this.initListeners();
+      }
+    }
+
+    initListeners() {
+      // Open drawer when Palette tab clicked
+      if (this.navPaletteTab) {
+        this.navPaletteTab.addEventListener('click', () => this.open());
+      }
+
+      // Close drawer when overlay clicked
+      this.overlay.addEventListener('click', () => this.close());
+
+      // Swipe to close
+      this.drawer.addEventListener('touchstart', (e) => this.onTouchStart(e), false);
+      this.drawer.addEventListener('touchmove', (e) => this.onTouchMove(e), false);
+      this.drawer.addEventListener('touchend', (e) => this.onTouchEnd(e), false);
+
+      // Close on Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.drawer.classList.contains('visible')) {
+          this.close();
+        }
+      });
+    }
+
+    open() {
+      this.drawer.classList.add('visible');
+      this.overlay.classList.add('visible');
+      updateSecondaryNavActive('palette');
+
+      // Copy regular palette to mobile palette if not already there
+      const regularPalette = document.getElementById('palette');
+      const mobilePalette = this.content.querySelector('.palette');
+      if (regularPalette && mobilePalette && mobilePalette.innerHTML === '') {
+        mobilePalette.innerHTML = regularPalette.innerHTML;
+      }
+    }
+
+    close() {
+      this.drawer.classList.remove('visible');
+      this.drawer.classList.remove('sliding-down');
+      this.overlay.classList.remove('visible');
+    }
+
+    syncPalette() {
+      // Keep mobile palette in sync with regular palette
+      const regularPalette = document.getElementById('palette');
+      const mobilePalette = this.content?.querySelector('.palette');
+      if (regularPalette && mobilePalette && this.drawer.classList.contains('visible')) {
+        mobilePalette.innerHTML = regularPalette.innerHTML;
+        // Re-attach event listeners to new elements
+        this.attachPaletteListeners();
+      }
+    }
+
+    attachPaletteListeners() {
+      const mobilePalette = this.content?.querySelector('.palette');
+      if (!mobilePalette) return;
+
+      // Attach collapse/expand handlers to categories
+      mobilePalette.querySelectorAll('.category-header').forEach(header => {
+        header.addEventListener('click', (e) => {
+          if (e.target.classList.contains('category-toggle')) return;
+          const section = header.parentElement;
+          const collapsed = section.classList.toggle('collapsed');
+          const toggle = header.querySelector('.category-toggle');
+          if (toggle) toggle.textContent = collapsed ? '+' : '−';
+        });
+      });
+
+      // Attach drag and tooltip listeners to icon items
+      mobilePalette.querySelectorAll('.icon-item').forEach(item => {
+        const iconName = item.dataset.icon;
+        const category = item.dataset.category;
+        const icon = paletteData
+          .find(c => c.category === category)?.items
+          .find(i => i.name === iconName);
+
+        if (icon) {
+          item.addEventListener('pointerdown', startPaletteDrag);
+          item.addEventListener('pointerenter', (e) => showPaletteTooltip({ ...icon, category }, e));
+          item.addEventListener('pointermove', (e) => showPaletteTooltip({ ...icon, category }, e));
+          item.addEventListener('pointerleave', hidePaletteTooltip);
+        }
+      });
+    }
+
+    onTouchStart(e) {
+      this.touchStartY = e.touches[0].clientY;
+      this.touchStartX = e.touches[0].clientX;
+      this.isDraggingDrawer = true;
+    }
+
+    onTouchMove(e) {
+      if (!this.isDraggingDrawer) return;
+
+      const currentY = e.touches[0].clientY;
+      const deltaY = currentY - this.touchStartY;
+
+      // Only consider it a swipe down if moving mostly vertically
+      const deltaX = Math.abs(e.touches[0].clientX - this.touchStartX);
+      const isVerticalSwipe = Math.abs(deltaY) > deltaX;
+
+      if (isVerticalSwipe && deltaY > 0) {
+        // Swiping down
+        const opacity = Math.max(0, 1 - (deltaY / 200));
+        this.overlay.style.opacity = opacity;
+      }
+    }
+
+    onTouchEnd(e) {
+      if (!this.isDraggingDrawer) return;
+      this.isDraggingDrawer = false;
+
+      const endY = e.changedTouches[0].clientY;
+      const deltaY = endY - this.touchStartY;
+
+      // Close if swiped down more than 100px
+      if (deltaY > 100) {
+        this.drawer.classList.add('sliding-down');
+        setTimeout(() => this.close(), 300);
+      } else {
+        // Snap back
+        this.overlay.style.opacity = '1';
+      }
+    }
+  }
+
+  // Initialize mobile palette drawer
+  const mobilePaletteDrawer = new MobilePaletteDrawer();
+
   if (costSummaryToggle) {
     costSummaryToggle.addEventListener("click", () => {
       costSummaryCollapsed = !costSummaryCollapsed;
@@ -8504,6 +9384,34 @@
   applyIconSize(iconSize.value);
   setToolsLocked(true);
   initMap();
+
+  // Initialize operational period with current time and 12-hour span
+  function initializeOperationalPeriod() {
+    const now = new Date();
+    const startTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const endTime = new Date(now.getTime() + 12 * 60 * 60 * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const opText = `OP-1 (${startTime}-${endTime})`;
+
+    const opPeriodEl = document.getElementById('operationalPeriod');
+    if (opPeriodEl && !opPeriodEl.value) {
+      opPeriodEl.value = opText;
+    }
+  }
+
+  // Add pulse animation to Place button for 6 seconds
+  function initPlaceButtonAttention() {
+    const placeBtn = document.getElementById('modePlaceBtn');
+    if (placeBtn) {
+      placeBtn.classList.add('pulse-attention');
+      setTimeout(() => {
+        placeBtn.classList.remove('pulse-attention');
+      }, 6000);
+    }
+  }
+
+  // Run initialization functions
+  initializeOperationalPeriod();
+  initPlaceButtonAttention();
 </script>
 </body>
 </html>

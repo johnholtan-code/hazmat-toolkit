@@ -16,8 +16,6 @@ final class TrainerMapViewModel: ObservableObject {
         let shapes: [GeoSimShape]
         let samplingDebugSummary: String
     }
-    nonisolated private static let maxPointsPerTraineeForReview = 1200
-
     enum SelectionMode: Hashable {
         case single
         case multi
@@ -41,6 +39,8 @@ final class TrainerMapViewModel: ObservableObject {
     @Published var allPoints: [TrackingPointWithMetadata] = []
     @Published var allZoneEvents: [SessionZoneEvent] = []
     @Published var visibleZones: [GeoSimShape] = []
+    @Published var availableSessions: [ScenarioSessionSummary] = []
+    @Published var selectedSessionID: UUID?
 
     // KPI state
     @Published var kpiDwellHigh: TimeInterval = 0
@@ -197,6 +197,7 @@ final class TrainerMapViewModel: ObservableObject {
     // MARK: - Init
     init(sessionID: UUID?, scenarioID: UUID, scenarioName: String, repository: any HazmatRepository) {
         self.sessionID = sessionID
+        self.selectedSessionID = sessionID
         self.scenarioID = scenarioID
         self.scenarioName = scenarioName
         self.repository = repository
@@ -209,104 +210,56 @@ final class TrainerMapViewModel: ObservableObject {
 
         do {
             let repository = self.repository
-            let sessionID = self.sessionID
             let scenarioID = self.scenarioID
-            let scenarioName = self.scenarioName
+            let requestedSessionID = self.selectedSessionID
+            let sessions = try await repository.fetchSessions(for: scenarioID)
+            let shapes = (try? await repository.fetchShapes(for: scenarioID)) ?? []
+            self.availableSessions = sessions
+
+            guard let sessionID = requestedSessionID else {
+                clearLoadedData()
+                self.visibleZones = shapes
+                self.isLoading = false
+                return
+            }
 
             let loaded = try await Task.detached(priority: .userInitiated) {
-                let shapes = (try? await repository.fetchShapes(for: scenarioID)) ?? []
-
-                if let sessionID {
-                    let review = try await repository.fetchTrackingReview(for: sessionID)
-                    let participants = review.participants
-                    let zoneEvents = review.zoneEvents
-                    var points = review.points.map { pt in
-                        TrackingPointWithMetadata(
-                            id: pt.id,
-                            traineeName: pt.traineeID,
-                            latitude: pt.latitude,
-                            longitude: pt.longitude,
-                            timestamp: pt.createdAt,
-                            monitorType: participants.first(where: { $0.traineeName == pt.traineeID })?.deviceType,
-                            samplingBand: pt.samplingBand,
-                            samplingBandLabel: pt.samplingBandLabel,
-                            secondsInCurrentBand: pt.secondsInCurrentBand,
-                            activeZone: nil
-                        )
-                    }
-                    let reviewSamplingCount = points.filter {
-                        ($0.samplingBand?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false) ||
-                        ($0.samplingBandLabel?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
-                    }.count
-
-                    let scenarioPoints = try await repository.fetchTrackingPoints(for: scenarioName)
-                    let scenarioSamplingCount = scenarioPoints.filter {
-                        ($0.samplingBand?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false) ||
-                        ($0.samplingBandLabel?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
-                    }.count
-
-                    points = Self.backfilledSampling(points: points, withScenarioPoints: scenarioPoints)
-
-                    let mergedSamplingCount = points.filter {
-                        ($0.samplingBand?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false) ||
-                        ($0.samplingBandLabel?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
-                    }.count
-
-                    let grouped = Dictionary(grouping: points, by: \.traineeName)
-                        .mapValues { $0.sorted(by: { $0.timestamp < $1.timestamp }) }
-
-                    return LoadedReviewData(
-                        participants: participants,
-                        zoneEvents: zoneEvents,
-                        points: points,
-                        groupedPoints: grouped,
-                        sortedTraineeIDs: grouped.keys.sorted(),
-                        sessionStartTime: participants.map(\.joinedAt).min(),
-                        sessionEndTime: participants.compactMap(\.lastSeenAt).max(),
-                        shapes: shapes,
-                        samplingDebugSummary: "review=\(reviewSamplingCount)/\(review.points.count), scenario=\(scenarioSamplingCount)/\(scenarioPoints.count), merged=\(mergedSamplingCount)/\(points.count)"
-                    )
-                } else {
-                    let scenarioPoints = try await repository.fetchTrackingPoints(for: scenarioName)
-                    let trimmedScenarioPoints = Self.trimmedPointsForReview(
-                        scenarioPoints,
-                        maxPointsPerTrainee: Self.maxPointsPerTraineeForReview
-                    )
-                    let participants = Self.makeParticipantsFromPoints(trimmedScenarioPoints)
-                    let points = trimmedScenarioPoints.map {
-                        TrackingPointWithMetadata(
-                            id: $0.id,
-                            traineeName: $0.traineeID,
-                            latitude: $0.latitude,
-                            longitude: $0.longitude,
-                            timestamp: $0.createdAt,
-                            monitorType: $0.detectionDevice,
-                            samplingBand: $0.samplingBand,
-                            samplingBandLabel: $0.samplingBandLabel,
-                            secondsInCurrentBand: $0.secondsInCurrentBand,
-                            activeZone: nil
-                        )
-                    }
-                    let grouped = Dictionary(grouping: points, by: \.traineeName)
-                        .mapValues { $0.sorted(by: { $0.timestamp < $1.timestamp }) }
-
-                    let scenarioSamplingCount = trimmedScenarioPoints.filter {
-                        ($0.samplingBand?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false) ||
-                        ($0.samplingBandLabel?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
-                    }.count
-
-                    return LoadedReviewData(
-                        participants: participants,
-                        zoneEvents: [],
-                        points: points,
-                        groupedPoints: grouped,
-                        sortedTraineeIDs: grouped.keys.sorted(),
-                        sessionStartTime: trimmedScenarioPoints.map(\.createdAt).min(),
-                        sessionEndTime: trimmedScenarioPoints.map(\.createdAt).max(),
-                        shapes: shapes,
-                        samplingDebugSummary: "scenario-only=\(scenarioSamplingCount)/\(trimmedScenarioPoints.count)"
+                let review = try await repository.fetchTrackingReview(for: sessionID)
+                let participants = review.participants
+                let zoneEvents = review.zoneEvents
+                let points = review.points.map { pt in
+                    TrackingPointWithMetadata(
+                        id: pt.id,
+                        traineeName: pt.traineeID,
+                        latitude: pt.latitude,
+                        longitude: pt.longitude,
+                        timestamp: pt.createdAt,
+                        monitorType: participants.first(where: { $0.traineeName == pt.traineeID })?.deviceType,
+                        samplingBand: pt.samplingBand,
+                        samplingBandLabel: pt.samplingBandLabel,
+                        secondsInCurrentBand: pt.secondsInCurrentBand,
+                        activeZone: nil
                     )
                 }
+                let reviewSamplingCount = points.filter {
+                    ($0.samplingBand?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false) ||
+                    ($0.samplingBandLabel?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
+                }.count
+
+                let grouped = Dictionary(grouping: points, by: \.traineeName)
+                    .mapValues { $0.sorted(by: { $0.timestamp < $1.timestamp }) }
+
+                return LoadedReviewData(
+                    participants: participants,
+                    zoneEvents: zoneEvents,
+                    points: points,
+                    groupedPoints: grouped,
+                    sortedTraineeIDs: grouped.keys.sorted(),
+                    sessionStartTime: participants.map(\.joinedAt).min(),
+                    sessionEndTime: participants.compactMap(\.lastSeenAt).max(),
+                    shapes: shapes,
+                    samplingDebugSummary: "review=\(reviewSamplingCount)/\(review.points.count)"
+                )
             }.value
 
             self.allParticipants = loaded.participants
@@ -328,6 +281,13 @@ final class TrainerMapViewModel: ObservableObject {
             self.errorMessage = "Failed to load session data: \(error.localizedDescription)"
             self.isLoading = false
         }
+    }
+
+    func selectSession(_ newSessionID: UUID?) {
+        pause()
+        selectedSessionID = newSessionID
+        sessionID = newSessionID
+        currentTime = 0
     }
 
     func toggleTraineeSelection(_ traineeID: String) {
@@ -381,6 +341,11 @@ final class TrainerMapViewModel: ObservableObject {
     func pause() {
         isPlaying = false
         playbackTimer?.cancel()
+    }
+
+    func restartPlayback() {
+        pause()
+        currentTime = 0
     }
 
     func seek(to time: TimeInterval) {
@@ -458,6 +423,26 @@ final class TrainerMapViewModel: ObservableObject {
             }
             lastExitTime = event.exitedAt
         }
+    }
+
+    private func clearLoadedData() {
+        allParticipants = []
+        allZoneEvents = []
+        sessionStartTime = nil
+        sessionEndTime = nil
+        allPoints = []
+        pointsByTrainee = [:]
+        sortedTraineeIDs = []
+        visibleZones = []
+        samplingDebugSummary = ""
+        currentTime = 0
+        selectedTraineeIDs = []
+        selectionMode = .single
+        kpiDwellHigh = 0
+        kpiDwellNormal = 0
+        kpiDwellLow = 0
+        kpiTransitionCount = 0
+        kpiShortHolds = 0
     }
 
     private func latestPoint(for traineeID: String, at timestamp: Date) -> TrackingPointWithMetadata? {

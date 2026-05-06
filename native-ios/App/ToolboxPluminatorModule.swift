@@ -10,9 +10,6 @@ struct ToolboxPluminatorModuleView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var simulation: PLUPlumeSimulationStore
     @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var exportAlertMessage: String?
-    @State private var shareExportItem: PLUShareExportItem?
-    @State private var showingGIFSettings = false
 
     var body: some View {
         NavigationStack {
@@ -67,58 +64,16 @@ struct ToolboxPluminatorModuleView: View {
                     .buttonStyle(SecondaryButtonStyle())
                     .disabled(!simulation.hasPhoto)
 
-                    Button {
-                        Task { await exportGIF() }
-                    } label: {
-                        if simulation.isExportingGIF {
-                            Label("Exporting…", systemImage: "hourglass")
-                        } else {
-                            Label("Export GIF", systemImage: "square.and.arrow.down")
-                        }
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(simulation.isExportingGIF || !simulation.isStageReadyForExport)
-
-                    Button {
-                        showingGIFSettings = true
-                    } label: {
-                        Label("GIF Settings", systemImage: "slider.horizontal.3")
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
                 }
             }
         }
         .preferredColorScheme(.dark)
-        .alert("GIF Export", isPresented: Binding(
-            get: { exportAlertMessage != nil },
-            set: { if !$0 { exportAlertMessage = nil } }
-        )) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(exportAlertMessage ?? "")
-        }
-        .sheet(item: $shareExportItem) { item in
-            PLUActivityView(items: [item.url])
-        }
-        .sheet(isPresented: $showingGIFSettings) {
-            PLUGIFExportSettingsSheet()
-                .environmentObject(simulation)
-        }
         .task(id: selectedPhotoItem) {
             guard let selectedPhotoItem else { return }
             await simulation.loadPhoto(from: selectedPhotoItem)
         }
         .task {
             simulation.refreshStageReadyFlag()
-        }
-    }
-
-    private func exportGIF() async {
-        do {
-            let url = try await simulation.exportCurrentStageGIFToPhotos()
-            shareExportItem = PLUShareExportItem(url: url)
-        } catch {
-            exportAlertMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
     }
 
@@ -133,11 +88,6 @@ struct ToolboxPluminatorModuleView: View {
                     Text("Tap stage to move \(simulation.activeEmitterDisplayName)")
                         .font(.caption.weight(.medium))
                         .foregroundStyle(.white)
-                    if !simulation.isStageReadyForExport {
-                        Text("Preparing GIF exporter…")
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.72))
-                    }
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
@@ -1138,6 +1088,7 @@ final class PLUPlumeSimulationStore: ObservableObject {
     }
 
     enum GIFExportError: LocalizedError {
+        case featureDisabled
         case stageUnavailable
         case frameCaptureFailed
         case encoderCreationFailed
@@ -1147,6 +1098,8 @@ final class PLUPlumeSimulationStore: ObservableObject {
 
         var errorDescription: String? {
             switch self {
+            case .featureDisabled:
+                return "GIF export is not available on your current plan."
             case .stageUnavailable:
                 return "The plume stage is not ready yet."
             case .frameCaptureFailed:
@@ -1164,6 +1117,8 @@ final class PLUPlumeSimulationStore: ObservableObject {
     }
 
     func exportCurrentStageGIFToPhotos() async throws -> URL {
+        let isGIFExportEnabled = UserDefaults.standard.bool(forKey: "Pluminator9000.gifExportEnabled")
+        guard isGIFExportEnabled else { throw GIFExportError.featureDisabled }
         guard !isExportingGIF else { throw GIFExportError.stageUnavailable }
         let (stageView, stageScene) = try await resolveReadyStageRenderer()
 

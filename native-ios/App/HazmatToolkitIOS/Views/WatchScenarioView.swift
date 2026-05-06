@@ -35,9 +35,7 @@ struct WatchScenarioView: View {
     }
 
     private var resolvedSessionIDForPlayback: UUID? {
-        let sessionState = store.sessionState(for: scenarioID)
-        if let live = sessionState?.sessionID { return live }
-        return allPoints.sorted(by: { $0.createdAt > $1.createdAt }).compactMap(\.sessionID).first
+        store.sessionState(for: scenarioID)?.sessionID
     }
 
     var body: some View {
@@ -149,7 +147,6 @@ struct WatchScenarioView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .listStyle(.plain)
                 .task(id: scenarioID) {
-                    await store.resolveSessionState(for: scenarioID)
                     await store.loadShapes(for: scenarioID)
                     await store.loadTracking(for: scenario.scenarioName)
                 }
@@ -433,13 +430,6 @@ struct WatchScenarioView: View {
                 .hidden()
             )
             .buttonStyle(.plain)
-            .disabled(resolvedSessionIDForPlayback == nil)
-
-            if resolvedSessionIDForPlayback == nil {
-                Text("Playback review is unavailable until a resolvable session ID is present in tracking data.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
 
             if isBusy {
                 ProgressView()

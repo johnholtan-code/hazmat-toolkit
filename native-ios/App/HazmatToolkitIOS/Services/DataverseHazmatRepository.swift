@@ -38,4 +38,8 @@ struct DataverseHazmatRepository: HazmatRepository {
     func fetchTrackingReview(for sessionID: UUID) async throws -> SessionTrackingReview {
         throw RepositoryError.notImplemented("Dataverse fetchTrackingReview")
     }
+
+    func fetchSessions(for scenarioID: UUID) async throws -> [ScenarioSessionSummary] {
+        throw RepositoryError.notImplemented("Dataverse fetchSessions")
+    }
 }

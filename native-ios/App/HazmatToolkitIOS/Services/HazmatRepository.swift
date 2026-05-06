@@ -12,4 +12,5 @@ protocol HazmatRepository: Sendable {
 
     func fetchTrackingPoints(for scenarioName: String) async throws -> [GeoTrackingPoint]
     func fetchTrackingReview(for sessionID: UUID) async throws -> SessionTrackingReview
+    func fetchSessions(for scenarioID: UUID) async throws -> [ScenarioSessionSummary]
 }

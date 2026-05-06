@@ -11,6 +11,7 @@ struct TrainerMapReviewView: View {
 
     @StateObject private var viewModel: TrainerMapViewModel
     @State private var hasStartedLoading = false
+    @State private var selectedSessionPickerID: UUID?
     @Environment(\.dismiss) private var dismiss
 
     init(store: AppStore, sessionID: UUID?, scenarioID: UUID, scenarioName: String) {
@@ -65,6 +66,7 @@ struct TrainerMapReviewView: View {
             guard !hasStartedLoading else { return }
             hasStartedLoading = true
             await viewModel.loadSessionData()
+            selectedSessionPickerID = viewModel.selectedSessionID
         }
         .overlay {
             if viewModel.isLoading {
@@ -110,9 +112,11 @@ struct TrainerMapReviewView: View {
 
     private var reviewControlsPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
+            sessionPickerCard
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    statCard(title: "Mode", value: sessionID == nil ? "Scenario history" : "Session review")
+                    statCard(title: "Mode", value: viewModel.selectedSessionID == nil ? "Choose session" : "Session review")
                     statCard(title: "Participants", value: "\(viewModel.allParticipants.count)")
                     statCard(title: "Points", value: "\(viewModel.allPoints.count)")
                     statCard(title: "Zone Events", value: "\(viewModel.allZoneEvents.count)")
@@ -122,7 +126,12 @@ struct TrainerMapReviewView: View {
             
             sessionTimeSummaryCard
 
-            if !viewModel.allParticipants.isEmpty {
+            if viewModel.selectedSessionID == nil {
+                Text("Select a session to load playback data.")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+            } else if !viewModel.allParticipants.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Participant Playback")
                         .font(.subheadline.weight(.semibold))
@@ -180,60 +189,159 @@ struct TrainerMapReviewView: View {
             }
 
             VStack(spacing: 10) {
-                HStack {
-                    Button {
-                        viewModel.isPlaying ? viewModel.pause() : viewModel.play()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                                .font(.caption.weight(.bold))
-                                .frame(width: 24, height: 24)
-                                .background(Color.white.opacity(0.22), in: Circle())
-                            Text(viewModel.isPlaying ? "Pause Playback" : "Start Playback")
-                                .font(.subheadline.weight(.bold))
-                        }
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            LinearGradient(
-                                colors: [Color.blue, Color.blue.opacity(0.84)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            in: Capsule()
-                        )
-                    }
-                    .buttonStyle(.plain)
-
-                    Spacer()
-
-                    Text("Speed \(Int(viewModel.playbackSpeed))x")
-                        .font(.subheadline.weight(.semibold))
-                }
-
-                Text(viewModel.selectedSamplingStatusText)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Slider(
-                    value: $viewModel.currentTime,
-                    in: 0...max(viewModel.sessionDuration, 1)
-                )
-
-                HStack {
-                    Text(durationLabel(viewModel.currentTime))
-                    Spacer()
-                    Text(durationLabel(viewModel.sessionDuration))
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                playbackControls
             }
             .padding(16)
             .hazmatPanel()
         }
         .hazmatPanel()
+    }
+
+    private var sessionPickerCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Session")
+                .font(.subheadline.weight(.semibold))
+            if viewModel.availableSessions.isEmpty {
+                Text("No sessions found for this scenario yet.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } else {
+                Picker("Session", selection: Binding(
+                    get: { selectedSessionPickerID },
+                    set: { newValue in
+                        selectedSessionPickerID = newValue
+                        viewModel.selectSession(newValue)
+                        Task { await viewModel.loadSessionData() }
+                    }
+                )) {
+                    Text("Select a session").tag(Optional<UUID>.none)
+                    ForEach(viewModel.availableSessions, id: \.id) { session in
+                        Text(sessionTitle(for: session)).tag(Optional(session.id))
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private func sessionTitle(for session: ScenarioSessionSummary) -> String {
+        let base = session.sessionName?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            ? session.sessionName!
+            : "Session \(session.id.uuidString.prefix(8))"
+        let time = clockLabel(for: session.startsAt ?? session.createdAt)
+        let status = session.isLive ? "LIVE" : "CLOSED"
+        return "\(base) • \(time) • \(status)"
+    }
+
+    private var playbackControls: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 8) {
+                Button("Play") { viewModel.play() }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(viewModel.isPlaying || viewModel.selectedSessionID == nil)
+                Button("Pause") { viewModel.pause() }
+                    .buttonStyle(.bordered)
+                    .disabled(!viewModel.isPlaying)
+                Button("Restart") { viewModel.restartPlayback() }
+                    .buttonStyle(.bordered)
+                    .disabled(viewModel.selectedSessionID == nil)
+                Spacer()
+                Picker("Speed", selection: $viewModel.playbackSpeed) {
+                    Text("1x").tag(1.0)
+                    Text("2x").tag(2.0)
+                    Text("5x").tag(5.0)
+                    Text("10x").tag(10.0)
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 260)
+                .disabled(viewModel.selectedSessionID == nil)
+            }
+
+            Text(viewModel.selectedSamplingStatusText)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Slider(value: $viewModel.currentTime, in: 0...max(viewModel.sessionDuration, 1))
+                .disabled(viewModel.selectedSessionID == nil)
+
+            HStack {
+                Text(durationLabel(viewModel.currentTime))
+                Spacer()
+                Text(durationLabel(viewModel.sessionDuration))
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+            HStack {
+                Spacer()
+                samplingPostureWidget
+                Spacer()
+            }
+        }
+    }
+
+    private var samplingPostureWidget: some View {
+        let band = activePlaybackBand
+        return HStack(spacing: 8) {
+            ZStack {
+                Circle().stroke(Color.primary, lineWidth: 2.2).frame(width: 16, height: 16).position(x: 14, y: 6)
+                Path { p in p.move(to: CGPoint(x: 14, y: 14)); p.addQuadCurve(to: CGPoint(x: 14, y: 46), control: CGPoint(x: 20, y: 30)) }
+                    .stroke(Color.primary, style: StrokeStyle(lineWidth: 3.4, lineCap: .round))
+                Path { p in p.move(to: CGPoint(x: 14, y: 24)); p.addLine(to: CGPoint(x: 22, y: 34)) }
+                    .stroke(Color.primary, style: StrokeStyle(lineWidth: 3.4, lineCap: .round))
+                Path { p in p.move(to: CGPoint(x: 14, y: 26)); p.addLine(to: armEndPoint(for: band)) }
+                    .stroke(Color.primary, style: StrokeStyle(lineWidth: 3.4, lineCap: .round))
+                Path { p in p.move(to: CGPoint(x: 14, y: 46)); p.addLine(to: CGPoint(x: 8, y: 60)) }
+                    .stroke(Color.primary, style: StrokeStyle(lineWidth: 3.4, lineCap: .round))
+                Path { p in p.move(to: CGPoint(x: 14, y: 46)); p.addLine(to: CGPoint(x: 22, y: 60)) }
+                    .stroke(Color.primary, style: StrokeStyle(lineWidth: 3.4, lineCap: .round))
+                RoundedRectangle(cornerRadius: 2).fill(bandColor(for: band)).frame(width: 7, height: 12).position(phonePoint(for: band))
+            }
+            .scaleEffect(2.0, anchor: .topLeading)
+            .frame(width: 74, height: 138, alignment: .topLeading)
+            Text(band)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(bandColor(for: band))
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(bandColor(for: band).opacity(0.15), in: Capsule())
+        }
+    }
+
+    private var activePlaybackBand: String {
+        guard let traineeID = viewModel.selectedTraineeIDs.first, viewModel.selectionMode != .all else { return "N/A" }
+        let raw = viewModel.playbackChipBandLabel(for: traineeID)
+        let normalized = raw.uppercased()
+        if normalized.contains("HIGH") { return "HIGH" }
+        if normalized.contains("LOW") { return "LOW" }
+        if normalized.contains("NORMAL") { return "NORMAL" }
+        return "N/A"
+    }
+
+    private func bandColor(for band: String) -> Color {
+        switch band {
+        case "HIGH": return .red
+        case "NORMAL": return .orange
+        case "LOW": return .blue
+        default: return .secondary
+        }
+    }
+
+    private func armEndPoint(for band: String) -> CGPoint {
+        switch band {
+        case "HIGH": return CGPoint(x: 7, y: 8)
+        case "LOW": return CGPoint(x: 7, y: 38)
+        default: return CGPoint(x: 7, y: 22)
+        }
+    }
+
+    private func phonePoint(for band: String) -> CGPoint {
+        switch band {
+        case "HIGH": return CGPoint(x: 8, y: 7)
+        case "LOW": return CGPoint(x: 8, y: 38)
+        default: return CGPoint(x: 8, y: 22)
+        }
     }
 
     private func statCard(title: String, value: String) -> some View {

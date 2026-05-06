@@ -42,6 +42,8 @@ protocol HazmatAPIClient: Sendable {
     func listSessionParticipants(sessionID: UUID) async throws -> [APIWatchParticipantDTO]
     func listSessionTracking(sessionID: UUID, since: Date?, limit: Int?) async throws -> APIWatchTrackingEnvelopeDTO
     func listSessionZoneEvents(sessionID: UUID, since: Date?, limit: Int?) async throws -> APIWatchZoneEventEnvelopeDTO
+    func listSessions(scenarioID: UUID) async throws -> [APIScenarioSessionSummaryDTO]
+    func latestSession(scenarioID: UUID) async throws -> APILatestSessionResponseDTO
 
     // Trainee session endpoints (MVP)
     func joinSession(_ request: APIJoinSessionRequest) async throws -> APIJoinSessionResponse
@@ -163,6 +165,16 @@ struct URLSessionHazmatAPIClient: HazmatAPIClient {
             query.append(URLQueryItem(name: "limit", value: String(limit)))
         }
         return try await send(path: "/v1/sessions/\(sessionID.uuidString)/watch/zone-events", method: "GET", queryItems: query)
+    }
+
+    func listSessions(scenarioID: UUID) async throws -> [APIScenarioSessionSummaryDTO] {
+        let query = [URLQueryItem(name: "scenarioId", value: scenarioID.uuidString)]
+        return try await send(path: "/v1/sessions", method: "GET", queryItems: query)
+    }
+
+    func latestSession(scenarioID: UUID) async throws -> APILatestSessionResponseDTO {
+        let query = [URLQueryItem(name: "scenarioId", value: scenarioID.uuidString)]
+        return try await send(path: "/v1/sessions/latest", method: "GET", queryItems: query)
     }
 
     func joinSession(_ request: APIJoinSessionRequest) async throws -> APIJoinSessionResponse {

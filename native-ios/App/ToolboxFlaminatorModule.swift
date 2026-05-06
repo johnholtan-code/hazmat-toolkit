@@ -10,9 +10,6 @@ struct ToolboxFlaminatorModuleView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var simulation: FLAFlameSimulationStore
     @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var exportAlertMessage: String?
-    @State private var shareExportItem: FLAShareExportItem?
-    @State private var showingGIFSettings = false
 
     var body: some View {
         NavigationStack {
@@ -66,56 +63,14 @@ struct ToolboxFlaminatorModuleView: View {
                     .buttonStyle(SecondaryButtonStyle())
                     .disabled(!simulation.hasPhoto)
 
-                    Button {
-                        Task { await exportGIF() }
-                    } label: {
-                        if simulation.isExportingGIF {
-                            Label("Exporting…", systemImage: "hourglass")
-                        } else {
-                            Label("Export GIF", systemImage: "square.and.arrow.down")
-                        }
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(simulation.isExportingGIF)
-
-                    Button {
-                        showingGIFSettings = true
-                    } label: {
-                        Label("GIF Settings", systemImage: "slider.horizontal.3")
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
                 }
 
             }
         }
         .preferredColorScheme(.dark)
-        .alert("GIF Export", isPresented: Binding(
-            get: { exportAlertMessage != nil },
-            set: { if !$0 { exportAlertMessage = nil } }
-        )) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(exportAlertMessage ?? "")
-        }
-        .sheet(item: $shareExportItem) { item in
-            FLAActivityView(items: [item.url])
-        }
-        .sheet(isPresented: $showingGIFSettings) {
-            FLAGIFExportSettingsSheet()
-                .environmentObject(simulation)
-        }
         .task(id: selectedPhotoItem) {
             guard let selectedPhotoItem else { return }
             await simulation.loadPhoto(from: selectedPhotoItem)
-        }
-    }
-
-    private func exportGIF() async {
-        do {
-            let url = try await simulation.exportCurrentStageGIFToPhotos()
-            shareExportItem = FLAShareExportItem(url: url)
-        } catch {
-            exportAlertMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
     }
 
@@ -1281,6 +1236,7 @@ final class FLAFlameSimulationStore: ObservableObject {
     }
 
     enum GIFExportError: LocalizedError {
+        case featureDisabled
         case stageUnavailable
         case frameCaptureFailed
         case encoderCreationFailed
@@ -1290,6 +1246,8 @@ final class FLAFlameSimulationStore: ObservableObject {
 
         var errorDescription: String? {
             switch self {
+            case .featureDisabled:
+                return "GIF export is not available on your current plan."
             case .stageUnavailable:
                 return "The flame stage is not ready yet."
             case .frameCaptureFailed:
@@ -1307,6 +1265,8 @@ final class FLAFlameSimulationStore: ObservableObject {
     }
 
     func exportCurrentStageGIFToPhotos() async throws -> URL {
+        let isGIFExportEnabled = UserDefaults.standard.bool(forKey: "Flaminator9000.gifExportEnabled")
+        guard isGIFExportEnabled else { throw GIFExportError.featureDisabled }
         guard !isExportingGIF else { throw GIFExportError.stageUnavailable }
         guard let stageView, let stageScene else { throw GIFExportError.stageUnavailable }
         guard stageView.bounds.width > 1, stageView.bounds.height > 1 else {

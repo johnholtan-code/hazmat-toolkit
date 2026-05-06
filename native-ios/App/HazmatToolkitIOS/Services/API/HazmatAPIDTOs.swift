@@ -56,6 +56,8 @@ enum APISessionStatus: String, Codable, Sendable {
     case live
     case ended
     case cancelled
+    case active
+    case closed
 }
 
 struct APIScenarioDTO: Codable, Hashable, Sendable, Identifiable {
@@ -544,14 +546,14 @@ struct APIWatchTrackingPointDTO: Decodable, Hashable, Sendable {
             traineeID: participantNamesByID[participantID] ?? participantID.uuidString,
             latitude: lat,
             longitude: lon,
+            createdAt: recordedAt,
             samplingBand: samplingBand,
-            secondsInCurrentBand: secondsInCurrentBand,
-            createdAt: recordedAt
+            secondsInCurrentBand: secondsInCurrentBand
         )
     }
 }
 
-struct APIWatchTrackingEnvelopeDTO: Codable, Hashable, Sendable {
+struct APIWatchTrackingEnvelopeDTO: Decodable, Hashable, Sendable {
     var items: [APIWatchTrackingPointDTO]
     var nextCursor: Date?
 }
@@ -675,4 +677,74 @@ struct APITrackingBatchResponse: Codable, Sendable {
     var accepted: Int
     var duplicates: Int
     var serverTime: Date
+}
+
+struct APIScenarioSessionSummaryDTO: Codable, Sendable {
+    var id: UUID
+    var scenarioID: UUID
+    var status: String
+    var joinCode: String?
+    var joinCodeExpiresAt: Date?
+    var startsAt: Date?
+    var endedAt: Date?
+    var isLive: Bool
+    var sessionName: String?
+    var createdAt: Date?
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case scenarioID = "scenarioId"
+        case status
+        case joinCode
+        case joinCodeExpiresAt
+        case startsAt
+        case endedAt
+        case isLive
+        case sessionName
+        case createdAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        scenarioID = try container.decode(UUID.self, forKey: .scenarioID)
+        status = (try? container.decode(String.self, forKey: .status)) ?? "active"
+        joinCode = try container.decodeIfPresent(String.self, forKey: .joinCode)
+        joinCodeExpiresAt = try container.decodeIfPresent(Date.self, forKey: .joinCodeExpiresAt)
+        startsAt = try container.decodeIfPresent(Date.self, forKey: .startsAt)
+        endedAt = try container.decodeIfPresent(Date.self, forKey: .endedAt)
+        isLive = (try? container.decode(Bool.self, forKey: .isLive)) ?? (status.lowercased() == "active" || status.lowercased() == "live")
+        sessionName = try container.decodeIfPresent(String.self, forKey: .sessionName)
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+    }
+
+    func toDomain() -> ScenarioSessionSummary {
+        ScenarioSessionSummary(
+            id: id,
+            scenarioID: scenarioID,
+            status: status,
+            joinCode: joinCode,
+            joinCodeExpiresAt: joinCodeExpiresAt,
+            startsAt: startsAt,
+            endedAt: endedAt,
+            isLive: isLive,
+            sessionName: sessionName,
+            createdAt: createdAt
+        )
+    }
+}
+
+struct APILatestSessionResponseDTO: Codable, Sendable {
+    struct SessionDTO: Codable, Sendable {
+        var id: UUID
+        var scenarioId: UUID
+        var status: String
+        var joinCode: String?
+        var joinCodeExpiresAt: Date?
+        var startsAt: Date?
+        var endedAt: Date?
+        var isLive: Bool
+    }
+
+    var session: SessionDTO
 }
